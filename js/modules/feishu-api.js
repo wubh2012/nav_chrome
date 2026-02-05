@@ -93,13 +93,6 @@ const FeishuAPI = (function() {
     ]
   };
 
-  // 默认日期信息
-  const DEFAULT_DATE_INFO = {
-    date: '',
-    weekday: '',
-    lunarDate: ''
-  };
-
   /**
    * 获取配置
    */
@@ -248,6 +241,42 @@ const FeishuAPI = (function() {
   }
 
   /**
+   * 生成日期信息
+   * @returns {{date: string, weekday: string, lunarDate: string}}
+   */
+  function generateDateInfo() {
+    const now = new Date();
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+    // 获取农历日期
+    /** @type {string} */
+    let lunarDate = '';
+    /** @type {Object|null} */
+    const Lunar = window.Lunar;
+    if (Lunar) {
+      /** @type {Object} */
+      const lunar = Lunar.fromDate(now);
+      let result = '';
+
+      // 处理闰月
+      if (lunar.isLeap) {
+        result += '闰';
+      }
+
+      // 月份和日期
+      result += lunar.getMonthInChinese() + '月' + lunar.getDayInChinese();
+
+      lunarDate = result;
+    }
+
+    return {
+      date: `${now.getMonth() + 1}月${now.getDate()}日`,
+      weekday: weekdays[now.getDay()],
+      lunarDate: lunarDate
+    };
+  }
+
+  /**
    * 转换飞书记录格式为导航数据格式
    * @param {Array} records - 飞书记录数组
    * @returns {Object} { data, categories, dateInfo }
@@ -298,7 +327,7 @@ const FeishuAPI = (function() {
     return {
       data,
       categories: Array.from(categories).sort(),
-      dateInfo: DEFAULT_DATE_INFO
+      dateInfo: generateDateInfo()
     };
   }
 
@@ -319,7 +348,7 @@ const FeishuAPI = (function() {
     return {
       data,
       categories,
-      dateInfo: DEFAULT_DATE_INFO
+      dateInfo: generateDateInfo()
     };
   }
 
@@ -526,17 +555,10 @@ const FeishuAPI = (function() {
 
   /**
    * 获取模拟数据的日期信息
+   * @returns {{date: string, weekday: string, lunarDate: string}}
    */
   function getMockDateInfo() {
-    const now = new Date();
-    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    const months = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
-
-    return {
-      date: `${months[now.getMonth()]}月${now.getDate()}日`,
-      weekday: weekdays[now.getDay()],
-      lunarDate: '' // 测试模式下不显示农历
-    };
+    return generateDateInfo();
   }
 
   // ==================== 公共 API ====================

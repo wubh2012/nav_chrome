@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>导航起始页</title>
+
+  <!-- Icons -->
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/icons/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="img/icons/icon-48.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="img/icons/icon-128.png">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <!-- 网格背景 -->
+  <div class="grid-bg"></div>
+
+  <!-- 移动端顶部导航栏 -->
+  <header class="mobile-header">
+    <div class="mobile-nav">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="打开菜单">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="mobile-logo">
+        <img src="img/logo.png" alt="logo">
+        <span>导航</span>
+      </div>
+      <div class="mobile-actions">
+        <button id="mobile-theme-btn" class="theme-toggle-button" title="切换主题">
+          <i class="bi bi-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 移动端遮罩层 -->
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="container">
+    <!-- 左侧侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="user-avatar">
+        <img src="img/logo.png" alt="logo">
+      </div>
+      <nav class="nav-menu">
+        <ul id="category-menu">
+          <li class="active" data-category="all"><i class="bi bi-house-door"></i> 全部</li>
+          <!-- 动态生成的分类菜单项 -->
+        </ul>
+
+        <!-- 皮肤选择器 -->
+        <div class="skin-selector" id="skin-selector">
+          <div class="current-skin">
+            <div class="current-skin-preview">
+              <i class="bi bi-stars current-skin-icon"></i>
+            </div>
+            <span class="current-skin-name">霓虹风格</span>
+            <button class="skin-expand-btn">
+              <i class="bi bi-chevron-down"></i>
+            </button>
+          </div>
+
+          <div class="skin-options">
+            <div class="skin-grid">
+              <div class="skin-option active" data-skin="neon">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">霓虹风格</span>
+              </div>
+
+              <div class="skin-option" data-skin="ocean">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">海洋蓝调</span>
+              </div>
+
+              <div class="skin-option" data-skin="forest">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">森林绿意</span>
+              </div>
+
+              <div class="skin-option" data-skin="sunset">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">日落橙黄</span>
+              </div>
+
+              <div class="skin-option" data-skin="purple">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">优雅紫色</span>
+              </div>
+
+              <div class="skin-option" data-skin="classic">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">经典灰调</span>
+              </div>
+            </div>
+
+            <div class="skin-mode-toggle" id="theme-mode-toggle">
+              <i class="bi bi-moon"></i>
+              <span>暗黑模式</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 设置入口 -->
+        <ul class="settings-menu">
+          <li id="open-settings-btn">
+            <i class="bi bi-gear"></i>
+            <span>设置</span>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 顶部信息区 -->
+      <header class="top-info">
+        <div class="time-info">
+          <div class="current-time" id="current-time">--:--:--</div>
+          <div class="date-info" id="date-info">加载中...</div>
+        </div>
+      </header>
+
+      <!-- 添加链接按钮 -->
+      <button id="add-link-btn" class="add-link-btn" title="添加网站">
+        <i class="bi bi-plus"></i>
+      </button>
+
+      <!-- 工具图标列表 -->
+      <div class="tools-container">
+        <div id="tools-grid" class="tools-grid">
+          <!-- 动态生成的工具图标 -->
+        </div>
+      </div>
+
+      <!-- 同步状态提示 -->
+      <div id="sync-status" class="sync-status"></div>
+    </main>
+  </div>
+
+  <!-- 添加链接模态框 -->
+  <div id="add-link-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>添加网站</h2>
+        <button id="close-modal-btn" class="close-modal-btn" aria-label="关闭">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form id="add-link-form">
+          <div class="form-group">
+            <label for="site-url">网站网址 *</label>
+            <input type="url" id="site-url" name="site-url" value="https://" placeholder="请输入完整网址">
+            <div class="error-message" id="url-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="site-name">网站名称 *</label>
+            <input type="text" id="site-name" name="site-name" placeholder="请输入网站名称" maxlength="50">
+            <div class="error-message" id="name-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="site-category">分类 *</label>
+            <select id="site-category" name="site-category">
+              <!-- 动态生成的分类选项 -->
+            </select>
+            <div id="custom-category-container" style="display: none; margin-top: 10px;">
+              <input type="text" id="custom-category" name="custom-category" placeholder="请输入自定义分类名称" maxlength="20">
+            </div>
+            <div class="error-message" id="category-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="site-sort">排序 (可选)</label>
+            <input type="number" id="site-sort" name="site-sort" placeholder="数字越小，排序越靠前" min="0" max="999" value="200">
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancel-add-btn" class="cancel-btn">取消</button>
+        <button id="save-link-btn" class="save-btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认模态框 -->
+  <div id="delete-link-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>确认删除</h2>
+        <button id="close-delete-modal-btn" class="close-modal-btn" aria-label="关闭">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="delete-confirmation">
+          <div class="delete-icon">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <p>确定要删除网站 <span id="delete-site-name" class="site-name-highlight"></span> 吗？</p>
+          <p class="delete-warning">此操作不可撤销。</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancel-delete-btn" class="cancel-btn">取消</button>
+        <button id="confirm-delete-btn" class="delete-btn">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/modules/storage.js"></script>
+  <script src="js/modules/feishu-api.js"></script>
+  <script src="js/modules/theme-manager.js"></script>
+  <script src="js/modules/ui-renderer.js"></script>
+  <script src="js/modules/link-manager.js"></script>
+  <script src="js/modules/sync-manager.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

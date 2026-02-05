@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>导航插件 - 设置</title>
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="stylesheet" href="css/bootstrap-icons.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #050012, #0d0122, #1a0033);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+      background: linear-gradient(135deg, #ff0066, #00f6ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      background: rgba(13, 1, 34, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title i {
+      color: #ff0066;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #8b86bd;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="number"],
+    .form-group select {
+      width: 100%;
+      height: 44px;
+      padding: 0 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #ff0066;
+      box-shadow: 0 0 0 2px rgba(255, 0, 102, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .form-group .hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .toggle-group:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #ff0066;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff0066, #4500ff);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(255, 0, 102, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .status-message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-message.success {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      color: #00ff88;
+    }
+
+    .status-message.error {
+      background: rgba(255, 77, 79, 0.1);
+      border: 1px solid rgba(255, 77, 79, 0.3);
+      color: #ff4d4f;
+    }
+
+    .status-message.info {
+      background: rgba(0, 246, 255, 0.1);
+      border: 1px solid rgba(0, 246, 255, 0.3);
+      color: #00f6ff;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 20px 0;
+    }
+
+    .test-mode-notice {
+      background: rgba(255, 193, 7, 0.1);
+      border: 1px solid rgba(255, 193, 7, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #ffc107;
+      display: none;
+    }
+
+    .test-mode-notice.show {
+      display: block;
+    }
+
+    .link-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .link-item a {
+      color: #00f6ff;
+      text-decoration: none;
+    }
+
+    .link-item a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>导航插件设置</h1>
+
+    <div class="test-mode-notice" id="test-mode-notice">
+      <i class="bi bi-info-circle"></i>
+      测试模式已启用，将使用模拟数据。关闭测试模式后可配置飞书连接。
+    </div>
+
+    <!-- 飞书配置 -->
+    <div class="card">
+      <div class="card-title">
+        <i class="bi bi-table"></i>
+        飞书多维表格配置
+      </div>
+
+      <div class="form-group">
+        <label for="app-id">APP_ID *</label>
+        <input type="text" id="app-id" placeholder="请输入飞书应用 ID">
+        <div class="hint">登录飞书开放平台，在应用凭证中获取</div>
+      </div>
+
+      <div class="form-group">
+        <label for="app-secret">APP_SECRET *</label>
+        <input type="password" id="app-secret" placeholder="请输入飞书应用密钥">
+        <div class="hint">请妥善保管，不要泄露给他人</div>
+      </div>
+
+      <div class="form-group">
+        <label for="app-token">APP_TOKEN (多维表格 Token) *</label>
+        <input type="text" id="app-token" placeholder="请输入多维表格 Token">
+        <div class="hint">多维表格 URL 中的 app_token 参数</div>
+      </div>
+
+      <div class="form-group">
+        <label for="table-id">TABLE_ID (表格 ID) *</label>
+        <input type="text" id="table-id" placeholder="请输入表格 ID">
+        <div class="hint">多维表格 URL 中的表格 ID</div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="test-connection-btn">
+          <i class="bi bi-plug"></i> 测试连接
+        </button>
+        <button class="btn btn-primary" id="save-btn">
+          <i class="bi bi-check-lg"></i> 保存配置
+        </button>
+      </div>
+
+      <div class="status-message" id="status-message"></div>
+    </div>
+
+    <!-- 测试模式 -->
+    <div class="card">
+      <div class="card-title">
+        <i class="bi bi-bug"></i>
+        测试模式
+      </div>
+
+      <div class="toggle-group">
+        <div class="toggle-label">
+          <div>启用测试模式</div>
+          <div class="hint" style="margin-top: 4px;">使用模拟数据，无需配置飞书</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="test-mode-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 帮助信息 -->
+    <div class="card">
+      <div class="card-title">
+        <i class="bi bi-question-circle"></i>
+        配置帮助
+      </div>
+
+      <div class="link-item">
+        <i class="bi bi-link-45deg"></i>
+        <a href="https://open.feishu.cn/" target="_blank">飞书开放平台</a>
+        - 创建应用获取凭证
+      </div>
+
+      <div class="link-item">
+        <i class="bi bi-link-45deg"></i>
+        <a href="#" id="view-guide-btn">查看配置指南</a>
+      </div>
+    </div>
+
+    <!-- 数据管理 -->
+    <div class="card">
+      <div class="card-title">
+        <i class="bi bi-trash"></i>
+        数据管理
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" id="clear-cache-btn">
+          <i class="bi bi-trash3"></i> 清除缓存
+        </button>
+        <button class="btn btn-secondary" id="reset-btn">
+          <i class="bi bi-arrow-counterclockwise"></i> 重置所有
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/modules/storage.js"></script>
+  <script src="js/modules/feishu-api.js"></script>
+  <script src="js/options.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "水果导航 - Chrome 起始页",
+  "version": "1.0.0",
+  "description": "基于飞书多维表格的导航起始页插件，支持多主题、自定义导航",
+  "author": "水果导航",
+  "homepage_url": "https://navsite.example.com",
+  "icons": {
+    "16": "img/icons/icon-16.png",
+    "32": "img/icons/icon-32.png",
+    "48": "img/icons/icon-48.png",
+    "128": "img/icons/icon-128.png",
+    "192": "img/icons/icon-192.png",
+    "512": "img/icons/icon-512.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "img/icons/icon-16.png",
+      "32": "img/icons/icon-32.png",
+      "48": "img/icons/icon-48.png"
+    },
+    "default_title": "水果导航"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "options_page": "options.html",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://open.feishu.cn/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
+}

@@ -42,11 +42,22 @@ const UIRenderer = (function() {
     const menu = document.getElementById('category-menu');
     if (!menu) return;
 
+    // 分类排序：全部 → 主页 → AI → Code → 其他（按原顺序）
+    const categoryOrder = ['主页', 'AI', 'Code'];
+    const sortedCategories = [...categories].sort((a, b) => {
+      const indexA = categoryOrder.indexOf(a);
+      const indexB = categoryOrder.indexOf(b);
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
     // 保留"全部"选项
     let html = `<li class="active" data-category="all"><i class="bi bi-house-door"></i> 全部</li>`;
 
     // 添加分类选项
-    categories.forEach(category => {
+    sortedCategories.forEach(category => {
       const icon = getCategoryIcon(category);
       html += `<li data-category="${category}"><i class="bi ${icon}"></i> ${category}</li>`;
     });
@@ -112,6 +123,8 @@ const UIRenderer = (function() {
     const grid = document.getElementById('tools-grid');
     if (!grid) return;
 
+    // 先隐藏容器，避免中间状态
+    grid.style.visibility = 'hidden';
     grid.innerHTML = '';
 
     const tools = [];
@@ -126,25 +139,39 @@ const UIRenderer = (function() {
 
     if (tools.length === 0) {
       grid.innerHTML = '<div class="empty-state">暂无数据，请添加链接</div>';
+      grid.style.visibility = 'visible';
       return;
     }
 
-    // 添加工具卡片
-    tools.forEach((tool, index) => {
-      const card = createToolCard(tool, index);
-      grid.appendChild(card);
+    // 使用 DocumentFragment 批量插入，减少 DOM 重排
+    const fragment = document.createDocumentFragment();
+    tools.forEach(tool => {
+      const card = createToolCard(tool);
+      // 初始状态设为隐藏，由动画控制显示
+      card.classList.add('tool-item-hidden');
+      fragment.appendChild(card);
+    });
+
+    grid.appendChild(fragment);
+
+    // 批量显示动画 - 所有卡片同时显示
+    requestAnimationFrame(() => {
+      grid.style.visibility = 'visible';
+      // 移除隐藏类，触发 CSS 动画
+      const cards = grid.querySelectorAll('.tool-item-hidden');
+      cards.forEach(card => {
+        card.classList.remove('tool-item-hidden');
+      });
     });
   }
 
   /**
    * 创建工具卡片
    * @param {Object} tool - 工具数据
-   * @param {number} index - 索引（用于动画延迟）
    */
-  function createToolCard(tool, index) {
+  function createToolCard(tool) {
     const card = document.createElement('div');
     card.className = 'tool-item';
-    card.style.animationDelay = `${index * 0.1}s`;
     card.setAttribute('data-id', tool.id || '');
     card.setAttribute('data-category', tool.category || '');
 

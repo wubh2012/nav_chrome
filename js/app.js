@@ -37,6 +37,9 @@
       // 8. 监听后台同步消息
       listenSyncMessages();
 
+      // 9. 标记页面加载完成，触发动画
+      document.body.classList.add('loaded');
+
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
       console.error('[ChromeNav] 初始化失败:', error);
@@ -131,8 +134,6 @@
         UIRenderer.init(cached.data, cached.categories, cached.dateInfo || {});
         window.cachedCategories = cached.categories;
 
-        // 尝试后台刷新数据
-        refreshDataBackground();
         return;
       }
 
@@ -222,6 +223,7 @@
 
   /**
    * 后台刷新数据
+   * 仅当数据真正变化时才更新 UI，避免图标闪烁
    */
   async function refreshDataBackground() {
     try {
@@ -234,16 +236,26 @@
 
       const result = await FeishuAPI.getRecords();
 
-      // 保存到存储
-      await Storage.saveNavData(result.data, result.categories, result.dateInfo);
+      // 先比较数据是否变化（注意：要在保存之前比较）
+      const cached = await Storage.loadNavData();
+      const hasChanged = !cached || JSON.stringify(cached.data) !== JSON.stringify(result.data);
 
-      // 更新 UI
-      UIRenderer.init(result.data, result.categories, result.dateInfo);
-      window.cachedCategories = result.categories;
+      // 仅在数据变化时才保存和更新 UI
+      if (hasChanged) {
+        // 保存到存储
+        await Storage.saveNavData(result.data, result.categories, result.dateInfo);
 
-      // 更新链接管理器
-      if (window.LinkManager) {
-        LinkManager.updateCategories(result.categories);
+        // 更新 UI
+        UIRenderer.init(result.data, result.categories, result.dateInfo);
+        window.cachedCategories = result.categories;
+
+        // 更新链接管理器
+        if (window.LinkManager) {
+          LinkManager.updateCategories(result.categories);
+        }
+        console.log('[ChromeNav] 后台刷新完成，数据已更新');
+      } else {
+        console.log('[ChromeNav] 后台刷新完成，数据无变化，跳过更新');
       }
 
       await Storage.saveSyncStatus('success', '同步完成');
@@ -254,8 +266,6 @@
           syncStatus.classList.remove('show');
         }
       }, 3000);
-
-      console.log('[ChromeNav] 后台刷新完成');
     } catch (error) {
       console.warn('[ChromeNav] 后台刷新失败:', error);
       await Storage.saveSyncStatus('error', '同步失败');

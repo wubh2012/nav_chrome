@@ -1913,6 +1913,28 @@ body {
   padding: 15px;
 }
 
+/* 批量加载时的隐藏状态 - 用于同时显示动画 */
+.tool-item-hidden {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* 批量显示动画 - 所有卡片同时淡入 */
+.tool-item:not(.tool-item-hidden) {
+  animation: toolItemFadeIn 0.4s ease forwards;
+}
+
+@keyframes toolItemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tool-item::before {
   content: "";
   position: absolute;
@@ -2017,44 +2039,6 @@ body {
   transition: transform 0.3s ease;
 }
 
-/* 优化工具卡片的加载动画 */
-.tool-item {
-  animation: slideInUp 0.3s ease forwards;
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.tool-item:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.tool-item:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.tool-item:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.tool-item:nth-child(4) {
-  animation-delay: 0.4s;
-}
-
-.tool-item:nth-child(5) {
-  animation-delay: 0.5s;
-}
-
-.tool-item:nth-child(6) {
-  animation-delay: 0.6s;
-}
-
-@keyframes slideInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* 触摸区域优化 */
 @media (max-width: 768px) {
   .tool-item {
@@ -2077,63 +2061,6 @@ body {
   .glass-container {
     background: rgba(13, 1, 34, 0.9);
   }
-}
-
-/* 全局动画样式 */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tool-item {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.tool-item:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.tool-item:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.tool-item:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.tool-item:nth-child(4) {
-  animation-delay: 0.4s;
-}
-
-.tool-item:nth-child(5) {
-  animation-delay: 0.5s;
-}
-
-.tool-item:nth-child(6) {
-  animation-delay: 0.6s;
-}
-
-.tool-item:nth-child(7) {
-  animation-delay: 0.7s;
-}
-
-.tool-item:nth-child(8) {
-  animation-delay: 0.8s;
-}
-
-.tool-item:nth-child(9) {
-  animation-delay: 0.9s;
-}
-
-.tool-item:nth-child(10) {
-  animation-delay: 1s;
 }
 
 /* 响应式优化 */
@@ -2186,26 +2113,6 @@ input:focus {
   to {
     transform: scale(4);
     opacity: 0;
-  }
-}
-
-body.loaded .tool-item {
-  animation: fadeInUp 0.6s ease forwards;
-}
-
-body.loaded .tool-item:nth-child(n) {
-  animation-delay: calc(var(--index, 0) * 0.1s);
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

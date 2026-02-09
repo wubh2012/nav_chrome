@@ -6,125 +6,185 @@ const ThemeManager = (function() {
   'use strict';
 
   // 皮肤主题配置（包含 dark/light 模式）
+  // 每个皮肤定义两套配色，分别对应 dark 和 light 模式
   const SKIN_THEMES = {
     neon: {
       name: '霓虹风格',
-      colors: {
+      // 霓虹风格 - 映射到 Art Deco CSS 变量
+      artDecoVars: {
         dark: {
-          '--bg-color': '#0a0a0f',
-          '--sidebar-bg': '#0a0a0f',
-          '--text-color': '#ffffff',
-          '--primary-color': '#ff0066',
-          '--secondary-color': '#4500ff',
-          '--accent-color': '#00f6ff',
-          '--accent-green': '#00ffaa',
-          '--warning-color': '#ff8800',
-          '--danger-color': '#ff4d4f',
-          '--neon-pink': '#ff0066',
-          '--neon-cyan': '#00f6ff',
-          '--neon-purple': '#4500ff',
-          '--neon-pink-rgb': '255, 0, 102',
-          '--neon-cyan-rgb': '0, 246, 255',
-          '--neon-purple-rgb': '69, 0, 255',
-          '--text-high': '#ffffff',
-          '--text-mid': '#8b86bd',
-          '--text-low': '#5e55e7',
-          '--glass-bg': 'rgba(13, 1, 34, 0.6)',
-          '--elevated-bg': 'rgba(13, 1, 34, 0.8)',
-          '--border-glass': 'rgba(255, 255, 255, 0.1)',
-          '--border-neon': 'rgba(255, 0, 102, 0.3)',
-          '--glow-pink': '0 0 20px rgba(255, 0, 102, 0.5)',
-          '--glow-cyan': '0 0 20px rgba(0, 246, 255, 0.3)'
+          '--gold-primary': '#ff0066',
+          '--gold-light': '#ff6b9d',
+          '--gold-dark': '#cc0052',
+          '--gold-dim': 'rgba(255, 0, 102, 0.25)',
+          '--gold-glow': 'rgba(255, 0, 102, 0.4)',
+          '--bg-primary': '#0a0a0f',
+          '--bg-secondary': 'rgba(13, 1, 34, 0.98)',
+          '--bg-card': 'rgba(28, 28, 28, 0.7)',
+          '--text-primary': '#ffffff',
+          '--text-secondary': '#ff6b9d',
+          '--text-muted': '#8b86bd',
+          '--border-gold': '1px solid rgba(255, 0, 102, 0.35)',
+          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
+          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
+          '--shadow-gold': '0 0 30px rgba(255, 0, 102, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(255, 0, 102, 0.2)'
         },
         light: {
-          '--bg-color': '#f5f7fa',
-          '--sidebar-bg': '#f5f7fa',
-          '--text-color': '#1a1a1a',
-          '--primary-color': '#ff0066',
-          '--secondary-color': '#4500ff',
-          '--accent-color': '#00f6ff',
-          '--accent-green': '#00ffaa',
-          '--warning-color': '#ff8800',
-          '--danger-color': '#ff4d4f',
-          '--neon-pink': '#ff0066',
-          '--neon-cyan': '#00f6ff',
-          '--neon-purple': '#4500ff',
-          '--neon-pink-rgb': '255, 0, 102',
-          '--neon-cyan-rgb': '0, 246, 255',
-          '--neon-purple-rgb': '69, 0, 255',
-          '--text-high': '#1a1a1a',
-          '--text-mid': '#666666',
-          '--text-low': '#888888',
-          '--glass-bg': 'rgba(255, 255, 255, 0.8)',
-          '--elevated-bg': 'rgba(245, 247, 250, 0.8)',
-          '--border-glass': 'rgba(255, 255, 255, 0.2)',
-          '--border-neon': 'rgba(255, 0, 102, 0.2)',
-          '--glow-pink': '0 0 15px rgba(255, 0, 102, 0.3)',
-          '--glow-cyan': '0 0 15px rgba(0, 246, 255, 0.3)'
+          '--gold-primary': '#ff0066',
+          '--gold-light': '#ff6b9d',
+          '--gold-dark': '#cc0052',
+          '--gold-dim': 'rgba(184, 134, 11, 0.2)',
+          '--gold-glow': 'rgba(255, 0, 102, 0.3)',
+          '--bg-primary': '#f5f7fa',
+          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
+          '--bg-card': 'rgba(255, 255, 255, 0.8)',
+          '--text-primary': '#1a1a1a',
+          '--text-secondary': '#cc0052',
+          '--text-muted': '#888888',
+          '--border-gold': '1px solid rgba(255, 0, 102, 0.35)',
+          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
+          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
+          '--shadow-gold': '0 0 30px rgba(255, 0, 102, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(255, 0, 102, 0.15)'
         }
       }
     },
     ocean: {
       name: '海洋蓝调',
-      colors: {
+      artDecoVars: {
         dark: {
-          '--bg-color': '#001122',
-          '--sidebar-bg': '#001122',
-          '--text-color': '#ffffff',
-          '--primary-color': '#0077be',
-          '--secondary-color': '#0096c7',
-          '--accent-color': '#00b4d8',
-          '--accent-green': '#48cae4',
-          '--warning-color': '#ffb703',
-          '--danger-color': '#ff6b6b',
-          '--neon-pink': '#00f5ff',
-          '--neon-cyan': '#40e0d0',
-          '--neon-purple': '#0096c7',
-          '--neon-pink-rgb': '0, 245, 255',
-          '--neon-cyan-rgb': '64, 224, 208',
-          '--neon-purple-rgb': '0, 150, 199',
-          '--text-high': '#ffffff',
-          '--text-mid': '#caf0f8',
-          '--text-low': '#ade8f4',
-          '--glass-bg': 'rgba(0, 34, 68, 0.6)',
-          '--elevated-bg': 'rgba(0, 34, 68, 0.8)',
-          '--border-glass': 'rgba(0, 181, 216, 0.1)',
-          '--border-neon': 'rgba(0, 245, 255, 0.3)',
-          '--glow-pink': '0 0 20px rgba(0, 245, 255, 0.5)',
-          '--glow-cyan': '0 0 20px rgba(64, 224, 208, 0.3)'
+          '--gold-primary': '#00f5ff',
+          '--gold-light': '#40e0d0',
+          '--gold-dark': '#00b4d8',
+          '--gold-dim': 'rgba(0, 245, 255, 0.25)',
+          '--gold-glow': 'rgba(0, 245, 255, 0.4)',
+          '--bg-primary': '#001122',
+          '--bg-secondary': 'rgba(0, 34, 68, 0.98)',
+          '--bg-card': 'rgba(28, 28, 28, 0.7)',
+          '--text-primary': '#ffffff',
+          '--text-secondary': '#40e0d0',
+          '--text-muted': '#caf0f8',
+          '--border-gold': '1px solid rgba(0, 245, 255, 0.35)',
+          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
+          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
+          '--shadow-gold': '0 0 30px rgba(0, 245, 255, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(0, 245, 255, 0.2)'
         },
         light: {
-          '--bg-color': '#caf0f8',
-          '--sidebar-bg': '#caf0f8',
-          '--text-color': '#1a1a1a',
-          '--primary-color': '#0077be',
-          '--secondary-color': '#0096c7',
-          '--accent-color': '#00b4d8',
-          '--accent-green': '#48cae4',
-          '--warning-color': '#ffb703',
-          '--danger-color': '#ff6b6b',
-          '--neon-pink': '#00f5ff',
-          '--neon-cyan': '#40e0d0',
-          '--neon-purple': '#0096c7',
-          '--neon-pink-rgb': '0, 245, 255',
-          '--neon-cyan-rgb': '64, 224, 208',
-          '--neon-purple-rgb': '0, 150, 199',
-          '--text-high': '#1a1a1a',
-          '--text-mid': '#666666',
-          '--text-low': '#888888',
-          '--glass-bg': 'rgba(255, 255, 255, 0.8)',
-          '--elevated-bg': 'rgba(202, 240, 248, 0.8)',
-          '--border-glass': 'rgba(0, 181, 216, 0.1)',
-          '--border-neon': 'rgba(0, 245, 255, 0.3)',
-          '--glow-pink': '0 0 20px rgba(0, 245, 255, 0.5)',
-          '--glow-cyan': '0 0 20px rgba(64, 224, 208, 0.3)'
+          '--gold-primary': '#0077be',
+          '--gold-light': '#40e0d0',
+          '--gold-dark': '#0096c7',
+          '--gold-dim': 'rgba(0, 119, 190, 0.2)',
+          '--gold-glow': 'rgba(0, 119, 190, 0.3)',
+          '--bg-primary': '#caf0f8',
+          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
+          '--bg-card': 'rgba(255, 255, 255, 0.8)',
+          '--text-primary': '#1a1a1a',
+          '--text-secondary': '#0077be',
+          '--text-muted': '#888888',
+          '--border-gold': '1px solid rgba(0, 119, 190, 0.35)',
+          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
+          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
+          '--shadow-gold': '0 0 30px rgba(0, 119, 190, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(0, 119, 190, 0.15)'
+        }
+      }
+    },
+    emerald: {
+      name: '翡翠绿',
+      artDecoVars: {
+        dark: {
+          '--gold-primary': '#2d8a6e',
+          '--gold-light': '#7dd3b0',
+          '--gold-dark': '#1a5c47',
+          '--gold-dim': 'rgba(45, 138, 110, 0.25)',
+          '--gold-glow': 'rgba(45, 138, 110, 0.4)',
+          '--bg-primary': '#0a0f0c',
+          '--bg-secondary': 'rgba(10, 15, 12, 0.98)',
+          '--bg-card': 'rgba(28, 28, 28, 0.7)',
+          '--text-primary': '#f5f5f0',
+          '--text-secondary': '#7dd3b0',
+          '--text-muted': '#9a9a9a',
+          '--border-gold': '1px solid rgba(45, 138, 110, 0.35)',
+          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
+          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
+          '--shadow-gold': '0 0 30px rgba(45, 138, 110, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(45, 138, 110, 0.2)'
+        },
+        light: {
+          '--gold-primary': '#2d8a6e',
+          '--gold-light': '#7dd3b0',
+          '--gold-dark': '#1a5c47',
+          '--gold-dim': 'rgba(45, 138, 110, 0.2)',
+          '--gold-glow': 'rgba(45, 138, 110, 0.3)',
+          '--bg-primary': '#f0f5f2',
+          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
+          '--bg-card': 'rgba(255, 255, 255, 0.8)',
+          '--text-primary': '#1a1a1a',
+          '--text-secondary': '#2d8a6e',
+          '--text-muted': '#888888',
+          '--border-gold': '1px solid rgba(45, 138, 110, 0.35)',
+          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
+          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
+          '--shadow-gold': '0 0 30px rgba(45, 138, 110, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(45, 138, 110, 0.15)'
+        }
+      }
+    },
+    darkgold: {
+      name: '暗金色',
+      artDecoVars: {
+        dark: {
+          '--gold-primary': '#d4af37',
+          '--gold-light': '#f4e4bc',
+          '--gold-dark': '#b8860b',
+          '--gold-dim': 'rgba(212, 175, 55, 0.25)',
+          '--gold-glow': 'rgba(212, 175, 55, 0.4)',
+          '--bg-primary': '#0a0905',
+          '--bg-secondary': 'rgba(18, 18, 18, 0.98)',
+          '--bg-card': 'rgba(28, 28, 28, 0.7)',
+          '--text-primary': '#f5f5f0',
+          '--text-secondary': '#9a9a9a',
+          '--text-muted': '#666666',
+          '--border-gold': '1px solid rgba(212, 175, 55, 0.35)',
+          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
+          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
+          '--shadow-gold': '0 0 30px rgba(212, 175, 55, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(212, 175, 55, 0.2)'
+        },
+        light: {
+          '--gold-primary': '#d4af37',
+          '--gold-light': '#f4e4bc',
+          '--gold-dark': '#b8860b',
+          '--gold-dim': 'rgba(184, 134, 11, 0.2)',
+          '--gold-glow': 'rgba(212, 175, 55, 0.3)',
+          '--bg-primary': '#f8f6f0',
+          '--bg-secondary': 'rgba(248, 246, 240, 0.98)',
+          '--bg-card': 'rgba(255, 255, 255, 0.8)',
+          '--text-primary': '#1a1a1a',
+          '--text-secondary': '#666666',
+          '--text-muted': '#999999',
+          '--border-gold': '1px solid rgba(212, 175, 55, 0.35)',
+          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
+          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
+          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
+          '--shadow-gold': '0 0 30px rgba(212, 175, 55, 0.15)',
+          '--shadow-hover': '0 12px 50px rgba(212, 175, 55, 0.15)'
         }
       }
     }
   };
 
   // 默认设置
-  const DEFAULT_SKIN = 'neon';
+  const DEFAULT_SKIN = 'darkgold';
   const DEFAULT_MODE = 'dark';
 
   // 当前状态
@@ -164,26 +224,25 @@ const ThemeManager = (function() {
 
   /**
    * 应用主题 - 动态注入 CSS 变量
+   * 使用 JS 直接修改 style.css 中的 :root 变量
    */
   function applyTheme() {
-    const root = document.documentElement;
     const skinConfig = SKIN_THEMES[currentSkin];
 
     if (!skinConfig) return;
 
     // 获取当前模式的颜色配置
-    const colors = skinConfig.colors[currentMode];
+    const colors = skinConfig.artDecoVars[currentMode];
 
     if (colors) {
-      // 动态注入 CSS 变量
-      Object.entries(colors).forEach(([key, value]) => {
-        root.style.setProperty(key, value);
-      });
+      // 直接在 documentElement 上设置 CSS 变量
+      // 内联样式的优先级高于外部 CSS 文件中的 :root 定义
+      const root = document.documentElement;
+      for (const [prop, value] of Object.entries(colors)) {
+        root.style.setProperty(prop, value);
+      }
+      console.log(`[ThemeManager] 已更新 ${Object.keys(colors).length} 个 CSS 变量`);
     }
-
-    // 应用皮肤和模式属性（用于 CSS 选择器）
-    root.setAttribute('data-skin', currentSkin);
-    root.setAttribute('data-theme', currentMode);
 
     // 保存到存储
     Storage.saveThemePreference(currentSkin, currentMode);
@@ -212,6 +271,53 @@ const ThemeManager = (function() {
     const skinNameEl = document.querySelector('.current-skin-name');
     if (skinNameEl && SKIN_THEMES[currentSkin]) {
       skinNameEl.textContent = SKIN_THEMES[currentSkin].name;
+    }
+
+    // 动态更新皮肤预览颜色
+    updateSkinPreviewColors();
+  }
+
+  /**
+   * 更新皮肤预览圆点的颜色
+   */
+  function updateSkinPreviewColors() {
+    // 更新所有皮肤选项的预览颜色
+    document.querySelectorAll('.skin-option').forEach(option => {
+      const skin = option.getAttribute('data-skin');
+      const skinConfig = SKIN_THEMES[skin];
+      if (!skinConfig || !skinConfig.artDecoVars) return;
+
+      const skinColors = skinConfig.artDecoVars[currentMode];
+      if (!skinColors) return;
+
+      const skinPrimary = skinColors['--gold-primary'];
+      const skinSecondary = skinColors['--gold-dark'];
+      const skinAccent = skinColors['--gold-light'];
+
+      // 更新主色圆点
+      const primaryDot = option.querySelector('.color-dot.primary');
+      if (primaryDot) {
+        primaryDot.style.background = skinPrimary;
+      }
+
+      // 更新辅色圆点
+      const secondaryDot = option.querySelector('.color-dot.secondary');
+      if (secondaryDot) {
+        secondaryDot.style.background = skinSecondary;
+      }
+
+      // 更新强调色圆点
+      const accentDot = option.querySelector('.color-dot.accent');
+      if (accentDot) {
+        accentDot.style.background = skinAccent;
+      }
+    });
+
+    // 更新当前选中皮肤的预览图标颜色
+    const currentSkinIcon = document.querySelector('.current-skin-icon');
+    const skinConfig = SKIN_THEMES[currentSkin];
+    if (currentSkinIcon && skinConfig && skinConfig.artDecoVars[currentMode]) {
+      currentSkinIcon.style.color = skinConfig.artDecoVars[currentMode]['--gold-primary'];
     }
   }
 

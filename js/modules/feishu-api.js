@@ -188,13 +188,18 @@ const FeishuAPI = (function() {
 
   /**
    * 获取所有记录
-   * @returns {Promise<Object>} { data, categories, dateInfo }
+   * @param {string} appToken - 多维表格 Token（已废弃，从 Storage 获取）
+   * @param {string} tableId - 表格 ID（已废弃，从 Storage 获取）
+   * @returns {Promise<Object>} { success, data, categories, dateInfo }
    */
-  async function getRecords() {
+  async function getRecords(appToken, tableId) {
     // 测试模式
     if (await isTestMode()) {
       console.log('[FeishuAPI] 使用测试模式数据');
-      return transformMockData();
+      return {
+        success: true,
+        ...transformMockData()
+      };
     }
 
     const config = await getConfig();
@@ -233,7 +238,10 @@ const FeishuAPI = (function() {
 
       console.log('[FeishuAPI] 数据获取成功，共', result.data?.items?.length || 0, '条记录');
 
-      return transformRecords(result.data?.items || []);
+      return {
+        success: true,
+        ...transformRecords(result.data?.items || [])
+      };
     } catch (error) {
       console.error('[FeishuAPI] 请求异常:', error);
       throw error;

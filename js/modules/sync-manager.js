@@ -93,8 +93,8 @@ const SyncManager = (function() {
       const result = await FeishuAPI.getRecords(feishuConfig.appToken, feishuConfig.tableId);
 
       if (result.success && result.data) {
-        // 处理数据
-        const { categories, navData, dateInfo } = processFeishuData(result.data);
+        // 直接使用 FeishuAPI 返回的已处理数据
+        const { data: navData, categories, dateInfo } = result;
 
         // 保存到存储
         await Storage.saveNavData(navData, categories, dateInfo);

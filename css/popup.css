@@ -1,28 +1,148 @@
-/* 弹窗样式 */
+/* ========================================
+   Popup - Art Deco 风格
+   ======================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+  width: 220px;
+  min-height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Art Deco 背景 */
+.artdeco-bg {
+  position: absolute;
+  inset: 0;
+  background: #0a0a0a;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* 放射状光线 */
+.artdeco-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200%;
+  height: 200%;
+  background:
+    conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      rgba(212, 175, 55, 0.08) 5deg,
+      transparent 10deg,
+      transparent 30deg,
+      rgba(212, 175, 55, 0.08) 35deg,
+      transparent 40deg,
+      transparent 60deg,
+      rgba(212, 175, 55, 0.08) 65deg,
+      transparent 70deg,
+      transparent 90deg,
+      rgba(212, 175, 55, 0.08) 95deg,
+      transparent 100deg,
+      transparent 120deg,
+      rgba(212, 175, 55, 0.08) 125deg,
+      transparent 130deg,
+      transparent 150deg,
+      rgba(212, 175, 55, 0.08) 155deg,
+      transparent 160deg,
+      transparent 180deg,
+      rgba(212, 175, 55, 0.08) 185deg,
+      transparent 190deg,
+      transparent 210deg,
+      rgba(212, 175, 55, 0.08) 215deg,
+      transparent 220deg,
+      transparent 240deg,
+      rgba(212, 175, 55, 0.08) 245deg,
+      transparent 250deg,
+      transparent 270deg,
+      rgba(212, 175, 55, 0.08) 275deg,
+      transparent 280deg,
+      transparent 300deg,
+      rgba(212, 175, 55, 0.08) 305deg,
+      transparent 310deg,
+      transparent 330deg,
+      rgba(212, 175, 55, 0.08) 335deg,
+      transparent 340deg,
+      transparent 360deg
+    );
+  opacity: 0.6;
+  animation: rotate 180s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* 中心渐变 */
+.artdeco-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%,
+    transparent 0%,
+    transparent 50%,
+    #0a0a0a 100%);
+  pointer-events: none;
+}
+
 .popup-container {
-  width: 200px;
-  padding: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #fff;
+  position: relative;
+  z-index: 1;
+  padding: 16px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 14px 16px;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.2s;
-  color: #333;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #f5f5f0;
   font-size: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #d4af37 0%, #b8860b 50%, #d4af37 100%);
+  transform: translateX(-3px);
+  transition: transform 0.3s ease;
 }
 
 .menu-item:hover {
-  background: #f0f0f0;
+  background: rgba(212, 175, 55, 0.1);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.menu-item:hover::before {
+  transform: translateX(0);
 }
 
 .menu-item i {
-  font-size: 16px;
-  color: #666;
+  font-size: 18px;
+  color: #d4af37;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.menu-item span {
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }

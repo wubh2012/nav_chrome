@@ -178,7 +178,7 @@ const UIRenderer = (function() {
     // 解析图标
     let iconHtml = '';
     if (tool.icon) {
-      
+
       if (tool.icon.startsWith('http') || tool.icon.startsWith('data:')) {
         // 图片图标
         iconHtml = `<img src="${tool.icon}" alt="${tool.name}" class="tool-icon" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'text-icon\\'>${getInitial(tool.name)}</span>'">`;
@@ -189,8 +189,8 @@ const UIRenderer = (function() {
         // 中文单个字
         iconHtml = createTextIcon(tool.icon);
       } else {
-        // Emoji 或其他
-        iconHtml = `<span class="text-icon">${tool.icon}</span>`;
+        // Emoji 或其他（使用透明背景的图标容器）
+        iconHtml = `<span class="emoji-icon">${tool.icon}</span>`;
       }
     } else {
       // 默认使用首字母

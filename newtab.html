@@ -14,42 +14,25 @@
   <link rel="icon" type="image/png" sizes="48x48" href="img/icons/icon-48.png">
   <link rel="icon" type="image/png" sizes="128x128" href="img/icons/icon-128.png">
 
+  <!-- Google Fonts - Art Deco 字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/bootstrap-icons.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <!-- Art Deco 背景层 -->
+  <div class="artdeco-bg"></div>
+  <div class="artdeco-grid"></div>
+
   <!-- 桌面端主题切换按钮 -->
   <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题">
     <i class="bi bi-moon-fill"></i>
   </button>
-
-  <!-- 网格背景 -->
-  <div class="grid-bg"></div>
-
-  <!-- 移动端顶部导航栏 -->
-  <header class="mobile-header">
-    <div class="mobile-nav">
-      <button class="hamburger-btn" id="hamburger-btn" aria-label="打开菜单">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <div class="mobile-logo">
-        <img src="img/logo.png" alt="logo">
-        <span>导航</span>
-      </div>
-      <div class="mobile-actions">
-        <button id="mobile-theme-btn" class="theme-toggle-button" title="切换主题">
-          <i class="bi bi-moon"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- 移动端遮罩层 -->
-  <div class="mobile-overlay" id="mobile-overlay"></div>
 
   <div class="container">
     <!-- 左侧侧边栏 -->
@@ -93,6 +76,24 @@
                   <div class="color-dot accent"></div>
                 </div>
                 <span class="skin-label">海洋蓝调</span>
+              </div>
+
+              <div class="skin-option" data-skin="emerald">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">翡翠绿</span>
+              </div>
+
+              <div class="skin-option" data-skin="darkgold">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">暗金色</span>
               </div>
             </div>
 

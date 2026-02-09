@@ -6,278 +6,480 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>导航插件 - 设置</title>
   <link rel="icon" href="img/favicon.ico">
+  <!-- Google Fonts - Art Deco -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/bootstrap-icons.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  /* ========================================
+     Options - Art Deco 风格
+     ======================================== */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-    body {
-      font-family: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(135deg, #050012, #0d0122, #1a0033);
-      color: #ffffff;
-      min-height: 100vh;
-      padding: 20px;
-    }
+  body {
+    font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0a0a0a;
+    color: #f5f5f0;
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+  }
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
+  /* Art Deco 背景 */
+  .artdeco-bg {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 0;
+    overflow: hidden;
+  }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 24px;
-      background: linear-gradient(135deg, #ff0066, #00f6ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+  .artdeco-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200%;
+    height: 200%;
+    background:
+      conic-gradient(from 0deg at 50% 50%,
+        transparent 0deg,
+        rgba(212, 175, 55, 0.06) 5deg,
+        transparent 10deg,
+        transparent 30deg,
+        rgba(212, 175, 55, 0.06) 35deg,
+        transparent 40deg,
+        transparent 60deg,
+        rgba(212, 175, 55, 0.06) 65deg,
+        transparent 70deg,
+        transparent 90deg,
+        rgba(212, 175, 55, 0.06) 95deg,
+        transparent 100deg,
+        transparent 120deg,
+        rgba(212, 175, 55, 0.06) 125deg,
+        transparent 130deg,
+        transparent 150deg,
+        rgba(212, 175, 55, 0.06) 155deg,
+        transparent 160deg,
+        transparent 180deg,
+        rgba(212, 175, 55, 0.06) 185deg,
+        transparent 190deg,
+        transparent 210deg,
+        rgba(212, 175, 55, 0.06) 215deg,
+        transparent 220deg,
+        transparent 240deg,
+        rgba(212, 175, 55, 0.06) 245deg,
+        transparent 250deg,
+        transparent 270deg,
+        rgba(212, 175, 55, 0.06) 275deg,
+        transparent 280deg,
+        transparent 300deg,
+        rgba(212, 175, 55, 0.06) 305deg,
+        transparent 310deg,
+        transparent 330deg,
+        rgba(212, 175, 55, 0.06) 335deg,
+        transparent 340deg,
+        transparent 360deg
+      );
+    opacity: 0.5;
+    animation: rotate 180s linear infinite;
+  }
 
-    .card {
-      background: rgba(13, 1, 34, 0.8);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
+  @keyframes rotate {
+    from { transform: translateX(-50%) rotate(0deg); }
+    to { transform: translateX(-50%) rotate(360deg); }
+  }
 
-    .card-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+  .artdeco-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%,
+      transparent 0%,
+      transparent 40%,
+      #0a0a0a 100%);
+    pointer-events: none;
+  }
 
-    .card-title i {
-      color: #ff0066;
-    }
+  /* 金色网格 */
+  .artdeco-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
 
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #8b86bd;
-    }
+  h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    font-size: 28px;
+    background: linear-gradient(180deg,
+      #f4e4bc 0%,
+      #d4af37 40%,
+      #b8860b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.05em;
+    position: relative;
+  }
 
-    .form-group input[type="text"],
-    .form-group input[type="password"],
-    .form-group input[type="number"],
-    .form-group select {
-      width: 100%;
-      height: 44px;
-      padding: 0 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      color: #ffffff;
-      font-size: 16px;
-      outline: none;
-      transition: all 0.3s ease;
-    }
+  h1::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+  }
 
-    .form-group input:focus,
-    .form-group select:focus {
-      border-color: #ff0066;
-      box-shadow: 0 0 0 2px rgba(255, 0, 102, 0.1);
-    }
+  .card {
+    background: rgba(20, 20, 20, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 0;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+  }
 
-    .form-group input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
+  /* 卡片四角装饰 */
+  .card::before,
+  .card::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+  }
 
-    .form-group .hint {
-      margin-top: 6px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-    }
+  .card::before {
+    top: 8px;
+    left: 8px;
+    border-right: none;
+    border-bottom: none;
+  }
 
-    .toggle-group {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
+  .card::after {
+    bottom: 8px;
+    right: 8px;
+    border-left: none;
+    border-top: none;
+  }
 
-    .toggle-group:last-child {
-      border-bottom: none;
-    }
+  .card:hover::before,
+  .card:hover::after {
+    border-color: #d4af37;
+  }
 
-    .toggle-label {
-      font-size: 14px;
-    }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #d4af37;
+    letter-spacing: 0.03em;
+  }
 
-    .toggle-switch {
-      position: relative;
-      width: 50px;
-      height: 26px;
-    }
+  .card-title i {
+    font-size: 18px;
+  }
 
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
+  .form-group {
+    margin-bottom: 22px;
+  }
 
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(255, 255, 255, 0.1);
-      transition: 0.3s;
-      border-radius: 26px;
-    }
+  .form-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9a9a9a;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
 
-    .toggle-slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: 0.3s;
-      border-radius: 50%;
-    }
+  .form-group input[type="text"],
+  .form-group input[type="password"],
+  .form-group input[type="number"],
+  .form-group select {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.3);
+    color: #f5f5f0;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-    .toggle-switch input:checked + .toggle-slider {
-      background-color: #ff0066;
-    }
+  .form-group input::placeholder {
+    color: #666;
+  }
 
-    .toggle-switch input:checked + .toggle-slider:before {
-      transform: translateX(24px);
-    }
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+  }
 
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
+  .form-group .hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+    letter-spacing: 0.02em;
+  }
 
-    .btn {
-      flex: 1;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #ff0066, #4500ff);
-      color: white;
-    }
+  .toggle-group:last-child {
+    border-bottom: none;
+  }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(255, 0, 102, 0.3);
-    }
+  .toggle-label {
+    font-size: 14px;
+  }
 
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
+  .toggle-label div:first-child {
+    color: #f5f5f0;
+    margin-bottom: 4px;
+  }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
+  .toggle-label .hint {
+    font-size: 12px;
+    color: #666;
+  }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
+  .toggle-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+  }
 
-    .status-message {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      display: none;
-    }
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-    .status-message.show {
-      display: block;
-    }
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0;
+  }
 
-    .status-message.success {
-      background: rgba(0, 255, 136, 0.1);
-      border: 1px solid rgba(0, 255, 136, 0.3);
-      color: #00ff88;
-    }
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #9a9a9a;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0;
+  }
 
-    .status-message.error {
-      background: rgba(255, 77, 79, 0.1);
-      border: 1px solid rgba(255, 77, 79, 0.3);
-      color: #ff4d4f;
-    }
+  .toggle-switch input:checked + .toggle-slider {
+    background-color: rgba(212, 175, 55, 0.3);
+    border-color: #d4af37;
+  }
 
-    .status-message.info {
-      background: rgba(0, 246, 255, 0.1);
-      border: 1px solid rgba(0, 246, 255, 0.3);
-      color: #00f6ff;
-    }
+  .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+    background-color: #d4af37;
+  }
 
-    .divider {
-      height: 1px;
-      background: rgba(255, 255, 255, 0.1);
-      margin: 20px 0;
-    }
+  .btn-group {
+    display: flex;
+    gap: 14px;
+    margin-top: 28px;
+  }
 
-    .test-mode-notice {
-      background: rgba(255, 193, 7, 0.1);
-      border: 1px solid rgba(255, 193, 7, 0.3);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #ffc107;
-      display: none;
-    }
+  .btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: 1px solid;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
 
-    .test-mode-notice.show {
-      display: block;
-    }
+  .btn-primary {
+    background: #d4af37;
+    border-color: #d4af37;
+    color: #0a0a0a;
+  }
 
-    .link-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
+  .btn-primary:hover {
+    background: #f4e4bc;
+    border-color: #f4e4bc;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+  }
 
-    .link-item a {
-      color: #00f6ff;
-      text-decoration: none;
-    }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
 
-    .link-item a:hover {
-      text-decoration: underline;
-    }
+  .btn-secondary {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f5f5f0;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: rgba(212, 175, 55, 0.3);
+    color: #d4af37;
+  }
+
+  .status-message {
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid;
+    border-radius: 0;
+    font-size: 13px;
+    display: none;
+  }
+
+  .status-message.show {
+    display: block;
+  }
+
+  .status-message.success {
+    background: rgba(0, 255, 136, 0.05);
+    border-color: rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+  }
+
+  .status-message.error {
+    background: rgba(255, 107, 107, 0.05);
+    border-color: rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+  }
+
+  .status-message.info {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.3);
+    color: #d4af37;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+    margin: 24px 0;
+  }
+
+  .test-mode-notice {
+    background: rgba(255, 193, 7, 0.05);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    border-radius: 0;
+    padding: 14px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #ffc107;
+    display: none;
+  }
+
+  .test-mode-notice.show {
+    display: block;
+  }
+
+  .test-mode-notice i {
+    margin-right: 8px;
+  }
+
+  .link-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0;
+    margin-bottom: 10px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+  }
+
+  .link-item:hover {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.2);
+  }
+
+  .link-item a {
+    color: #d4af37;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .link-item a:hover {
+    color: #f4e4bc;
+    text-decoration: underline;
+  }
+
+  .link-item i:first-child {
+    color: #d4af37;
+  }
   </style>
 </head>
 
 <body>
+  <!-- Art Deco 背景 -->
+  <div class="artdeco-bg"></div>
+  <div class="artdeco-grid"></div>
+
   <div class="container">
     <h1>导航插件设置</h1>
 
@@ -339,7 +541,7 @@
       <div class="toggle-group">
         <div class="toggle-label">
           <div>启用测试模式</div>
-          <div class="hint" style="margin-top: 4px;">使用模拟数据，无需配置飞书</div>
+          <div class="hint">使用模拟数据，无需配置飞书</div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="test-mode-toggle">

@@ -508,6 +508,18 @@ body {
   color: var(--gold-primary);
 }
 
+.settings-menu li#github-link a {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.settings-menu li#github-link:hover a {
+  color: var(--text-primary);
+}
+
 /* ========================================
    主内容区
    ======================================== */

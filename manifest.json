@@ -6,7 +6,6 @@
   "description": "基于飞书多维表格的导航起始页插件，支持多主题、自定义导航，让您的浏览器新标签页更加美观实用。",
   "short_description": "基于飞书多维表格的导航起始页",
   "author": "水果导航",
-  "homepage_url": "https://testnav-one.vercel.app",
   "icons": {
     "16": "img/icons/icon-16.png",
     "32": "img/icons/icon-32.png",
@@ -53,16 +52,6 @@
       ]
     }
   ],
-  "locales": {
-    "zh_CN": {
-      "name": "水果导航 - Chrome 起始页",
-      "description": "基于飞书多维表格的导航起始页插件，支持多主题、自定义导航。"
-    },
-    "en": {
-      "name": "Fruit Navigation - Chrome New Tab",
-      "description": "A Chrome new tab extension with Feishu integration, featuring multiple themes and custom navigation."
-    }
-  },
-  "default_locale": "zh_CN",
-  "offline_enabled": true
+  "offline_enabled": true,
+  "privacy_policy": "https://www.aalmix.com/nav-privacy-policy.html"
 }

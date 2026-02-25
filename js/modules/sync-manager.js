@@ -85,6 +85,14 @@ const SyncManager = (function() {
       return;
     }
 
+    // 检查缓存是否有效（7天内），优先使用缓存
+    const cached = await Storage.loadNavData();
+    if (cached) {
+      console.log('[SyncManager] 缓存有效，跳过飞书请求');
+      await Storage.saveSyncStatus('success', '使用缓存数据');
+      return;
+    }
+
     isSyncing = true;
     await Storage.saveSyncStatus('syncing', '同步中...');
 

@@ -32,6 +32,11 @@ const UIRenderer = (function() {
 
     // 渲染日期时间
     renderDateTime(dateInfo);
+
+    // 保持当前分类上下文
+    if (currentCategory !== 'all' && cachedCategories.includes(currentCategory)) {
+      switchCategory(currentCategory);
+    }
   }
 
   /**
@@ -113,6 +118,10 @@ const UIRenderer = (function() {
       const filteredData = { [category]: cachedNavData[category] || [] };
       renderTools(filteredData);
     }
+
+    document.dispatchEvent(new CustomEvent('chromeNav:categoryChanged', {
+      detail: { category }
+    }));
   }
 
   /**
@@ -140,6 +149,9 @@ const UIRenderer = (function() {
     if (tools.length === 0) {
       grid.innerHTML = '<div class="empty-state">暂无数据，请添加链接</div>';
       grid.style.visibility = 'visible';
+      document.dispatchEvent(new CustomEvent('chromeNav:toolsRendered', {
+        detail: { category: currentCategory }
+      }));
       return;
     }
 
@@ -162,6 +174,10 @@ const UIRenderer = (function() {
       cards.forEach(card => {
         card.classList.remove('tool-item-hidden');
       });
+
+      document.dispatchEvent(new CustomEvent('chromeNav:toolsRendered', {
+        detail: { category: currentCategory }
+      }));
     });
   }
 
@@ -374,6 +390,41 @@ const UIRenderer = (function() {
     }
   }
 
+  /**
+   * 获取导航数据快照（深拷贝）
+   */
+  function getNavDataSnapshot() {
+    return {
+      data: JSON.parse(JSON.stringify(cachedNavData || {})),
+      categories: [...cachedCategories],
+      dateInfo: cachedDateInfo ? JSON.parse(JSON.stringify(cachedDateInfo)) : null
+    };
+  }
+
+  /**
+   * 设置导航数据并刷新界面
+   * @param {Object} data
+   * @param {Array} categories
+   * @param {Object} dateInfo
+   */
+  function setNavDataAndRefresh(data, categories, dateInfo) {
+    cachedNavData = data || {};
+    cachedCategories = categories || [];
+    cachedDateInfo = dateInfo || null;
+
+    renderCategoryMenu(cachedCategories);
+
+    if (currentCategory === 'all' || !cachedCategories.includes(currentCategory)) {
+      currentCategory = 'all';
+      renderTools(cachedNavData);
+    } else {
+      const filteredData = { [currentCategory]: cachedNavData[currentCategory] || [] };
+      renderTools(filteredData);
+    }
+
+    renderDateTime(cachedDateInfo);
+  }
+
   // ==================== 公共 API ====================
 
   return {
@@ -385,7 +436,9 @@ const UIRenderer = (function() {
     showSyncStatus,
     startTimeUpdate,
     getCurrentCategory,
-    refreshCurrentCategory
+    refreshCurrentCategory,
+    getNavDataSnapshot,
+    setNavDataAndRefresh
   };
 })();
 

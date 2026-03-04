@@ -627,6 +627,14 @@ body {
   padding: 10px;
 }
 
+.tool-item[draggable="true"] {
+  cursor: grab;
+}
+
+.tool-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 /* Art Deco 四角装饰 */
 .tool-item::before,
 .tool-item::after {
@@ -666,6 +674,37 @@ body {
 
 .tool-item:hover .tool-icon {
   transform: scale(1.1);
+}
+
+/* 拖拽排序状态 */
+.tool-item.dragging {
+  opacity: 0.45;
+  transform: scale(0.96) !important;
+  box-shadow: none !important;
+}
+
+.tool-item.dragging .tool-item-delete-btn {
+  opacity: 0 !important;
+}
+
+.tool-item.drag-over {
+  border-color: var(--gold-primary);
+}
+
+.tool-item.drag-over-before {
+  box-shadow: inset 3px 0 0 var(--gold-primary);
+}
+
+.tool-item.drag-over-after {
+  box-shadow: inset -3px 0 0 var(--gold-primary);
+}
+
+body.drag-sort-saving .tools-grid .tool-item {
+  pointer-events: none;
+}
+
+body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
+  cursor: wait;
 }
 
 /* 工具图标 */

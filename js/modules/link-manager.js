@@ -234,7 +234,11 @@ const LinkManager = (function() {
         closeDeleteModal();
 
         // 显示成功提示
-        UIRenderer.showSyncStatus('删除成功', 'success');
+        if (result.skipped) {
+          UIRenderer.showSyncStatus('飞书中该记录已不存在，已刷新本地缓存', 'info');
+        } else {
+          UIRenderer.showSyncStatus('删除成功', 'success');
+        }
 
         // 刷新数据
         await refreshData();

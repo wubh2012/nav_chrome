@@ -31,13 +31,18 @@
       // 6. 初始化链接管理器
       LinkManager.init(window.cachedCategories || []);
 
-      // 7. 绑定移动端事件
+      // 7. 初始化拖拽排序
+      if (window.DragSortManager) {
+        DragSortManager.init();
+      }
+
+      // 8. 绑定移动端事件
       bindMobileEvents();
 
-      // 8. 监听后台同步消息
+      // 9. 监听后台同步消息
       listenSyncMessages();
 
-      // 9. 标记页面加载完成，触发动画
+      // 10. 标记页面加载完成，触发动画
       document.body.classList.add('loaded');
 
       console.log('[ChromeNav] 初始化完成');

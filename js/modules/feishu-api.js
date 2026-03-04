@@ -14,6 +14,7 @@ const FeishuAPI = (function() {
 
   // Token 有效期（2小时）
   const TOKEN_DURATION = 2 * 60 * 60 * 1000;
+  const BATCH_UPDATE_SIZE = 100;
 
   // 飞书多维表格字段映射
   const FIELD_MAPPING = {
@@ -490,6 +491,14 @@ const FeishuAPI = (function() {
           await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
           return await deleteRecord(recordId); // 递归重试
         }
+        if (isRecordNotFoundError(result)) {
+          console.warn('[FeishuAPI] 删除时记录不存在，跳过并继续同步:', recordId);
+          return {
+            success: true,
+            skipped: true,
+            message: '记录不存在，已跳过删除'
+          };
+        }
         console.error('[FeishuAPI] 删除记录失败:', result.msg);
         throw new Error(`删除记录失败: ${result.msg}`);
       }
@@ -498,12 +507,228 @@ const FeishuAPI = (function() {
 
       return {
         success: true,
+        skipped: false,
         message: '删除成功'
       };
     } catch (error) {
       console.error('[FeishuAPI] 删除记录异常:', error);
       throw error;
     }
+  }
+
+  /**
+   * 判断是否为记录不存在错误
+   * @param {Object|string} errorLike - 错误对象或消息
+   * @returns {boolean}
+   */
+  function isRecordNotFoundError(errorLike) {
+    const text = typeof errorLike === 'string'
+      ? errorLike
+      : `${errorLike?.msg || ''} ${errorLike?.message || ''}`.trim();
+    return text.includes('RecordIdNotFound');
+  }
+
+  /**
+   * 更新记录排序字段
+   * @param {string} recordId - 记录 ID
+   * @param {number} sort - 排序值
+   * @param {boolean} canRetry - 是否允许重试 token 失效
+   * @returns {Promise<Object>} 更新结果
+   */
+  async function updateRecordSort(recordId, sort, canRetry = true) {
+    if (!recordId) {
+      throw new Error('记录 ID 不能为空');
+    }
+
+    // 测试模式：仅本地模拟成功
+    if (await isTestMode()) {
+      console.log('[FeishuAPI] 测试模式：更新排序', recordId, sort);
+      return {
+        success: true,
+        message: '测试模式下排序已更新'
+      };
+    }
+
+    const config = await getConfig();
+    if (!config || !config.appToken || !config.tableId) {
+      throw new Error('飞书配置不完整');
+    }
+
+    const token = await getTenantAccessToken();
+    const fields = {
+      [FIELD_MAPPING.sort]: sort
+    };
+
+    try {
+      console.log('[FeishuAPI] 正在更新排序...', recordId, sort);
+
+      const response = await fetch(
+        `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ fields })
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.code !== 0) {
+        if (result.code === 99991663 && canRetry) {
+          console.log('[FeishuAPI] Token 过期，尝试重新获取...');
+          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+          return await updateRecordSort(recordId, sort, false);
+        }
+        if (isRecordNotFoundError(result)) {
+          console.warn('[FeishuAPI] 记录不存在，跳过排序更新:', recordId);
+          return {
+            success: true,
+            skipped: true,
+            message: '记录不存在，已跳过'
+          };
+        }
+        console.error('[FeishuAPI] 更新排序失败:', result.msg);
+        throw new Error(`更新排序失败: ${result.msg}`);
+      }
+
+      return {
+        success: true,
+        skipped: false,
+        message: '排序更新成功'
+      };
+    } catch (error) {
+      console.error('[FeishuAPI] 更新排序异常:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 批量更新记录排序字段
+   * @param {Array<{recordId: string, sort: number}>} updates - 批量更新项
+   * @param {boolean} canRetry - 是否允许重试 token 失效
+   * @returns {Promise<Object>} 更新结果
+   */
+  async function batchUpdateRecordSorts(updates, canRetry = true) {
+    const safeUpdates = Array.isArray(updates) ? updates : [];
+    if (safeUpdates.length === 0) {
+      return {
+        success: true,
+        message: '无排序变更',
+        updatedCount: 0
+      };
+    }
+
+    // 测试模式：仅本地模拟成功
+    if (await isTestMode()) {
+      console.log('[FeishuAPI] 测试模式：批量更新排序', safeUpdates.length);
+      return {
+        success: true,
+        message: '测试模式下排序已更新',
+        updatedCount: safeUpdates.length
+      };
+    }
+
+    const config = await getConfig();
+    if (!config || !config.appToken || !config.tableId) {
+      throw new Error('飞书配置不完整');
+    }
+
+    const payloadUpdates = safeUpdates
+      .filter(item => item && item.recordId)
+      .map(item => ({
+        record_id: item.recordId,
+        fields: {
+          [FIELD_MAPPING.sort]: item.sort
+        }
+      }));
+
+    if (payloadUpdates.length === 0) {
+      return {
+        success: true,
+        message: '无可更新记录',
+        updatedCount: 0
+      };
+    }
+
+    const token = await getTenantAccessToken();
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    try {
+      for (let i = 0; i < payloadUpdates.length; i += BATCH_UPDATE_SIZE) {
+        const chunk = payloadUpdates.slice(i, i + BATCH_UPDATE_SIZE);
+        const response = await fetch(
+          `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/batch_update`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ records: chunk })
+          }
+        );
+
+        const result = await response.json();
+
+        if (result.code !== 0) {
+          if (result.code === 99991663 && canRetry) {
+            console.log('[FeishuAPI] Token 过期，尝试重新获取...');
+            await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+            return await batchUpdateRecordSorts(safeUpdates, false);
+          }
+          if (isRecordNotFoundError(result)) {
+            console.warn('[FeishuAPI] 批量更新含无效记录，降级逐条更新并跳过无效记录');
+            const singleResult = await fallbackBatchBySingleUpdates(chunk);
+            updatedCount += singleResult.updatedCount;
+            skippedCount += singleResult.skippedCount;
+            continue;
+          }
+          console.error('[FeishuAPI] 批量更新排序失败:', result.msg);
+          throw new Error(`批量更新排序失败: ${result.msg}`);
+        }
+
+        updatedCount += chunk.length;
+      }
+
+      return {
+        success: true,
+        message: skippedCount > 0 ? '批量排序更新成功（已跳过无效记录）' : '批量排序更新成功',
+        updatedCount,
+        skippedCount
+      };
+    } catch (error) {
+      console.error('[FeishuAPI] 批量更新排序异常:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 批量接口失败时降级逐条更新
+   * @param {Array<{record_id: string, fields: Object}>} chunk
+   * @returns {Promise<{updatedCount: number, skippedCount: number}>}
+   */
+  async function fallbackBatchBySingleUpdates(chunk) {
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const item of chunk) {
+      const recordId = item?.record_id;
+      const sort = item?.fields?.[FIELD_MAPPING.sort];
+      if (!recordId) continue;
+
+      const result = await updateRecordSort(recordId, sort);
+      if (result?.skipped) {
+        skippedCount++;
+      } else {
+        updatedCount++;
+      }
+    }
+
+    return { updatedCount, skippedCount };
   }
 
   /**
@@ -577,6 +802,8 @@ const FeishuAPI = (function() {
     getRecords,
     addRecord,
     deleteRecord,
+    updateRecordSort,
+    batchUpdateRecordSorts,
     testConnection,
 
     // Token 管理

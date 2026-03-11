@@ -37,6 +37,8 @@ body {
    Art Deco 配色系统
    ======================================== */
 :root {
+  --sidebar-width: 256px;
+
   /* 主金色系 */
   --gold-primary: #d4af37;
   --gold-light: #f4e4bc;
@@ -67,6 +69,185 @@ body {
   /* 过渡 */
   --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ========================================
+   快速搜索
+   ======================================== */
+.quick-search-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1010;
+}
+
+.quick-search-modal.active {
+  display: block;
+}
+
+.quick-search-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.64);
+  backdrop-filter: blur(3px);
+}
+
+.quick-search-panel {
+  position: absolute;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 92vw);
+  max-height: 76vh;
+  background: var(--bg-secondary);
+  border: 1px solid var(--gold-dim);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card), 0 0 40px var(--gold-dim);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-search-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--border-thin);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.24);
+  padding: 0 12px;
+  min-height: 48px;
+}
+
+.quick-search-header i {
+  color: var(--gold-primary);
+  font-size: 16px;
+}
+
+.quick-search-input {
+  width: 100%;
+  height: 46px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 18px;
+}
+
+.quick-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.quick-search-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.quick-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(76vh - 120px);
+  border: var(--border-thin);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.quick-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-bottom: var(--border-dim);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.quick-search-item:last-child {
+  border-bottom: none;
+}
+
+.quick-search-item:hover,
+.quick-search-item.active {
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.quick-search-item-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: var(--border-thin);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gold-primary);
+}
+
+.quick-search-item-icon i {
+  font-size: 15px;
+}
+
+.quick-search-item-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.quick-search-item-icon-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quick-search-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.quick-search-item-name {
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-search-item-meta {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-search-empty {
+  display: none;
+  color: var(--text-secondary);
+  border: var(--border-thin);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  text-align: center;
+  padding: 22px 12px;
+}
+
+@media (max-width: 768px) {
+  .quick-search-panel {
+    top: 8vh;
+    width: 94vw;
+    max-height: 82vh;
+    padding: 12px;
+  }
+
+  .quick-search-list {
+    max-height: calc(82vh - 116px);
+  }
 }
 
 /* 亮色模式 - Art Deco 浅色版 */
@@ -205,8 +386,8 @@ body {
    侧边栏样式
    ======================================== */
 .sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background: var(--bg-secondary);
   border-right: var(--border-gold);
   padding: 0;
@@ -237,7 +418,7 @@ body {
 /* 用户头像区域 */
 .user-avatar {
   text-align: center;
-  padding: 48px 24px 32px;
+  padding: 48px 20px 30px;
   position: relative;
   border-bottom: var(--border-dim);
 }
@@ -285,8 +466,8 @@ body {
 .nav-menu li {
   display: flex;
   align-items: center;
-  padding: 14px 24px;
-  margin: 4px 16px;
+  padding: 13px 20px;
+  margin: 4px 12px;
   border: var(--border-thin);
   border-radius: 8px;
   cursor: pointer;
@@ -317,7 +498,7 @@ body {
 .nav-menu li i {
   width: 20px;
   height: 20px;
-  margin-right: 14px;
+  margin-right: 12px;
   color: inherit;
   font-size: 16px;
   text-shadow: 0 0 10px var(--gold-dim);
@@ -327,7 +508,7 @@ body {
    皮肤选择器
    ======================================== */
 .skin-selector {
-  margin: 16px;
+  margin: 14px;
   background: rgba(255, 255, 255, 0.02);
   border: var(--border-thin);
   border-radius: 12px;
@@ -463,7 +644,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 12px;
-  margin: 0 16px 16px;
+  margin: 0 14px 14px;
   background: rgba(255, 255, 255, 0.02);
   border: var(--border-thin);
   border-radius: 8px;
@@ -497,8 +678,8 @@ body {
 .settings-menu li {
   display: flex;
   align-items: center;
-  padding: 14px 24px;
-  margin: 4px 16px;
+  padding: 13px 20px;
+  margin: 4px 12px;
   border: var(--border-thin);
   border-radius: 8px;
   cursor: pointer;
@@ -514,7 +695,7 @@ body {
 }
 
 .settings-menu li i {
-  margin-right: 14px;
+  margin-right: 12px;
   color: var(--gold-primary);
 }
 
@@ -1251,6 +1432,8 @@ button:focus {
    皮肤主题 - Art Deco 金色（默认）
    ======================================== */
 :root {
+  --sidebar-width: 256px;
+
   /* Art Deco 主金色系 */
   --gold-primary: #d4af37;
   --gold-light: #f4e4bc;

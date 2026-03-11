@@ -36,13 +36,18 @@
         DragSortManager.init();
       }
 
-      // 8. 绑定移动端事件
+      // 8. 初始化快速搜索
+      if (window.QuickSearchManager) {
+        QuickSearchManager.init();
+      }
+
+      // 9. 绑定移动端事件
       bindMobileEvents();
 
-      // 9. 监听后台同步消息
+      // 10. 监听后台同步消息
       listenSyncMessages();
 
-      // 10. 标记页面加载完成，触发动画
+      // 11. 标记页面加载完成，触发动画
       document.body.classList.add('loaded');
 
       console.log('[ChromeNav] 初始化完成');

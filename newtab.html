@@ -223,6 +223,28 @@
     </div>
   </div>
 
+  <!-- 快速搜索 -->
+  <div id="quick-search-modal" class="quick-search-modal" aria-hidden="true">
+    <div id="quick-search-overlay" class="quick-search-overlay"></div>
+    <div class="quick-search-panel" role="dialog" aria-modal="true" aria-label="快速搜索网站">
+      <div class="quick-search-header">
+        <i class="bi bi-search"></i>
+        <input
+          id="quick-search-input"
+          class="quick-search-input"
+          type="text"
+          placeholder="输入名称、网址或分类进行搜索"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="网站快速搜索输入框"
+        >
+      </div>
+      <div class="quick-search-hint">↑/↓ 切换，Enter 打开，Esc 关闭</div>
+      <ul id="quick-search-list" class="quick-search-list" role="listbox"></ul>
+      <div id="quick-search-empty" class="quick-search-empty">没有匹配的网站</div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="lib/lunar.js"></script>
   <script src="js/modules/storage.js"></script>
@@ -232,6 +254,7 @@
   <script src="js/modules/link-manager.js"></script>
   <script src="js/modules/drag-sort-manager.js"></script>
   <script src="js/modules/sync-manager.js"></script>
+  <script src="js/modules/quick-search-manager.js"></script>
   <script src="js/app.js"></script>
 </body>
 

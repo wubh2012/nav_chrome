@@ -25,7 +25,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
-  font-family: "Playfair Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "Josefin Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
   font-weight: 400;
@@ -572,6 +572,7 @@ body {
   cursor: pointer;
   padding: 4px;
   transition: var(--transition-smooth);
+  font-family: inherit;
 }
 
 .skin-expand-btn:hover {
@@ -756,7 +757,7 @@ body {
   font-size: 200px;
   color: var(--gold-dim);
   opacity: 0.08;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Poiret One', sans-serif;
   line-height: 1;
   pointer-events: none;
   /* 确保装饰元素不会影响布局 - 使用固定定位脱离文档流 */
@@ -765,7 +766,7 @@ body {
 }
 
 .current-time {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
+  font-family: 'Poiret One', sans-serif;
   font-weight: 300;
   font-size: 96px;
   letter-spacing: 0.08em;
@@ -999,7 +1000,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 /* 工具名称 */
 .tool-name {
   font-size: 12px;
-  font-family: 'Noto Serif SC', 'Playfair Display', serif;
+  font-family: 'Noto Sans SC', 'Josefin Sans', sans-serif;
   color: var(--text-primary);
   font-weight: 500;
   white-space: nowrap;
@@ -1134,6 +1135,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   z-index: 1002;
   transition: var(--transition-smooth);
   font-size: 18px;
+  font-family: inherit;
   color: var(--gold-primary);
 }
 
@@ -1225,7 +1227,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 }
 
 .modal-header h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Poiret One', sans-serif;
   font-weight: 400;
   font-size: 22px;
   color: var(--gold-primary);
@@ -1284,6 +1286,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 15px;
+  font-family: inherit;
   outline: none;
   transition: var(--transition-smooth);
 }
@@ -1323,6 +1326,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   transition: var(--transition-smooth);
   letter-spacing: 0.03em;

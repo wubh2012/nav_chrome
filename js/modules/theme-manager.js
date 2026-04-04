@@ -250,6 +250,9 @@ const ThemeManager = (function() {
     // 更新主题图标
     updateThemeIcons();
 
+    // 更新 favicon
+    updateFavicon();
+
     console.log(`[ThemeManager] 应用主题: ${currentSkin} + ${currentMode}`);
   }
 
@@ -318,6 +321,29 @@ const ThemeManager = (function() {
     const skinConfig = SKIN_THEMES[currentSkin];
     if (currentSkinIcon && skinConfig && skinConfig.artDecoVars[currentMode]) {
       currentSkinIcon.style.color = skinConfig.artDecoVars[currentMode]['--gold-primary'];
+    }
+  }
+
+  /**
+   * 更新 favicon 颜色
+   */
+  function updateFavicon() {
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--gold-primary').trim();
+    if (!color) return;
+
+    // 简化的西瓜图标 SVG
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+      <path d="M16 4 L28 16 Q28 28 16 28 Q4 28 4 16 L16 4 Z" fill="${color}"/>
+      <path d="M8 16 Q8 22 16 24 Q24 22 24 16" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+      <ellipse cx="12" cy="16" rx="2" ry="1.2" fill="rgba(0,0,0,0.2)" transform="rotate(-20 12 16)"/>
+      <ellipse cx="18" cy="18" rx="2" ry="1.2" fill="rgba(0,0,0,0.2)" transform="rotate(30 18 18)"/>
+      <ellipse cx="14" cy="20" rx="1.5" ry="1" fill="rgba(0,0,0,0.2)" transform="rotate(-10 14 20)"/>
+    </svg>`;
+
+    const dataUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    const favicon = document.querySelector("link[rel='icon']");
+    if (favicon) {
+      favicon.href = dataUrl;
     }
   }
 

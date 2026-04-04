@@ -50,6 +50,9 @@
       // 11. 标记页面加载完成，触发动画
       document.body.classList.add('loaded');
 
+      // 12. 随机显示底部搜索提示
+      showRandomSearchHint();
+
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
       console.error('[ChromeNav] 初始化失败:', error);
@@ -279,6 +282,24 @@
     } catch (error) {
       console.warn('[ChromeNav] 后台刷新失败:', error);
       await Storage.saveSyncStatus('error', '同步失败');
+    }
+  }
+
+  /**
+   * 随机显示底部搜索提示
+   */
+  function showRandomSearchHint() {
+    // 30% 概率显示提示
+    if (Math.random() < 0.3) {
+      const hintToast = document.getElementById('search-hint-toast');
+      if (hintToast) {
+        // 显示提示
+        hintToast.classList.add('visible');
+        // 3秒后自动隐藏
+        setTimeout(() => {
+          hintToast.classList.remove('visible');
+        }, 3000);
+      }
     }
   }
 

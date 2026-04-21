@@ -19,8 +19,25 @@
     testModeNotice: document.getElementById('test-mode-notice'),
     clearCacheBtn: document.getElementById('clear-cache-btn'),
     resetBtn: document.getElementById('reset-btn'),
-    viewGuideBtn: document.getElementById('view-guide-btn')
+    viewGuideBtn: document.getElementById('view-guide-btn'),
+    backgroundModeInputs: document.querySelectorAll('input[name="background-mode"]'),
+    backgroundModeOptions: document.querySelectorAll('.mode-option'),
+    backgroundUploadSection: document.getElementById('background-upload-section'),
+    backgroundUrlSection: document.getElementById('background-url-section'),
+    backgroundFileInput: document.getElementById('background-file'),
+    backgroundFileMeta: document.getElementById('background-file-meta'),
+    backgroundUrl: document.getElementById('background-url'),
+    backgroundSize: document.getElementById('background-size'),
+    backgroundOverlay: document.getElementById('background-overlay'),
+    backgroundOverlayValue: document.getElementById('background-overlay-value'),
+    backgroundBlur: document.getElementById('background-blur'),
+    backgroundBlurValue: document.getElementById('background-blur-value'),
+    backgroundSaveBtn: document.getElementById('background-save-btn'),
+    backgroundResetBtn: document.getElementById('background-reset-btn'),
+    backgroundStatusMessage: document.getElementById('background-status-message')
   };
+
+  let pendingBackgroundFile = null;
 
   /**
    * 初始化
@@ -49,6 +66,11 @@
       const testMode = await Storage.getTestMode();
       elements.testModeToggle.checked = testMode;
       updateTestModeUI(testMode);
+
+      if (Storage.loadBackgroundSettings) {
+        const backgroundSettings = await Storage.loadBackgroundSettings();
+        populateBackgroundSettings(backgroundSettings);
+      }
     } catch (error) {
       console.error('[Options] 加载配置失败:', error);
     }
@@ -75,6 +97,36 @@
 
     // 查看指南
     elements.viewGuideBtn.addEventListener('click', showGuide);
+
+    elements.backgroundModeInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        updateBackgroundModeUI(input.value);
+      });
+    });
+
+    if (elements.backgroundFileInput) {
+      elements.backgroundFileInput.addEventListener('change', handleBackgroundFileChange);
+    }
+
+    if (elements.backgroundOverlay) {
+      elements.backgroundOverlay.addEventListener('input', () => {
+        updateRangeLabels();
+      });
+    }
+
+    if (elements.backgroundBlur) {
+      elements.backgroundBlur.addEventListener('input', () => {
+        updateRangeLabels();
+      });
+    }
+
+    if (elements.backgroundSaveBtn) {
+      elements.backgroundSaveBtn.addEventListener('click', saveBackgroundSettings);
+    }
+
+    if (elements.backgroundResetBtn) {
+      elements.backgroundResetBtn.addEventListener('click', resetBackgroundSettings);
+    }
   }
 
   /**
@@ -82,13 +134,220 @@
    * @param {string} message - 消息内容
    * @param {string} type - 消息类型 (success/error/info)
    */
-  function showStatus(message, type = 'info') {
-    elements.statusMessage.textContent = message;
-    elements.statusMessage.className = `status-message show ${type}`;
+  function showStatus(message, type = 'info', target = elements.statusMessage) {
+    if (!target) return;
+
+    target.textContent = message;
+    target.className = `status-message show ${type}`;
 
     setTimeout(() => {
-      elements.statusMessage.classList.remove('show');
+      target.classList.remove('show');
     }, 5000);
+  }
+
+  function populateBackgroundSettings(settings) {
+    const safeSettings = Storage.normalizeBackgroundSettings
+      ? Storage.normalizeBackgroundSettings(settings)
+      : settings;
+    const mode = safeSettings.mode || 'default';
+    const modeInput = Array.from(elements.backgroundModeInputs).find((input) => input.value === mode);
+
+    if (modeInput) {
+      modeInput.checked = true;
+    }
+
+    if (elements.backgroundUrl) {
+      elements.backgroundUrl.value = safeSettings.url || '';
+    }
+    if (elements.backgroundSize) {
+      elements.backgroundSize.value = safeSettings.size || 'cover';
+    }
+    if (elements.backgroundOverlay) {
+      elements.backgroundOverlay.value = String(safeSettings.overlayOpacity ?? 0.38);
+    }
+    if (elements.backgroundBlur) {
+      elements.backgroundBlur.value = String(safeSettings.blurPx ?? 0);
+    }
+
+    updateBackgroundModeUI(mode);
+    updateRangeLabels();
+    setBackgroundFileMeta(mode === 'upload' ? '已保存本地背景图或等待重新上传' : '未选择文件');
+  }
+
+  function updateBackgroundModeUI(mode) {
+    elements.backgroundModeOptions.forEach((option) => {
+      option.classList.toggle('active', option.getAttribute('data-mode') === mode);
+    });
+
+    if (elements.backgroundUploadSection) {
+      elements.backgroundUploadSection.classList.toggle('hidden', mode !== 'upload');
+    }
+
+    if (elements.backgroundUrlSection) {
+      elements.backgroundUrlSection.classList.toggle('hidden', mode !== 'url');
+    }
+  }
+
+  function updateRangeLabels() {
+    if (elements.backgroundOverlayValue && elements.backgroundOverlay) {
+      elements.backgroundOverlayValue.textContent = `${Math.round(Number(elements.backgroundOverlay.value || 0) * 100)}%`;
+    }
+
+    if (elements.backgroundBlurValue && elements.backgroundBlur) {
+      elements.backgroundBlurValue.textContent = `${Math.round(Number(elements.backgroundBlur.value || 0))}px`;
+    }
+  }
+
+  function setBackgroundFileMeta(text) {
+    if (elements.backgroundFileMeta) {
+      elements.backgroundFileMeta.textContent = text;
+    }
+  }
+
+  function getSelectedBackgroundMode() {
+    const selected = Array.from(elements.backgroundModeInputs).find((input) => input.checked);
+    return selected ? selected.value : 'default';
+  }
+
+  function handleBackgroundFileChange(event) {
+    const [file] = event.target.files || [];
+    pendingBackgroundFile = file || null;
+    setBackgroundFileMeta(file ? `${file.name} (${Math.round(file.size / 1024)} KB)` : '未选择文件');
+  }
+
+  async function saveBackgroundSettings() {
+    const button = elements.backgroundSaveBtn;
+    if (button) {
+      button.disabled = true;
+    }
+
+    try {
+      const mode = getSelectedBackgroundMode();
+      const currentSettings = await Storage.loadBackgroundSettings();
+      const nextSettings = {
+        ...currentSettings,
+        mode,
+        url: '',
+        size: elements.backgroundSize.value,
+        overlayOpacity: Number(elements.backgroundOverlay.value),
+        blurPx: Number(elements.backgroundBlur.value)
+      };
+
+      if (mode === 'url') {
+        const url = elements.backgroundUrl.value.trim();
+        if (!/^https?:\/\//i.test(url)) {
+          showStatus('请输入有效的图片 URL', 'error', elements.backgroundStatusMessage);
+          return;
+        }
+        nextSettings.url = url;
+      }
+
+      if (mode === 'upload') {
+        if (pendingBackgroundFile) {
+          const processedBlob = await prepareBackgroundImage(pendingBackgroundFile);
+          await BackgroundStorage.saveUploadedBackground(processedBlob);
+          pendingBackgroundFile = null;
+        } else {
+          const existing = await BackgroundStorage.getUploadedBackground();
+          if (!existing) {
+            showStatus('请先选择一张本地图片', 'error', elements.backgroundStatusMessage);
+            return;
+          }
+        }
+      }
+
+      if (mode !== 'upload') {
+        pendingBackgroundFile = null;
+        if (elements.backgroundFileInput) {
+          elements.backgroundFileInput.value = '';
+        }
+      }
+
+      await Storage.saveBackgroundSettings(nextSettings);
+      showStatus('背景设置已保存', 'success', elements.backgroundStatusMessage);
+      populateBackgroundSettings(nextSettings);
+    } catch (error) {
+      console.error('[Options] 保存背景失败:', error);
+      showStatus(error.message || '保存背景失败', 'error', elements.backgroundStatusMessage);
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  }
+
+  async function resetBackgroundSettings() {
+    try {
+      pendingBackgroundFile = null;
+      if (elements.backgroundFileInput) {
+        elements.backgroundFileInput.value = '';
+      }
+
+      await Storage.clearBackgroundSettings();
+      await BackgroundStorage.clearUploadedBackground();
+      populateBackgroundSettings(Storage.DEFAULT_BACKGROUND_SETTINGS || {});
+      showStatus('已恢复默认背景', 'success', elements.backgroundStatusMessage);
+    } catch (error) {
+      console.error('[Options] 重置背景失败:', error);
+      showStatus('重置背景失败', 'error', elements.backgroundStatusMessage);
+    }
+  }
+
+  async function prepareBackgroundImage(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      throw new Error('请选择图片文件');
+    }
+
+    const image = await readImageFile(file);
+    const { width, height } = scaleDimensions(image.naturalWidth || image.width, image.naturalHeight || image.height, 2560);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, width, height);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('图片处理失败'));
+        }
+      }, 'image/jpeg', 0.82);
+    });
+  }
+
+  function readImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      const image = new Image();
+
+      reader.onload = () => {
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('图片加载失败'));
+        image.src = reader.result;
+      };
+      reader.onerror = () => reject(new Error('图片读取失败'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function scaleDimensions(width, height, maxSide) {
+    if (!width || !height) {
+      return { width: 1920, height: 1080 };
+    }
+
+    const longestSide = Math.max(width, height);
+    if (longestSide <= maxSide) {
+      return { width, height };
+    }
+
+    const ratio = maxSide / longestSide;
+    return {
+      width: Math.round(width * ratio),
+      height: Math.round(height * ratio)
+    };
   }
 
   /**
@@ -245,6 +504,9 @@
 
     try {
       await Storage.clearAll();
+      if (window.BackgroundStorage) {
+        await BackgroundStorage.clearUploadedBackground();
+      }
       location.reload();
     } catch (error) {
       console.error('[Options] 重置失败:', error);

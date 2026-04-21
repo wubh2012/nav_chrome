@@ -382,6 +382,45 @@ const UIRenderer = (function() {
   }
 
   /**
+   * 获取当前可切换的分类顺序（含“全部”）
+   * @returns {Array<string>}
+   */
+  function getCategorySequence() {
+    const categoryOrder = ['主页', 'AI', 'Code'];
+    const sortedCategories = [...cachedCategories].sort((a, b) => {
+      const indexA = categoryOrder.indexOf(a);
+      const indexB = categoryOrder.indexOf(b);
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
+    return ['all', ...sortedCategories];
+  }
+
+  /**
+   * 按方向切换到相邻分类
+   * @param {number} direction - 1 为向下，-1 为向上
+   * @returns {string|null}
+   */
+  function switchAdjacentCategory(direction) {
+    const categories = getCategorySequence();
+    if (categories.length <= 1) return null;
+
+    const currentIndex = Math.max(0, categories.indexOf(currentCategory));
+    const nextIndex = (currentIndex + direction + categories.length) % categories.length;
+    const nextCategory = categories[nextIndex];
+
+    if (!nextCategory || nextCategory === currentCategory) {
+      return null;
+    }
+
+    switchCategory(nextCategory);
+    return nextCategory;
+  }
+
+  /**
    * 刷新当前分类的工具显示
    */
   function refreshCurrentCategory() {
@@ -436,6 +475,8 @@ const UIRenderer = (function() {
     showSyncStatus,
     startTimeUpdate,
     getCurrentCategory,
+    getCategorySequence,
+    switchAdjacentCategory,
     refreshCurrentCategory,
     getNavDataSnapshot,
     setNavDataAndRefresh

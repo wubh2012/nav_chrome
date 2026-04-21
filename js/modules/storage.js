@@ -382,4 +382,4 @@ const Storage = (function() {
 })();
 
 // 导出到全局
-window.Storage = Storage;
+globalThis.Storage = Storage;

@@ -1,6 +1,6 @@
 /**
  * 快速搜索管理器
- * 双击 Shift 打开搜索框，支持键盘导航与回车跳转
+ * 双击 Shift 或按 Ctrl+F 打开搜索框，支持键盘导航与回车跳转
  */
 const QuickSearchManager = (function() {
   'use strict';
@@ -94,6 +94,13 @@ const QuickSearchManager = (function() {
       return;
     }
     if (isOpen()) return;
+
+    if (event.ctrlKey && !event.altKey && !event.metaKey && (event.key === 'f' || event.key === 'F')) {
+      event.preventDefault();
+      lastShiftKeyDownAt = 0;
+      open();
+      return;
+    }
 
     if (event.key !== 'Shift' || event.repeat) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;

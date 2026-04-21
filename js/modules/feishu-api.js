@@ -794,6 +794,10 @@ const FeishuAPI = (function() {
     return generateDateInfo();
   }
 
+  function getCurrentDateInfo() {
+    return generateDateInfo();
+  }
+
   // ==================== 公共 API ====================
 
   return {
@@ -812,6 +816,7 @@ const FeishuAPI = (function() {
     // 测试模式支持
     isTestMode,
     getMockData,
+    getCurrentDateInfo,
     getMockDateInfo,
 
     // 工具方法

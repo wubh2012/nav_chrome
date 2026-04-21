@@ -121,7 +121,7 @@
   }
 
   .container {
-    max-width: 960px;
+    max-width: 1180px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
@@ -130,15 +130,23 @@
   /* 两列布局 */
   .settings-grid {
     display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
     align-items: start;
+  }
+
+  .primary-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
   }
 
   .side-cards {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
+    min-width: 0;
   }
 
   .link-item:last-child {
@@ -490,6 +498,112 @@
   .link-item i:first-child {
     color: #d4af37;
   }
+
+  .background-section {
+    margin-top: 18px;
+  }
+
+  .background-section.hidden {
+    display: none;
+  }
+
+  .form-group input[type="url"],
+  .form-group input[type="range"],
+  .form-group input[type="file"] {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .form-group input[type="url"] {
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.3);
+    color: #f5f5f0;
+    outline: none;
+  }
+
+  .form-group input[type="file"] {
+    padding: 12px 0;
+    color: #f5f5f0;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .mode-option {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 96px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .mode-option:hover,
+  .mode-option.active {
+    border-color: #d4af37;
+    background: rgba(212, 175, 55, 0.08);
+  }
+
+  .mode-option input {
+    display: none;
+  }
+
+  .mode-option-title {
+    color: #f5f5f0;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  .mode-option-desc,
+  .subtle-note {
+    color: #8a8a8a;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .range-row {
+    display: grid;
+    grid-template-columns: 1fr 56px;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .range-value {
+    text-align: right;
+    color: #d4af37;
+    font-size: 12px;
+  }
+
+  .file-meta {
+    margin-top: 8px;
+    color: #d4af37;
+    font-size: 12px;
+  }
+
+  @media (max-width: 980px) {
+    .container {
+      max-width: 100%;
+    }
+
+    .settings-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .btn-group {
+      flex-direction: column;
+    }
+
+    .mode-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   </style>
 </head>
 
@@ -507,6 +621,7 @@
     </div>
 
     <div class="settings-grid">
+      <div class="primary-cards">
       <!-- 飞书配置 -->
       <div class="card">
         <div class="card-title">
@@ -550,7 +665,85 @@
         <div class="status-message" id="status-message"></div>
       </div>
 
+      <div class="card">
+        <div class="card-title">
+          <i class="bi bi-image"></i>
+          背景设置
+        </div>
+
+        <div class="form-group">
+          <label>背景模式</label>
+          <div class="mode-grid" id="background-mode-group">
+            <label class="mode-option" data-mode="default">
+              <input type="radio" name="background-mode" value="default" checked>
+              <div class="mode-option-title">默认背景</div>
+              <div class="mode-option-desc">保留当前 Art Deco 背景</div>
+            </label>
+            <label class="mode-option" data-mode="upload">
+              <input type="radio" name="background-mode" value="upload">
+              <div class="mode-option-title">本地上传</div>
+              <div class="mode-option-desc">最稳定，图片保存在浏览器本地</div>
+            </label>
+            <label class="mode-option" data-mode="url">
+              <input type="radio" name="background-mode" value="url">
+              <div class="mode-option-title">图片 URL</div>
+              <div class="mode-option-desc">适合高级用户使用外部图片链接</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group background-section hidden" id="background-upload-section">
+          <label for="background-file">上传图片</label>
+          <input type="file" id="background-file" accept="image/*">
+          <div class="subtle-note">上传时会自动压缩，默认只保留当前这一张背景图。</div>
+          <div class="file-meta" id="background-file-meta">未选择文件</div>
+        </div>
+
+        <div class="form-group background-section hidden" id="background-url-section">
+          <label for="background-url">图片 URL</label>
+          <input type="url" id="background-url" placeholder="https://example.com/background.jpg">
+          <div class="subtle-note">请使用可直接访问的图片地址；加载失败会自动回退默认背景。</div>
+        </div>
+
+        <div class="form-group">
+          <label for="background-size">图片适配</label>
+          <select id="background-size">
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="background-overlay">遮罩强度</label>
+          <div class="range-row">
+            <input type="range" id="background-overlay" min="0" max="0.85" step="0.01" value="0.38">
+            <div class="range-value" id="background-overlay-value">38%</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="background-blur">模糊强度</label>
+          <div class="range-row">
+            <input type="range" id="background-blur" min="0" max="24" step="1" value="0">
+            <div class="range-value" id="background-blur-value">0px</div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" id="background-reset-btn">
+            <i class="bi bi-arrow-counterclockwise"></i> 恢复默认
+          </button>
+          <button class="btn btn-primary" id="background-save-btn">
+            <i class="bi bi-image"></i> 保存背景
+          </button>
+        </div>
+
+        <div class="status-message" id="background-status-message"></div>
+      </div>
+
       <!-- 测试模式 + 帮助信息 -->
+    </div>
+
       <div class="side-cards">
         <div class="card">
           <div class="card-title">
@@ -613,6 +806,8 @@
   </div>
 
   <script src="js/modules/storage.js"></script>
+  <script src="js/modules/background-config.js"></script>
+  <script src="js/modules/background-storage.js"></script>
   <script src="js/modules/feishu-api.js"></script>
   <script src="js/options.js"></script>
 </body>

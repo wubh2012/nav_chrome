@@ -1,16 +1,14 @@
 /**
- * 同步管理器 - 处理飞书数据同步
- * 定时同步 + 手动同步 + 失败重试
+ * Sync manager
+ * Handles periodic sync, manual sync, and retry behavior.
  */
 const SyncManager = (function() {
   'use strict';
 
-  // 重试配置
   const MAX_RETRIES = 3;
-  const RETRY_INTERVAL = 1 * 60 * 1000; // 1 分钟
-  const DEFAULT_SYNC_INTERVAL = 30; // 默认 30 分钟
+  const RETRY_INTERVAL = 1 * 60 * 1000;
+  const DEFAULT_SYNC_INTERVAL = 30;
 
-  // 当前状态
   let syncInterval = DEFAULT_SYNC_INTERVAL;
   let isSyncing = false;
   let retryCount = 0;
@@ -18,78 +16,55 @@ const SyncManager = (function() {
   let syncAlarmName = 'chromeNav_sync_alarm';
   let isPeriodicEnabled = false;
 
-  /**
-   * 启动定时同步
-   * @param {number} intervalMinutes - 同步间隔（分钟）
-   */
   async function startPeriodicSync(intervalMinutes = DEFAULT_SYNC_INTERVAL) {
     syncInterval = intervalMinutes;
 
-    // 取消现有的定时任务
     await stopPeriodicSync();
 
-    // 创建新的定时任务
     await chrome.alarms.create(syncAlarmName, {
       delayInMinutes: syncInterval,
       periodInMinutes: syncInterval
     });
 
     isPeriodicEnabled = true;
-    console.log(`[SyncManager] 定时同步已启动，间隔 ${syncInterval} 分钟`);
+    console.log(`[SyncManager] Periodic sync started, interval ${syncInterval} minutes`);
 
-    // 立即执行一次同步
-    await syncNow();
+    syncNow().catch((error) => {
+      console.warn('[SyncManager] Initial background sync failed:', error);
+    });
   }
 
-  /**
-   * 停止定时同步
-   */
   async function stopPeriodicSync() {
     if (retryTimer) {
       clearTimeout(retryTimer);
       retryTimer = null;
     }
+
     await chrome.alarms.clear(syncAlarmName);
     isPeriodicEnabled = false;
     retryCount = 0;
-    console.log('[SyncManager] 定时同步已停止');
+    console.log('[SyncManager] Periodic sync stopped');
   }
 
-  /**
-   * 立即同步
-   */
   async function syncNow() {
     if (isSyncing) {
-      console.log('[SyncManager] 同步已在进行中，跳过');
+      console.log('[SyncManager] Sync already in progress, skipping');
       return;
     }
 
     await handleSync();
   }
 
-  /**
-   * 处理同步逻辑
-   */
   async function handleSync() {
-    // 检查是否启用测试模式
     const testMode = await Storage.getTestMode();
     if (testMode) {
-      console.log('[SyncManager] 测试模式，跳过同步');
+      console.log('[SyncManager] Test mode enabled, skipping sync');
       return;
     }
 
-    // 检查飞书配置
     const feishuConfig = await Storage.loadFeishuConfig();
     if (!feishuConfig || !feishuConfig.appId || !feishuConfig.appToken) {
-      console.log('[SyncManager] 未配置飞书，跳过同步');
-      return;
-    }
-
-    // 检查缓存是否有效（7天内），优先使用缓存
-    const cached = await Storage.loadNavData();
-    if (cached) {
-      console.log('[SyncManager] 缓存有效，跳过飞书请求');
-      await Storage.saveSyncStatus('success', '使用缓存数据');
+      console.log('[SyncManager] Feishu is not configured, skipping sync');
       return;
     }
 
@@ -97,41 +72,29 @@ const SyncManager = (function() {
     await Storage.saveSyncStatus('syncing', '同步中...');
 
     try {
-      // 获取飞书数据
       const result = await FeishuAPI.getRecords(feishuConfig.appToken, feishuConfig.tableId);
 
-      if (result.success && result.data) {
-        // 直接使用 FeishuAPI 返回的已处理数据
-        const { data: navData, categories, dateInfo } = result;
-
-        // 保存到存储
-        await Storage.saveNavData(navData, categories, dateInfo);
-
-        // 更新同步时间
-        await Storage.saveSyncStatus('success', '同步成功');
-        retryCount = 0; // 重置重试计数
-
-        console.log(`[SyncManager] 同步成功，共 ${categories.length} 个分类`);
-
-        // 通知前端更新（如果有页面打开着）
-        notifyFrontend();
-      } else {
+      if (!result.success || !result.data) {
         throw new Error(result.error || '获取数据失败');
       }
-    } catch (error) {
-      console.error('[SyncManager] 同步失败:', error);
-      await Storage.saveSyncStatus('error', error.message);
 
-      // 处理重试
+      const { data: navData, categories, dateInfo } = result;
+
+      await Storage.saveNavData(navData, categories, dateInfo);
+      await Storage.saveSyncStatus('success', '同步成功');
+      retryCount = 0;
+
+      console.log(`[SyncManager] Sync completed, ${categories.length} categories`);
+      notifyFrontend();
+    } catch (error) {
+      console.error('[SyncManager] Sync failed:', error);
+      await Storage.saveSyncStatus('error', error.message);
       handleRetry();
     } finally {
       isSyncing = false;
     }
   }
 
-  /**
-   * 处理重试逻辑
-   */
   async function handleRetry() {
     if (retryTimer) {
       clearTimeout(retryTimer);
@@ -140,121 +103,34 @@ const SyncManager = (function() {
 
     if (retryCount < MAX_RETRIES) {
       retryCount++;
-      await Storage.saveSyncStatus('error', `同步失败，${RETRY_INTERVAL / 1000}秒后重试 (${retryCount}/${MAX_RETRIES})`);
+      await Storage.saveSyncStatus(
+        'error',
+        `同步失败，${RETRY_INTERVAL / 1000} 秒后重试 (${retryCount}/${MAX_RETRIES})`
+      );
 
-      console.log(`[SyncManager] 准备第 ${retryCount} 次重试...`);
+      console.log(`[SyncManager] Retry scheduled (${retryCount}/${MAX_RETRIES})`);
 
       retryTimer = setTimeout(async () => {
         await handleSync();
       }, RETRY_INTERVAL);
-    } else {
-      await Storage.saveSyncStatus('error', `同步失败，已重试 ${MAX_RETRIES} 次`);
-      console.error(`[SyncManager] 同步失败，已重试 ${MAX_RETRIES} 次`);
+      return;
     }
+
+    await Storage.saveSyncStatus('error', `同步失败，已重试 ${MAX_RETRIES} 次`);
+    console.error(`[SyncManager] Sync failed after ${MAX_RETRIES} retries`);
   }
 
-  /**
-   * 获取网站图标 URL
-   * 优先使用备用图标，否则使用 Google Favicon 服务
-   * @param {string} fallbackIcon - 飞书配置的备用图标
-   * @param {string} url - 网站 URL
-   * @returns {string} 图标 URL 或图标内容
-   */
-  function getIconUrl(fallbackIcon, url) {
-    // 如果有备用图标，直接返回
-    if (fallbackIcon && fallbackIcon.trim()) {
-      return fallbackIcon;
-    }
-
-    // 没有备用图标时，使用 Google Favicon 服务
-    try {
-      const domain = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /**
-   * 处理飞书返回的数据
-   * @param {Array} records - 飞书记录数组
-   * @returns {Object} { categories, navData, dateInfo }
-   */
-  function processFeishuData(records) {
-    const categoryMap = {};
-    const categories = [];
-
-    records.forEach(record => {
-      const fields = record.fields || {};
-      const category = fields['分类'] || '未分类';
-
-      if (!categoryMap[category]) {
-        categoryMap[category] = [];
-        categories.push(category);
-      }
-
-      // 解析网址字段
-      let url = fields['网址'];
-      if (url && typeof url === 'object' && url.link) {
-        url = url.link;
-      }
-
-      const fallbackIcon = fields['图标'] || '';
-
-      categoryMap[category].push({
-        name: fields['站点名称'] || '未命名',
-        url: url || '',
-        icon: getIconUrl(fallbackIcon, url),
-        sort: fields['排序'] || 0
-      });
-    });
-
-    // 按 sort 排序
-    categories.sort();
-    for (const cat of categories) {
-      categoryMap[cat].sort((a, b) => (a.sort || 0) - (b.sort || 0));
-    }
-
-    // 日期信息（农历）
-    let dateInfo = null;
-    try {
-      if (typeof Lunar !== 'undefined') {
-        const lunar = Lunar.fromSolar(Date.now());
-        dateInfo = {
-          lunar: lunar.toString(),
-          festivals: lunar.getFestivals(),
-          week: new Date().getDay()
-        };
-      }
-    } catch (e) {
-      console.warn('[SyncManager] 农历计算失败:', e);
-    }
-
-    return {
-      categories,
-      navData: categoryMap,
-      dateInfo
-    };
-  }
-
-  /**
-   * 通知前端页面更新
-   */
   function notifyFrontend() {
     try {
       chrome.runtime.sendMessage({
         type: 'SYNC_COMPLETE',
         timestamp: Date.now()
       });
-    } catch (e) {
-      // 没有打开的前端页面，忽略
+    } catch (error) {
+      // Ignore when no page is listening.
     }
   }
 
-  /**
-   * 获取同步状态
-   * @returns {Promise<Object>}
-   */
   async function getStatus() {
     const status = await Storage.getSyncStatus();
     const syncTime = await Storage.getSyncTime();
@@ -270,19 +146,14 @@ const SyncManager = (function() {
     };
   }
 
-  /**
-   * 初始化同步管理器
-   */
   async function init() {
-    // 监听定时任务触发
     chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === syncAlarmName) {
-        console.log('[SyncManager] 定时任务触发');
+        console.log('[SyncManager] Alarm triggered');
         handleSync();
       }
     });
 
-    // 监听来自前端的同步请求
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === 'SYNC_NOW') {
         syncNow().then(() => {
@@ -290,7 +161,7 @@ const SyncManager = (function() {
         }).catch((error) => {
           sendResponse({ success: false, error: error.message });
         });
-        return true; // 异步响应
+        return true;
       }
 
       if (message.type === 'GET_SYNC_STATUS') {
@@ -305,6 +176,8 @@ const SyncManager = (function() {
       if (message.type === 'START_PERIODIC_SYNC') {
         startPeriodicSync(message.interval || DEFAULT_SYNC_INTERVAL).then(() => {
           sendResponse({ success: true });
+        }).catch((error) => {
+          sendResponse({ success: false, error: error.message });
         });
         return true;
       }
@@ -312,15 +185,17 @@ const SyncManager = (function() {
       if (message.type === 'STOP_PERIODIC_SYNC') {
         stopPeriodicSync().then(() => {
           sendResponse({ success: true });
+        }).catch((error) => {
+          sendResponse({ success: false, error: error.message });
         });
         return true;
       }
+
+      return false;
     });
 
-    console.log('[SyncManager] 初始化完成');
+    console.log('[SyncManager] Initialized');
   }
-
-  // ==================== 公共 API ====================
 
   return {
     init,
@@ -332,5 +207,4 @@ const SyncManager = (function() {
   };
 })();
 
-// 导出到全局
 window.SyncManager = SyncManager;

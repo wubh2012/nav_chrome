@@ -1,9 +1,6 @@
-/* ========================================
-   Chrome Nav - Art Deco 风格重写
-   装饰艺术风格设计系统
+﻿/* ========================================
+   Chrome Nav theme
    ======================================== */
-
-/* 全局重置 */
 * {
   margin: 0;
   padding: 0;
@@ -33,49 +30,39 @@ body {
   position: relative;
 }
 
-/* ========================================
-   Art Deco 配色系统
-   ======================================== */
+/* Theme variables */
 :root {
   --sidebar-width: 256px;
   --sidebar-collapsed-width: 84px;
 
-  /* 主金色系 */
-  --gold-primary: #d4af37;
-  --gold-light: #f4e4bc;
-  --gold-dark: #b8860b;
-  --gold-dim: rgba(212, 175, 55, 0.25);
-  --gold-glow: rgba(212, 175, 55, 0.4);
+  --gold-primary: #f2f2f3;
+  --gold-light: #ffffff;
+  --gold-dark: #b3b3ba;
+  --gold-dim: rgba(255, 255, 255, 0.14);
+  --gold-glow: rgba(255, 255, 255, 0.22);
 
-  /* 背景色 */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: rgba(18, 18, 18, 0.98);
-  --bg-card: rgba(28, 28, 28, 0.7);
+  --bg-primary: #0b0b0c;
+  --bg-secondary: rgba(18, 18, 20, 0.9);
+  --bg-card: rgba(26, 26, 29, 0.74);
 
-  /* 文字色 */
-  --text-primary: #f5f5f0;
-  --text-secondary: #9a9a9a;
-  --text-muted: #666666;
+  --text-primary: #f4f4f5;
+  --text-secondary: #b4b4bc;
+  --text-muted: #72727c;
 
-  /* 边框和线条 */
-  --border-gold: 1px solid rgba(212, 175, 55, 0.35);
+  --border-gold: 1px solid rgba(255, 255, 255, 0.14);
   --border-thin: 1px solid rgba(255, 255, 255, 0.08);
   --border-dim: 1px solid rgba(255, 255, 255, 0.05);
 
-  /* 阴影 */
-  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.6);
-  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.15);
-  --shadow-hover: 0 12px 50px rgba(212, 175, 55, 0.2);
-  --background-overlay-opacity: 0.38;
+  --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.44);
+  --shadow-gold: 0 0 28px rgba(255, 255, 255, 0.08);
+  --shadow-hover: 0 24px 70px rgba(0, 0, 0, 0.48);
+  --background-overlay-opacity: 0.46;
 
-  /* 过渡 */
   --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ========================================
-   快速搜索
-   ======================================== */
+/* Quick search */
 .quick-search-modal {
   display: none;
   position: fixed;
@@ -175,7 +162,7 @@ body {
 
 .quick-search-item:hover,
 .quick-search-item.active {
-  background: rgba(212, 175, 55, 0.12);
+  background: var(--gold-dim);
 }
 
 .quick-search-item-icon {
@@ -256,23 +243,29 @@ body {
   }
 }
 
-/* 亮色模式 - Art Deco 浅色版 */
+/* Light mode */
 [data-theme="light"] {
-  --bg-primary: #f8f6f0;
-  --bg-secondary: rgba(248, 246, 240, 0.98);
-  --bg-card: rgba(255, 255, 255, 0.8);
-  --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  --border-thin: 1px solid rgba(0, 0, 0, 0.08);
-  --border-dim: 1px solid rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.1);
-  --gold-dim: rgba(184, 134, 11, 0.2);
+  --bg-primary: #ececef;
+  --bg-secondary: rgba(255, 255, 255, 0.88);
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --text-primary: #15161a;
+  --text-secondary: #5d6068;
+  --text-muted: #8a8d96;
+  --border-gold: 1px solid rgba(23, 24, 27, 0.12);
+  --border-thin: 1px solid rgba(23, 24, 27, 0.1);
+  --border-dim: 1px solid rgba(23, 24, 27, 0.06);
+  --shadow-card: 0 18px 42px rgba(17, 18, 22, 0.12);
+  --gold-primary: #17181b;
+  --gold-light: #3a3c42;
+  --gold-dark: #5f6168;
+  --gold-dim: rgba(23, 24, 27, 0.12);
+  --gold-glow: rgba(23, 24, 27, 0.18);
+  --shadow-gold: 0 0 20px rgba(23, 24, 27, 0.05);
+  --shadow-hover: 0 24px 60px rgba(17, 18, 22, 0.16);
+  --background-overlay-opacity: 0.16;
 }
 
-/* ========================================
-   Art Deco 背景系统
-   ======================================== */
+/* Background system */
 .artdeco-bg {
   position: fixed;
   inset: 0;
@@ -304,7 +297,7 @@ body {
   background: rgba(0, 0, 0, var(--background-overlay-opacity));
 }
 
-/* 放射状太阳光线效果 */
+/* Radial glow effect */
 .artdeco-bg::before {
   content: '';
   position: absolute;
@@ -362,7 +355,7 @@ body {
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* 浮标漂浮动画 */
+/* Floating animation */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -372,7 +365,7 @@ body {
   }
 }
 
-/* 中心渐变 */
+/* Center vignette */
 .artdeco-bg::after {
   content: '';
   position: absolute;
@@ -387,7 +380,7 @@ body {
   pointer-events: none;
 }
 
-/* 金色网格 */
+/* Grid overlay */
 body.has-custom-background .artdeco-bg::before,
 body.has-custom-background .artdeco-bg::after {
   display: none;
@@ -405,9 +398,7 @@ body.has-custom-background .artdeco-bg::after {
   pointer-events: none;
 }
 
-/* ========================================
-   布局容器
-   ======================================== */
+/* Layout */
 .container {
   display: flex;
   align-items: flex-start;
@@ -416,13 +407,11 @@ body.has-custom-background .artdeco-bg::after {
   z-index: 10;
 }
 
-/* ========================================
-   侧边栏样式
-   ======================================== */
+/* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
-  background: var(--bg-secondary);
+  background: transparent;
   border-right: var(--border-gold);
   padding: 0;
   display: flex;
@@ -434,6 +423,9 @@ body.has-custom-background .artdeco-bg::after {
   flex-shrink: 0;
   transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.55s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s ease, opacity 0.35s ease, border-color 0.35s ease;
   overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .sidebar.skin-selector-open {
@@ -512,7 +504,16 @@ body:not(.loaded) .user-avatar .logo-svg {
   transition: none !important;
 }
 
-/* 侧边栏左边金色装饰线 */
+/* Sidebar background layer */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg-secondary);
+  opacity: 0.82;
+  z-index: -1;
+}
+
 .sidebar::before {
   content: '';
   position: absolute;
@@ -527,7 +528,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   z-index: 20;
 }
 
-/* 用户头像区域 */
+/* Logo area */
 .user-avatar {
   text-align: center;
   padding: 48px 20px 30px;
@@ -565,7 +566,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   white-space: nowrap;
   padding: 7px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid color-mix(in srgb, var(--gold-primary) 18%, transparent);
   background: rgba(12, 12, 12, 0.72);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
@@ -648,7 +649,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   }
 }
 
-/* 导航菜单 */
+/* Navigation */
 .nav-menu {
   padding: 24px 0;
   flex: 1;
@@ -678,14 +679,14 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .nav-menu li:hover {
-  background: rgba(212, 175, 55, 0.05);
-  border-color: rgba(212, 175, 55, 0.3);
+  background: color-mix(in srgb, var(--gold-primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--gold-primary) 28%, transparent);
   color: var(--text-primary);
   transform: translateX(4px);
 }
 
 .nav-menu li.active {
-  background: rgba(212, 175, 55, 0.1);
+  background: color-mix(in srgb, var(--gold-primary) 10%, transparent);
   border-color: var(--gold-primary);
   color: var(--gold-primary);
 }
@@ -699,9 +700,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   text-shadow: 0 0 10px var(--gold-dim);
 }
 
-/* ========================================
-   皮肤选择器
-   ======================================== */
+/* Skin selector */
 .skin-selector {
   margin: 14px;
   background: rgba(255, 255, 255, 0.02);
@@ -720,7 +719,7 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .current-skin:hover {
-  background: rgba(212, 175, 55, 0.05);
+  background: color-mix(in srgb, var(--gold-primary) 6%, transparent);
 }
 
 .current-skin-preview {
@@ -803,13 +802,13 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .skin-option:hover {
-  background: rgba(212, 175, 55, 0.08);
+  background: color-mix(in srgb, var(--gold-primary) 8%, transparent);
   border-color: var(--gold-primary);
 }
 
 .skin-option.active {
   border-color: var(--gold-primary);
-  background: rgba(212, 175, 55, 0.1);
+  background: color-mix(in srgb, var(--gold-primary) 10%, transparent);
 }
 
 .skin-colors {
@@ -849,7 +848,7 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .skin-mode-toggle:hover {
-  background: rgba(212, 175, 55, 0.08);
+  background: color-mix(in srgb, var(--gold-primary) 8%, transparent);
 }
 
 .skin-mode-toggle i {
@@ -862,9 +861,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   color: var(--text-primary);
 }
 
-/* ========================================
-   设置菜单
-   ======================================== */
+/* Settings menu */
 .settings-menu {
   margin-top: 16px;
   padding-top: 16px;
@@ -885,8 +882,8 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .settings-menu li:hover {
-  background: rgba(212, 175, 55, 0.05);
-  border-color: rgba(212, 175, 55, 0.3);
+  background: color-mix(in srgb, var(--gold-primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--gold-primary) 28%, transparent);
   color: var(--text-primary);
 }
 
@@ -907,9 +904,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   color: var(--text-primary);
 }
 
-/* ========================================
-   主内容区
-   ======================================== */
+/* Main content */
 .main-content {
   flex: 1;
   padding: 0;
@@ -925,7 +920,7 @@ body:not(.loaded) .user-avatar .logo-svg {
     align-items 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 顶部信息区 */
+/* Top info */
 .top-info {
   text-align: center;
   padding: 25px;
@@ -933,7 +928,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   transition: padding 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 中央装饰菱形 */
+/* Time focus block */
 .time-info {
   display: inline-block;
   cursor: pointer;
@@ -957,7 +952,6 @@ body:not(.loaded) .user-avatar .logo-svg {
   font-family: 'Poiret One', sans-serif;
   line-height: 1;
   pointer-events: none;
-  /* 确保装饰元素不会影响布局 - 使用固定定位脱离文档流 */
   position: fixed;
   z-index: -1;
 }
@@ -998,9 +992,7 @@ body:not(.loaded) .user-avatar .logo-svg {
     letter-spacing 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ========================================
-   工具卡片网格
-   ======================================== */
+/* Tool grid */
 .tools-container {
   flex: 1;
   padding: 0px 60px 100px;
@@ -1067,7 +1059,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   transform: scale(1.1);
 }
 
-/* 拖拽排序状态 */
+/* Drag sorting state */
 .tool-item.dragging {
   opacity: 0.45;
   transform: scale(0.96) !important;
@@ -1098,12 +1090,12 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   cursor: wait;
 }
 
-/* 工具图标 */
+/* Tool icon */
 .tool-icon {
   font-size: 32px;
   color: var(--gold-primary);
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: contain;
   display: block;
@@ -1119,7 +1111,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   object-fit: contain;
 }
 
-/* 文字图标 */
+/* Text icon */
 .text-icon {
   width: 36px;
   height: 36px;
@@ -1135,7 +1127,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   color: var(--bg-primary);
 }
 
-/* Emoji/图标文字（透明背景） */
+/* Emoji icon */
 .emoji-icon {
   width: 36px;
   height: 36px;
@@ -1148,7 +1140,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   margin-right: auto;
 }
 
-/* 工具名称 */
+/* Tool label */
 .tool-name {
   font-size: 12px;
   font-family: 'Noto Sans SC', 'Josefin Sans', sans-serif;
@@ -1163,7 +1155,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   letter-spacing: 0.02em;
 }
 
-/* 卡片入场动画 */
+/* Card entrance animation */
 .tool-item-hidden {
   opacity: 0;
   transform: translateY(30px) scale(0.95);
@@ -1184,7 +1176,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   }
 }
 
-/* 卡片 staggering - 所有卡片同时淡入 */
+/* Card stagger timing */
 .tool-item:nth-child(1) { animation-delay: 0.02s; }
 .tool-item:nth-child(2) { animation-delay: 0.04s; }
 .tool-item:nth-child(3) { animation-delay: 0.06s; }
@@ -1194,7 +1186,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 .tool-item:nth-child(7) { animation-delay: 0.14s; }
 .tool-item:nth-child(8) { animation-delay: 0.16s; }
 
-/* 删除按钮 */
+/* Delete button */
 .tool-item-delete-btn {
   position: absolute;
   top: 8px;
@@ -1226,9 +1218,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   background: rgba(255, 77, 79, 0.2);
 }
 
-/* ========================================
-   添加链接按钮
-   ======================================== */
+/* Add link button */
 .add-link-btn {
   position: fixed;
   bottom: 40px;
@@ -1267,9 +1257,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   transform: rotate(90deg) scale(1.2);
 }
 
-/* ========================================
-   主题切换按钮
-   ======================================== */
+/* Theme toggle button */
 .theme-toggle-anchor {
   position: fixed;
   top: 24px;
@@ -1302,7 +1290,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 .theme-toggle-anchor:hover .theme-toggle-button,
 .theme-toggle-button:hover,
 .theme-toggle-button:focus-visible {
-  background: rgba(212, 175, 55, 0.1);
+  background: color-mix(in srgb, var(--gold-primary) 10%, transparent);
   border-color: var(--gold-primary);
   transform: translateY(-2px);
 }
@@ -1355,37 +1343,62 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   line-height: 1;
 }
 
-/* ========================================
-   同步状态
-   ======================================== */
+/* Sync status */
 .sync-status {
   position: fixed;
-  bottom: 24px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 10px 20px;
-  background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  border: var(--border-thin);
-  border-radius: 8px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  min-width: 320px;
+  max-width: min(560px, calc(100vw - 48px));
+  padding: 14px 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, white 4%), color-mix(in srgb, var(--bg-primary) 94%, black 6%));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--gold-primary) 22%, transparent);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
   opacity: 0;
-  transition: var(--transition-smooth);
-  z-index: 100;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  transition: opacity 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease;
+  z-index: 1003;
   will-change: transform, opacity;
+  pointer-events: none;
 }
 
 .sync-status.show {
   opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
 
-/* ========================================
-   模态框样式
-   ======================================== */
-/* ========================================
-   时间聚焦模式
-   ======================================== */
+.sync-status.info {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--gold-primary) 26%, transparent);
+}
+
+.sync-status.success {
+  color: #d9ffe8;
+  border-color: rgba(82, 196, 26, 0.45);
+  background:
+    linear-gradient(180deg, rgba(18, 40, 25, 0.92), rgba(12, 24, 16, 0.96));
+}
+
+.sync-status.error {
+  color: #ffe1e1;
+  border-color: rgba(255, 77, 79, 0.42);
+  background:
+    linear-gradient(180deg, rgba(52, 18, 20, 0.94), rgba(26, 10, 11, 0.97));
+}
+
+/* Time focus mode */
 body.time-focus-mode .sidebar,
 body.time-focus-mode .add-link-btn,
 body.time-focus-mode .theme-toggle-anchor,
@@ -1500,7 +1513,7 @@ body.time-focus-mode {
   background: var(--bg-secondary);
   border: 1px solid var(--gold-dim);
   border-radius: 16px;
-  box-shadow: var(--shadow-card), 0 0 60px rgba(212, 175, 55, 0.1);
+  box-shadow: var(--shadow-card), 0 0 60px color-mix(in srgb, var(--gold-primary) 10%, transparent);
   max-width: 480px;
   width: 90%;
   max-height: 85vh;
@@ -1552,7 +1565,7 @@ body.time-focus-mode {
 }
 
 .close-modal-btn:hover {
-  background: rgba(212, 175, 55, 0.1);
+  background: color-mix(in srgb, var(--gold-primary) 10%, transparent);
   border-color: var(--gold-primary);
   color: var(--gold-primary);
 }
@@ -1599,7 +1612,7 @@ body.time-focus-mode {
 .form-group input:focus,
 .form-group select:focus {
   border-color: var(--gold-primary);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold-primary) 15%, transparent);
 }
 
 .error-message {
@@ -1640,7 +1653,7 @@ body.time-focus-mode {
 }
 
 .cancel-btn:hover {
-  background: rgba(212, 175, 55, 0.05);
+  background: color-mix(in srgb, var(--gold-primary) 6%, transparent);
   border-color: var(--gold-primary);
   color: var(--gold-primary);
 }
@@ -1667,7 +1680,7 @@ body.time-focus-mode {
   border-color: #ff8787;
 }
 
-/* 删除确认 */
+/* Delete confirmation */
 .delete-confirmation {
   display: flex;
   flex-direction: column;
@@ -1714,9 +1727,7 @@ body.time-focus-mode {
   to { opacity: 1; }
 }
 
-/* ========================================
-   可访问性
-   ======================================== */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1734,9 +1745,7 @@ button:focus {
   outline-offset: 2px;
 }
 
-/* ========================================
-   浏览器兼容性
-   ======================================== */
+/* Browser fallback */
 @supports not (backdrop-filter: blur(20px)) {
   .sidebar,
   .tool-item,
@@ -1746,13 +1755,22 @@ button:focus {
 
   [data-theme="light"] .sidebar,
   [data-theme="light"] .tool-item {
-    background: rgba(248, 246, 240, 0.98);
+    background: rgba(255, 255, 255, 0.88);
   }
 }
 
 /* ========================================
-   皮肤主题 - 霓虹 (默认)
+   Neutral graphite
    ======================================== */
+[data-skin="graphite"] {
+  --gold-primary: #f2f2f3;
+  --gold-light: #ffffff;
+  --gold-dark: #b3b3ba;
+  --gold-dim: rgba(255, 255, 255, 0.14);
+  --gold-glow: rgba(255, 255, 255, 0.22);
+}
+
+/* Neon skin */
 [data-skin="neon"] {
   --gold-primary: #ff0066;
   --gold-light: #ff66a3;
@@ -1760,60 +1778,3 @@ button:focus {
   --gold-dim: rgba(255, 0, 102, 0.25);
 }
 
-/* ========================================
-   皮肤主题 - 海洋蓝调
-   ======================================== */
-[data-skin="ocean"] {
-  --gold-primary: #00b4d8;
-  --gold-light: #48cae4;
-  --gold-dark: #0077b6;
-  --gold-dim: rgba(0, 180, 216, 0.25);
-}
-
-/* ========================================
-   皮肤主题 - 翡翠绿
-   ======================================== */
-[data-skin="emerald"] {
-  --gold-primary: #2d8a6e;
-  --gold-light: #7dd3b0;
-  --gold-dark: #1a5c47;
-  --gold-dim: rgba(45, 138, 110, 0.25);
-}
-
-/* ========================================
-   皮肤主题 - Art Deco 金色（默认）
-   ======================================== */
-:root {
-  --sidebar-width: 256px;
-
-  /* Art Deco 主金色系 */
-  --gold-primary: #d4af37;
-  --gold-light: #f4e4bc;
-  --gold-dark: #b8860b;
-  --gold-dim: rgba(212, 175, 55, 0.25);
-  --gold-glow: rgba(212, 175, 55, 0.4);
-
-  /* 背景色 */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: rgba(18, 18, 18, 0.98);
-  --bg-card: rgba(28, 28, 28, 0.7);
-
-  /* 文字色 */
-  --text-primary: #f5f5f0;
-  --text-secondary: #9a9a9a;
-  --text-muted: #666666;
-
-  /* 边框和线条 */
-  --border-gold: 1px solid rgba(212, 175, 55, 0.35);
-  --border-thin: 1px solid rgba(255, 255, 255, 0.08);
-  --border-dim: 1px solid rgba(255, 255, 255, 0.05);
-
-  /* 阴影 */
-  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.6);
-  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.15);
-  --shadow-hover: 0 12px 50px rgba(212, 175, 55, 0.2);
-
-  /* 过渡 */
-  --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}

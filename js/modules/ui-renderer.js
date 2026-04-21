@@ -333,8 +333,9 @@ const UIRenderer = (function() {
     const statusEl = document.getElementById('sync-status');
     if (!statusEl) return;
 
+    statusEl.classList.remove('info', 'success', 'error');
     statusEl.textContent = message;
-    statusEl.style.color = type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : 'var(--text-mid)';
+    statusEl.classList.add(type);
     statusEl.classList.add('show');
 
     setTimeout(() => {

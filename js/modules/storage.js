@@ -222,7 +222,7 @@ const Storage = (function() {
 
   /**
    * 保存主题偏好
-   * @param {string} skin - 皮肤主题 (neon/ocean/forest/sunset/purple/classic)
+   * @param {string} skin - 皮肤主题 (graphite/neon)
    * @param {string} mode - 模式 (dark/light)
    * @returns {Promise<void>}
    */
@@ -234,14 +234,14 @@ const Storage = (function() {
 
   /**
    * 加载主题偏好
-   * @returns {Promise<Object>} { skin: 'neon', mode: 'dark' }
+   * @returns {Promise<Object>} { skin: 'graphite', mode: 'dark' }
    */
   async function loadThemePreference() {
     try {
       const result = await get(KEYS.THEME_PREFERENCE);
-      return result[KEYS.THEME_PREFERENCE] || { skin: 'neon', mode: 'dark' };
+      return result[KEYS.THEME_PREFERENCE] || { skin: 'graphite', mode: 'dark' };
     } catch (error) {
-      return { skin: 'neon', mode: 'dark' };
+      return { skin: 'graphite', mode: 'dark' };
     }
   }
 

@@ -1,16 +1,58 @@
 /**
- * 主题管理器 - 处理主题切换和持久化
- * 使用 JS 动态注入 CSS 变量方式
+ * Theme manager for skin and light/dark mode switching.
+ * Applies CSS custom properties directly on the document root.
  */
 const ThemeManager = (function() {
   'use strict';
 
-  // 皮肤主题配置（包含 dark/light 模式）
-  // 每个皮肤定义两套配色，分别对应 dark 和 light 模式
   const SKIN_THEMES = {
+    graphite: {
+      name: '石墨中性',
+      artDecoVars: {
+        dark: {
+          '--gold-primary': '#f2f2f3',
+          '--gold-light': '#ffffff',
+          '--gold-dark': '#b3b3ba',
+          '--gold-dim': 'rgba(255, 255, 255, 0.14)',
+          '--gold-glow': 'rgba(255, 255, 255, 0.22)',
+          '--bg-primary': '#0b0b0c',
+          '--bg-secondary': 'rgba(18, 18, 20, 0.9)',
+          '--bg-card': 'rgba(26, 26, 29, 0.74)',
+          '--text-primary': '#f4f4f5',
+          '--text-secondary': '#b4b4bc',
+          '--text-muted': '#72727c',
+          '--border-gold': '1px solid rgba(255, 255, 255, 0.14)',
+          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
+          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
+          '--shadow-card': '0 18px 50px rgba(0, 0, 0, 0.44)',
+          '--shadow-gold': '0 0 28px rgba(255, 255, 255, 0.08)',
+          '--shadow-hover': '0 24px 70px rgba(0, 0, 0, 0.48)',
+          '--background-overlay-opacity': '0.46'
+        },
+        light: {
+          '--gold-primary': '#17181b',
+          '--gold-light': '#3a3c42',
+          '--gold-dark': '#5f6168',
+          '--gold-dim': 'rgba(23, 24, 27, 0.12)',
+          '--gold-glow': 'rgba(23, 24, 27, 0.18)',
+          '--bg-primary': '#ececef',
+          '--bg-secondary': 'rgba(255, 255, 255, 0.88)',
+          '--bg-card': 'rgba(255, 255, 255, 0.78)',
+          '--text-primary': '#15161a',
+          '--text-secondary': '#5d6068',
+          '--text-muted': '#8a8d96',
+          '--border-gold': '1px solid rgba(23, 24, 27, 0.12)',
+          '--border-thin': '1px solid rgba(23, 24, 27, 0.1)',
+          '--border-dim': '1px solid rgba(23, 24, 27, 0.06)',
+          '--shadow-card': '0 18px 42px rgba(17, 18, 22, 0.12)',
+          '--shadow-gold': '0 0 20px rgba(23, 24, 27, 0.05)',
+          '--shadow-hover': '0 24px 60px rgba(17, 18, 22, 0.16)',
+          '--background-overlay-opacity': '0.16'
+        }
+      }
+    },
     neon: {
       name: '霓虹风格',
-      // 霓虹风格 - 映射到 Art Deco CSS 变量
       artDecoVars: {
         dark: {
           '--gold-primary': '#ff0066',
@@ -51,289 +93,108 @@ const ThemeManager = (function() {
           '--shadow-hover': '0 12px 50px rgba(255, 0, 102, 0.15)'
         }
       }
-    },
-    ocean: {
-      name: '海洋蓝调',
-      artDecoVars: {
-        dark: {
-          '--gold-primary': '#00f5ff',
-          '--gold-light': '#40e0d0',
-          '--gold-dark': '#00b4d8',
-          '--gold-dim': 'rgba(0, 245, 255, 0.25)',
-          '--gold-glow': 'rgba(0, 245, 255, 0.4)',
-          '--bg-primary': '#001122',
-          '--bg-secondary': 'rgba(0, 34, 68, 0.98)',
-          '--bg-card': 'rgba(28, 28, 28, 0.7)',
-          '--text-primary': '#ffffff',
-          '--text-secondary': '#40e0d0',
-          '--text-muted': '#caf0f8',
-          '--border-gold': '1px solid rgba(0, 245, 255, 0.35)',
-          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
-          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
-          '--shadow-gold': '0 0 30px rgba(0, 245, 255, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(0, 245, 255, 0.2)'
-        },
-        light: {
-          '--gold-primary': '#0077be',
-          '--gold-light': '#40e0d0',
-          '--gold-dark': '#0096c7',
-          '--gold-dim': 'rgba(0, 119, 190, 0.2)',
-          '--gold-glow': 'rgba(0, 119, 190, 0.3)',
-          '--bg-primary': '#caf0f8',
-          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
-          '--bg-card': 'rgba(255, 255, 255, 0.8)',
-          '--text-primary': '#1a1a1a',
-          '--text-secondary': '#0077be',
-          '--text-muted': '#888888',
-          '--border-gold': '1px solid rgba(0, 119, 190, 0.35)',
-          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
-          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
-          '--shadow-gold': '0 0 30px rgba(0, 119, 190, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(0, 119, 190, 0.15)'
-        }
-      }
-    },
-    emerald: {
-      name: '翡翠绿',
-      artDecoVars: {
-        dark: {
-          '--gold-primary': '#2d8a6e',
-          '--gold-light': '#7dd3b0',
-          '--gold-dark': '#1a5c47',
-          '--gold-dim': 'rgba(45, 138, 110, 0.25)',
-          '--gold-glow': 'rgba(45, 138, 110, 0.4)',
-          '--bg-primary': '#0a0f0c',
-          '--bg-secondary': 'rgba(10, 15, 12, 0.98)',
-          '--bg-card': 'rgba(28, 28, 28, 0.7)',
-          '--text-primary': '#f5f5f0',
-          '--text-secondary': '#7dd3b0',
-          '--text-muted': '#9a9a9a',
-          '--border-gold': '1px solid rgba(45, 138, 110, 0.35)',
-          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
-          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
-          '--shadow-gold': '0 0 30px rgba(45, 138, 110, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(45, 138, 110, 0.2)'
-        },
-        light: {
-          '--gold-primary': '#2d8a6e',
-          '--gold-light': '#7dd3b0',
-          '--gold-dark': '#1a5c47',
-          '--gold-dim': 'rgba(45, 138, 110, 0.2)',
-          '--gold-glow': 'rgba(45, 138, 110, 0.3)',
-          '--bg-primary': '#f0f5f2',
-          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
-          '--bg-card': 'rgba(255, 255, 255, 0.8)',
-          '--text-primary': '#1a1a1a',
-          '--text-secondary': '#2d8a6e',
-          '--text-muted': '#888888',
-          '--border-gold': '1px solid rgba(45, 138, 110, 0.35)',
-          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
-          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
-          '--shadow-gold': '0 0 30px rgba(45, 138, 110, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(45, 138, 110, 0.15)'
-        }
-      }
-    },
-    darkgold: {
-      name: '暗金色',
-      artDecoVars: {
-        dark: {
-          '--gold-primary': '#d4af37',
-          '--gold-light': '#f4e4bc',
-          '--gold-dark': '#b8860b',
-          '--gold-dim': 'rgba(212, 175, 55, 0.25)',
-          '--gold-glow': 'rgba(212, 175, 55, 0.4)',
-          '--bg-primary': '#0a0905',
-          '--bg-secondary': 'rgba(18, 18, 18, 0.98)',
-          '--bg-card': 'rgba(28, 28, 28, 0.7)',
-          '--text-primary': '#f5f5f0',
-          '--text-secondary': '#9a9a9a',
-          '--text-muted': '#666666',
-          '--border-gold': '1px solid rgba(212, 175, 55, 0.35)',
-          '--border-thin': '1px solid rgba(255, 255, 255, 0.08)',
-          '--border-dim': '1px solid rgba(255, 255, 255, 0.05)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.6)',
-          '--shadow-gold': '0 0 30px rgba(212, 175, 55, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(212, 175, 55, 0.2)'
-        },
-        light: {
-          '--gold-primary': '#d4af37',
-          '--gold-light': '#f4e4bc',
-          '--gold-dark': '#b8860b',
-          '--gold-dim': 'rgba(184, 134, 11, 0.2)',
-          '--gold-glow': 'rgba(212, 175, 55, 0.3)',
-          '--bg-primary': '#f8f6f0',
-          '--bg-secondary': 'rgba(248, 246, 240, 0.98)',
-          '--bg-card': 'rgba(255, 255, 255, 0.8)',
-          '--text-primary': '#1a1a1a',
-          '--text-secondary': '#666666',
-          '--text-muted': '#999999',
-          '--border-gold': '1px solid rgba(212, 175, 55, 0.35)',
-          '--border-thin': '1px solid rgba(0, 0, 0, 0.08)',
-          '--border-dim': '1px solid rgba(0, 0, 0, 0.04)',
-          '--shadow-card': '0 8px 40px rgba(0, 0, 0, 0.1)',
-          '--shadow-gold': '0 0 30px rgba(212, 175, 55, 0.15)',
-          '--shadow-hover': '0 12px 50px rgba(212, 175, 55, 0.15)'
-        }
-      }
     }
   };
 
-  // 默认设置
-  const DEFAULT_SKIN = 'darkgold';
+  const DEFAULT_SKIN = 'graphite';
   const DEFAULT_MODE = 'dark';
 
-  // 当前状态
   let currentSkin = DEFAULT_SKIN;
   let currentMode = DEFAULT_MODE;
 
-  /**
-   * 初始化主题管理器
-   */
   async function init() {
     try {
-      // 从存储加载偏好
       const preference = await Storage.loadThemePreference();
       currentSkin = preference.skin || DEFAULT_SKIN;
       currentMode = preference.mode || DEFAULT_MODE;
 
-      // 验证皮肤是否有效
       if (!SKIN_THEMES[currentSkin]) {
         currentSkin = DEFAULT_SKIN;
       }
 
-      // 应用主题
+      if (currentMode !== 'dark' && currentMode !== 'light') {
+        currentMode = DEFAULT_MODE;
+      }
+
       applyTheme(false);
-
-      // 更新 UI 状态
       updateSkinSelectorUI();
-
-      console.log(`[ThemeManager] 初始化完成: ${currentSkin} + ${currentMode}`);
     } catch (error) {
-      console.error('[ThemeManager] 初始化失败:', error);
-      // 使用默认值
+      console.error('[ThemeManager] init failed', error);
       currentSkin = DEFAULT_SKIN;
       currentMode = DEFAULT_MODE;
       applyTheme(false);
     }
   }
 
-  /**
-   * 应用主题 - 动态注入 CSS 变量
-   * 使用 JS 直接修改 style.css 中的 :root 变量
-   */
   function applyTheme(persistPreference = true) {
     const skinConfig = SKIN_THEMES[currentSkin];
-
     if (!skinConfig) return;
 
-    // 获取当前模式的颜色配置
     const colors = skinConfig.artDecoVars[currentMode];
+    if (!colors) return;
 
-    if (colors) {
-      // 直接在 documentElement 上设置 CSS 变量
-      // 内联样式的优先级高于外部 CSS 文件中的 :root 定义
-      const root = document.documentElement;
-      for (const [prop, value] of Object.entries(colors)) {
-        root.style.setProperty(prop, value);
-      }
-      console.log(`[ThemeManager] 已更新 ${Object.keys(colors).length} 个 CSS 变量`);
+    const root = document.documentElement;
+    root.dataset.skin = currentSkin;
+    root.dataset.theme = currentMode;
+
+    for (const [prop, value] of Object.entries(colors)) {
+      root.style.setProperty(prop, value);
     }
 
-    // 保存到存储
     if (persistPreference) {
       Storage.saveThemePreference(currentSkin, currentMode);
     }
 
-    // 更新主题图标
     updateThemeIcons();
-
-    // 更新 favicon
     updateFavicon();
-
-    console.log(`[ThemeManager] 应用主题: ${currentSkin} + ${currentMode}`);
   }
 
-  /**
-   * 更新皮肤选择器 UI
-   */
   function updateSkinSelectorUI() {
-    // 更新皮肤选项激活状态
     document.querySelectorAll('.skin-option').forEach(option => {
       const skin = option.getAttribute('data-skin');
-      if (skin === currentSkin) {
-        option.classList.add('active');
-      } else {
-        option.classList.remove('active');
-      }
+      option.classList.toggle('active', skin === currentSkin);
     });
 
-    // 更新当前皮肤名称
     const skinNameEl = document.querySelector('.current-skin-name');
     if (skinNameEl && SKIN_THEMES[currentSkin]) {
       skinNameEl.textContent = SKIN_THEMES[currentSkin].name;
     }
 
-    // 动态更新皮肤预览颜色
     updateSkinPreviewColors();
   }
 
-  /**
-   * 更新皮肤预览圆点的颜色
-   */
   function updateSkinPreviewColors() {
-    // 更新所有皮肤选项的预览颜色
     document.querySelectorAll('.skin-option').forEach(option => {
       const skin = option.getAttribute('data-skin');
       const skinConfig = SKIN_THEMES[skin];
-      if (!skinConfig || !skinConfig.artDecoVars) return;
+      if (!skinConfig) return;
 
       const skinColors = skinConfig.artDecoVars[currentMode];
       if (!skinColors) return;
 
-      const skinPrimary = skinColors['--gold-primary'];
-      const skinSecondary = skinColors['--gold-dark'];
-      const skinAccent = skinColors['--gold-light'];
-
-      // 更新主色圆点
       const primaryDot = option.querySelector('.color-dot.primary');
-      if (primaryDot) {
-        primaryDot.style.background = skinPrimary;
-      }
-
-      // 更新辅色圆点
       const secondaryDot = option.querySelector('.color-dot.secondary');
-      if (secondaryDot) {
-        secondaryDot.style.background = skinSecondary;
-      }
-
-      // 更新强调色圆点
       const accentDot = option.querySelector('.color-dot.accent');
-      if (accentDot) {
-        accentDot.style.background = skinAccent;
-      }
+
+      if (primaryDot) primaryDot.style.background = skinColors['--gold-primary'];
+      if (secondaryDot) secondaryDot.style.background = skinColors['--gold-dark'];
+      if (accentDot) accentDot.style.background = skinColors['--gold-light'];
     });
 
-    // 更新当前选中皮肤的预览图标颜色
     const currentSkinIcon = document.querySelector('.current-skin-icon');
-    const skinConfig = SKIN_THEMES[currentSkin];
-    if (currentSkinIcon && skinConfig && skinConfig.artDecoVars[currentMode]) {
-      currentSkinIcon.style.color = skinConfig.artDecoVars[currentMode]['--gold-primary'];
+    const activeSkin = SKIN_THEMES[currentSkin];
+    if (currentSkinIcon && activeSkin) {
+      currentSkinIcon.style.color = activeSkin.artDecoVars[currentMode]['--gold-primary'];
     }
   }
 
-  /**
-   * 更新 favicon 颜色
-   */
   function updateFavicon() {
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--gold-primary').trim();
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--gold-primary')
+      .trim();
+
     if (!color) return;
 
-    // 简化的西瓜图标 SVG
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
       <path d="M16 4 L28 16 Q28 28 16 28 Q4 28 4 16 L16 4 Z" fill="${color}"/>
       <path d="M8 16 Q8 22 16 24 Q24 22 24 16" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
@@ -342,51 +203,40 @@ const ThemeManager = (function() {
       <ellipse cx="14" cy="20" rx="1.5" ry="1" fill="rgba(0,0,0,0.2)" transform="rotate(-10 14 20)"/>
     </svg>`;
 
-    const dataUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`;
     const favicon = document.querySelector("link[rel='icon']");
     if (favicon) {
-      favicon.href = dataUrl;
+      favicon.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
     }
   }
 
-  /**
-   * 更新主题图标
-   */
   function updateThemeIcons() {
     const isDark = currentMode === 'dark';
-    const moonIcon = 'bi-moon-fill';
-    const sunIcon = 'bi-sun-fill';
 
-    // 更新右上角主题按钮
-    const themeBtns = document.querySelectorAll('#desktop-theme-toggle-btn, #mobile-theme-btn');
-    themeBtns.forEach(btn => {
+    document.querySelectorAll('#desktop-theme-toggle-btn').forEach(btn => {
       const icon = btn.querySelector('i');
       if (icon) {
-        icon.className = isDark ? sunIcon : moonIcon;
+        icon.className = isDark ? 'bi-sun-fill' : 'bi-moon-fill';
       }
     });
 
-    // 更新皮肤选择器中的模式切换
     const modeToggle = document.getElementById('theme-mode-toggle');
-    if (modeToggle) {
-      const icon = modeToggle.querySelector('i');
-      const span = modeToggle.querySelector('span');
-      if (icon) {
-        icon.className = isDark ? 'bi-sun' : 'bi-moon';
-      }
-      if (span) {
-        span.textContent = isDark ? '亮色模式' : '暗黑模式';
-      }
+    if (!modeToggle) return;
+
+    const icon = modeToggle.querySelector('i');
+    const label = modeToggle.querySelector('span');
+
+    if (icon) {
+      icon.className = isDark ? 'bi-sun' : 'bi-moon';
+    }
+
+    if (label) {
+      label.textContent = isDark ? '亮色模式' : '暗黑模式';
     }
   }
 
-  /**
-   * 切换皮肤
-   * @param {string} skin - 皮肤名称
-   */
   async function setSkin(skin) {
     if (!SKIN_THEMES[skin]) {
-      console.warn(`[ThemeManager] 未知的皮肤: ${skin}`);
+      console.warn(`[ThemeManager] unknown skin: ${skin}`);
       return false;
     }
 
@@ -396,41 +246,27 @@ const ThemeManager = (function() {
     return true;
   }
 
-  /**
-   * 切换模式（暗黑/亮色）
-   */
   function toggleMode() {
     currentMode = currentMode === 'dark' ? 'light' : 'dark';
     applyTheme(true);
+    updateSkinSelectorUI();
   }
 
-  /**
-   * 设置模式
-   * @param {string} mode - 'dark' 或 'light'
-   */
   function setMode(mode) {
     if (mode !== 'dark' && mode !== 'light') return;
     currentMode = mode;
     applyTheme(true);
+    updateSkinSelectorUI();
   }
 
-  /**
-   * 获取当前皮肤
-   */
   function getSkin() {
     return currentSkin;
   }
 
-  /**
-   * 获取当前模式
-   */
   function getMode() {
     return currentMode;
   }
 
-  /**
-   * 获取所有皮肤主题
-   */
   function getAllThemes() {
     return SKIN_THEMES;
   }
@@ -438,64 +274,51 @@ const ThemeManager = (function() {
   function syncSkinSelectorState(isExpanded) {
     const skinSelector = document.getElementById('skin-selector');
     const sidebar = document.getElementById('sidebar');
-    if (!skinSelector || !sidebar) {
-      return;
-    }
+    if (!skinSelector || !sidebar) return;
 
     skinSelector.classList.toggle('expanded', isExpanded);
     sidebar.classList.toggle('skin-selector-open', isExpanded);
   }
 
-  // ==================== 事件绑定 ====================
-
-  /**
-   * 绑定主题相关事件
-   */
   function bindEvents() {
-    // 皮肤选择器展开/收起
     const skinSelector = document.getElementById('skin-selector');
     if (skinSelector) {
-      skinSelector.querySelector('.current-skin').addEventListener('click', () => {
-        syncSkinSelectorState(!skinSelector.classList.contains('expanded'));
-      });
+      const currentSkinTrigger = skinSelector.querySelector('.current-skin');
+      if (currentSkinTrigger) {
+        currentSkinTrigger.addEventListener('click', () => {
+          syncSkinSelectorState(!skinSelector.classList.contains('expanded'));
+        });
+      }
 
-      // 点击其他地方关闭
-      document.addEventListener('click', (e) => {
-        if (!skinSelector.contains(e.target)) {
+      document.addEventListener('click', event => {
+        if (!skinSelector.contains(event.target)) {
           syncSkinSelectorState(false);
         }
       });
     }
 
-    // 皮肤选项点击
     document.querySelectorAll('.skin-option').forEach(option => {
       option.addEventListener('click', async () => {
         const skin = option.getAttribute('data-skin');
         await setSkin(skin);
-
-        // 收起皮肤选择器
         syncSkinSelectorState(false);
       });
     });
 
-    // 模式切换按钮
     const modeToggle = document.getElementById('theme-mode-toggle');
     if (modeToggle) {
-      modeToggle.addEventListener('click', () => {
+      modeToggle.addEventListener('click', event => {
+        event.stopPropagation();
         toggleMode();
       });
     }
 
-    // 右上角主题切换按钮
-    const themeBtns = document.querySelectorAll('#desktop-theme-toggle-btn, #mobile-theme-btn');
-    themeBtns.forEach(btn => {
+    document.querySelectorAll('#desktop-theme-toggle-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleMode();
       });
     });
   }
-
-  // ==================== 公共 API ====================
 
   return {
     init,
@@ -509,5 +332,4 @@ const ThemeManager = (function() {
   };
 })();
 
-// 导出到全局
 window.ThemeManager = ThemeManager;

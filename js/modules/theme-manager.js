@@ -207,7 +207,7 @@ const ThemeManager = (function() {
       }
 
       // 应用主题
-      applyTheme();
+      applyTheme(false);
 
       // 更新 UI 状态
       updateSkinSelectorUI();
@@ -218,7 +218,7 @@ const ThemeManager = (function() {
       // 使用默认值
       currentSkin = DEFAULT_SKIN;
       currentMode = DEFAULT_MODE;
-      applyTheme();
+      applyTheme(false);
     }
   }
 
@@ -226,7 +226,7 @@ const ThemeManager = (function() {
    * 应用主题 - 动态注入 CSS 变量
    * 使用 JS 直接修改 style.css 中的 :root 变量
    */
-  function applyTheme() {
+  function applyTheme(persistPreference = true) {
     const skinConfig = SKIN_THEMES[currentSkin];
 
     if (!skinConfig) return;
@@ -245,7 +245,9 @@ const ThemeManager = (function() {
     }
 
     // 保存到存储
-    Storage.saveThemePreference(currentSkin, currentMode);
+    if (persistPreference) {
+      Storage.saveThemePreference(currentSkin, currentMode);
+    }
 
     // 更新主题图标
     updateThemeIcons();
@@ -389,7 +391,7 @@ const ThemeManager = (function() {
     }
 
     currentSkin = skin;
-    applyTheme();
+    applyTheme(true);
     updateSkinSelectorUI();
     return true;
   }
@@ -399,7 +401,7 @@ const ThemeManager = (function() {
    */
   function toggleMode() {
     currentMode = currentMode === 'dark' ? 'light' : 'dark';
-    applyTheme();
+    applyTheme(true);
   }
 
   /**
@@ -409,7 +411,7 @@ const ThemeManager = (function() {
   function setMode(mode) {
     if (mode !== 'dark' && mode !== 'light') return;
     currentMode = mode;
-    applyTheme();
+    applyTheme(true);
   }
 
   /**
@@ -433,6 +435,17 @@ const ThemeManager = (function() {
     return SKIN_THEMES;
   }
 
+  function syncSkinSelectorState(isExpanded) {
+    const skinSelector = document.getElementById('skin-selector');
+    const sidebar = document.getElementById('sidebar');
+    if (!skinSelector || !sidebar) {
+      return;
+    }
+
+    skinSelector.classList.toggle('expanded', isExpanded);
+    sidebar.classList.toggle('skin-selector-open', isExpanded);
+  }
+
   // ==================== 事件绑定 ====================
 
   /**
@@ -443,13 +456,13 @@ const ThemeManager = (function() {
     const skinSelector = document.getElementById('skin-selector');
     if (skinSelector) {
       skinSelector.querySelector('.current-skin').addEventListener('click', () => {
-        skinSelector.classList.toggle('expanded');
+        syncSkinSelectorState(!skinSelector.classList.contains('expanded'));
       });
 
       // 点击其他地方关闭
       document.addEventListener('click', (e) => {
         if (!skinSelector.contains(e.target)) {
-          skinSelector.classList.remove('expanded');
+          syncSkinSelectorState(false);
         }
       });
     }
@@ -461,10 +474,7 @@ const ThemeManager = (function() {
         await setSkin(skin);
 
         // 收起皮肤选择器
-        const skinSelector = document.getElementById('skin-selector');
-        if (skinSelector) {
-          skinSelector.classList.remove('expanded');
-        }
+        syncSkinSelectorState(false);
       });
     });
 

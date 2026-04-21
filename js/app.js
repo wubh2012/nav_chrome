@@ -6,52 +6,55 @@
 
   console.log('[ChromeNav] 正在初始化...');
 
+  const WHEEL_SWITCH_THRESHOLD = 60;
+  const WHEEL_SWITCH_COOLDOWN = 420;
+  const SIDEBAR_COLLAPSED_KEY = 'chromeNav_sidebarCollapsed';
+  const SIDEBAR_HINT_SHOWN_KEY = 'chromeNav_sidebarHintShown';
+  const DATE_REFRESH_INTERVAL = 60 * 1000;
+  const TIME_FOCUS_MODE_CLASS = 'time-focus-mode';
+  let wheelDeltaAccumulator = 0;
+  let wheelCooldownUntil = 0;
+
   /**
    * 初始化应用
    */
   async function initApp() {
     try {
-      // 1. 初始化主题管理器（优先加载主题）
       await ThemeManager.init();
       ThemeManager.bindEvents();
 
-      // 2. 初始化同步管理器
-      SyncManager.init();
-      await startPeriodicSyncIfNeeded();
-
-      // 3. 检查是否首次安装
-      const isFirstInstall = await checkFirstInstall();
-
-      // 4. 加载数据
-      await loadNavigationData(isFirstInstall);
-
-      // 5. 初始化 UI 渲染器
       UIRenderer.startTimeUpdate();
+      startDateRefresh();
 
-      // 6. 初始化链接管理器
+      if (window.BackgroundManager) {
+        BackgroundManager.init().catch((error) => {
+          console.warn('[ChromeNav] Background init failed:', error);
+        });
+      }
+
+      SyncManager.init();
+      startPeriodicSyncIfNeeded();
+
+      const startupState = await loadStartupState();
+      await loadNavigationData(startupState);
       LinkManager.init(window.cachedCategories || []);
 
-      // 7. 初始化拖拽排序
       if (window.DragSortManager) {
         DragSortManager.init();
       }
 
-      // 8. 初始化快速搜索
       if (window.QuickSearchManager) {
         QuickSearchManager.init();
       }
 
-      // 9. 绑定移动端事件
       bindMobileEvents();
-
-      // 10. 监听后台同步消息
+      bindSidebarToggle();
+      bindCategoryWheelSwitch();
+      bindTimeFocusToggle();
       listenSyncMessages();
 
-      // 11. 标记页面加载完成，触发动画
       document.body.classList.add('loaded');
-
-      // 12. 随机显示底部搜索提示
-      showRandomSearchHint();
+      showSidebarToggleHintIfNeeded();
 
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
@@ -63,15 +66,15 @@
   /**
    * 根据配置启动定时同步
    */
-  async function startPeriodicSyncIfNeeded() {
+  async function startPeriodicSyncIfNeeded(startupState = null) {
     try {
-      const testMode = await Storage.getTestMode();
-      if (testMode) {
+      const state = startupState || await loadStartupState();
+      if (state.testMode) {
         console.log('[ChromeNav] 测试模式，跳过定时同步');
         return;
       }
 
-      const feishuConfig = await Storage.loadFeishuConfig();
+      const feishuConfig = state.feishuConfig;
       if (feishuConfig && feishuConfig.syncEnabled !== false) {
         const interval = feishuConfig.syncInterval || 30;
         await SyncManager.startPeriodicSync(interval);
@@ -92,7 +95,6 @@
       if (message.type === 'SYNC_COMPLETE') {
         console.log('[ChromeNav] 收到同步完成通知');
 
-        // 重新加载数据并更新 UI
         loadNavigationData(false).then(() => {
           sendResponse({ success: true });
         }).catch((error) => {
@@ -103,7 +105,6 @@
       }
 
       if (message.type === 'TRIGGER_SYNC') {
-        // 后台触发同步
         SyncManager.syncNow().then(() => {
           sendResponse({ success: true });
         }).catch((error) => {
@@ -111,48 +112,53 @@
         });
         return true;
       }
+
+      return false;
     });
   }
 
   /**
    * 检查是否首次安装
    */
-  async function checkFirstInstall() {
-    const config = await Storage.loadFeishuConfig();
-    return !config;
+  async function loadStartupState() {
+    const [testMode, feishuConfig, cached] = await Promise.all([
+      Storage.getTestMode(),
+      Storage.loadFeishuConfig(),
+      Storage.loadNavData()
+    ]);
+
+    return {
+      testMode,
+      feishuConfig,
+      cached,
+      isFirstInstall: !feishuConfig
+    };
   }
 
   /**
    * 加载导航数据
-   * @param {boolean} isFirstInstall - 是否首次安装
+   * @param {boolean} isFirstInstall
    */
-  async function loadNavigationData(isFirstInstall) {
+  async function loadNavigationData(startupState) {
     try {
       UIRenderer.showSyncStatus('正在加载数据...', 'info');
 
-      // 检查测试模式
-      const testMode = await Storage.getTestMode();
-
-      if (testMode) {
+      const state = startupState || await loadStartupState();
+      if (state.testMode) {
         console.log('[ChromeNav] 测试模式已启用');
         await loadTestData();
         return;
       }
 
-      // 检查是否有缓存数据
-      const cached = await Storage.loadNavData();
-
-      if (cached && !isFirstInstall) {
+      if (state.cached && !state.isFirstInstall) {
         console.log('[ChromeNav] 使用缓存数据');
-        UIRenderer.init(cached.data, cached.categories, cached.dateInfo || {});
-        window.cachedCategories = cached.categories;
-
+        UIRenderer.init(state.cached.data, state.cached.categories, getCurrentDateInfo(state.cached.dateInfo));
+        window.cachedCategories = state.cached.categories;
         return;
       }
 
-      // 尝试获取飞书数据
       try {
-        const isConfigured = await Storage.isFeishuConfigured();
+        const isConfigured = !!(state.feishuConfig && state.feishuConfig.appId && state.feishuConfig.appSecret && state.feishuConfig.appToken);
 
         if (isConfigured) {
           console.log('[ChromeNav] 从飞书获取数据...');
@@ -161,23 +167,20 @@
           console.log('[ChromeNav] 未配置飞书，进入测试模式数据');
           await loadTestData();
 
-          // 提示用户配置
-          if (isFirstInstall) {
+          if (state.isFirstInstall) {
             setTimeout(() => {
-              UIRenderer.showSyncStatus('请点击右上角"设置"配置飞书数据', 'info');
+              UIRenderer.showSyncStatus('请点击右上角“设置”配置飞书数据', 'info');
             }, 2000);
           }
         }
       } catch (error) {
         console.warn('[ChromeNav] 获取飞书数据失败:', error);
 
-        // 如果有缓存，使用缓存
-        if (cached) {
-          UIRenderer.init(cached.data, cached.categories, cached.dateInfo || {});
-          window.cachedCategories = cached.categories;
+        if (state.cached) {
+          UIRenderer.init(state.cached.data, state.cached.categories, getCurrentDateInfo(state.cached.dateInfo));
+          window.cachedCategories = state.cached.categories;
           UIRenderer.showSyncStatus('使用缓存数据', 'info');
         } else {
-          // 没有缓存时加载测试数据
           await loadTestData();
         }
       }
@@ -192,15 +195,12 @@
    */
   async function loadFeishuData() {
     const result = await FeishuAPI.getRecords();
+    const dateInfo = getCurrentDateInfo(result.dateInfo);
 
-    // 保存到存储
-    await Storage.saveNavData(result.data, result.categories, result.dateInfo);
-
-    // 更新 UI
-    UIRenderer.init(result.data, result.categories, result.dateInfo);
+    await Storage.saveNavData(result.data, result.categories, dateInfo);
+    UIRenderer.init(result.data, result.categories, dateInfo);
     window.cachedCategories = result.categories;
 
-    // 更新链接管理器
     if (window.LinkManager) {
       LinkManager.updateCategories(result.categories);
     }
@@ -216,17 +216,13 @@
     console.log('[ChromeNav] 加载测试数据');
 
     const mockData = FeishuAPI.getMockData();
-    const mockDateInfo = FeishuAPI.getMockDateInfo();
+    const mockDateInfo = getCurrentDateInfo(FeishuAPI.getMockDateInfo());
     const categories = Object.keys(mockData);
 
-    // 保存到存储
     await Storage.saveNavData(mockData, categories, mockDateInfo);
-
-    // 更新 UI
     UIRenderer.init(mockData, categories, mockDateInfo);
     window.cachedCategories = categories;
 
-    // 更新链接管理器
     if (window.LinkManager) {
       LinkManager.updateCategories(categories);
     }
@@ -235,79 +231,29 @@
   }
 
   /**
-   * 后台刷新数据
-   * 仅当数据真正变化时才更新 UI，避免图标闪烁
-   */
-  async function refreshDataBackground() {
-    try {
-      const isConfigured = await Storage.isFeishuConfigured();
-
-      if (!isConfigured) return;
-
-      // 保存同步状态
-      await Storage.saveSyncStatus('syncing', '同步中...');
-
-      const result = await FeishuAPI.getRecords();
-
-      // 先比较数据是否变化（注意：要在保存之前比较）
-      const cached = await Storage.loadNavData();
-      const hasChanged = !cached || JSON.stringify(cached.data) !== JSON.stringify(result.data);
-
-      // 仅在数据变化时才保存和更新 UI
-      if (hasChanged) {
-        // 保存到存储
-        await Storage.saveNavData(result.data, result.categories, result.dateInfo);
-
-        // 更新 UI
-        UIRenderer.init(result.data, result.categories, result.dateInfo);
-        window.cachedCategories = result.categories;
-
-        // 更新链接管理器
-        if (window.LinkManager) {
-          LinkManager.updateCategories(result.categories);
-        }
-        console.log('[ChromeNav] 后台刷新完成，数据已更新');
-      } else {
-        console.log('[ChromeNav] 后台刷新完成，数据无变化，跳过更新');
-      }
-
-      await Storage.saveSyncStatus('success', '同步完成');
-
-      setTimeout(() => {
-        const syncStatus = document.getElementById('sync-status');
-        if (syncStatus) {
-          syncStatus.classList.remove('show');
-        }
-      }, 3000);
-    } catch (error) {
-      console.warn('[ChromeNav] 后台刷新失败:', error);
-      await Storage.saveSyncStatus('error', '同步失败');
-    }
-  }
-
-  /**
    * 随机显示底部搜索提示
    */
-  function showRandomSearchHint() {
-    // 30% 概率显示提示
-    if (Math.random() < 0.3) {
-      const hintToast = document.getElementById('search-hint-toast');
-      if (hintToast) {
-        // 显示提示
-        hintToast.classList.add('visible');
-        // 3秒后自动隐藏
-        setTimeout(() => {
-          hintToast.classList.remove('visible');
-        }, 3000);
-      }
+  function getCurrentDateInfo(fallbackDateInfo = {}) {
+    if (window.FeishuAPI && typeof FeishuAPI.getCurrentDateInfo === 'function') {
+      return FeishuAPI.getCurrentDateInfo();
     }
+    if (window.FeishuAPI && typeof FeishuAPI.getMockDateInfo === 'function') {
+      return FeishuAPI.getMockDateInfo();
+    }
+    return fallbackDateInfo || {};
+  }
+
+  function startDateRefresh() {
+    UIRenderer.renderDateTime(getCurrentDateInfo());
+    setInterval(() => {
+      UIRenderer.renderDateTime(getCurrentDateInfo());
+    }, DATE_REFRESH_INTERVAL);
   }
 
   /**
    * 绑定移动端事件
    */
   function bindMobileEvents() {
-    // 汉堡菜单
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobile-overlay');
@@ -323,16 +269,14 @@
       });
     }
 
-    // 点击遮罩关闭
     if (overlay) {
       overlay.addEventListener('click', () => {
         if (hamburgerBtn) hamburgerBtn.classList.remove('active');
-        sidebar.classList.remove('active');
+        if (sidebar) sidebar.classList.remove('active');
         overlay.classList.remove('active');
       });
     }
 
-    // 设置按钮
     const settingsBtn = document.getElementById('open-settings-btn');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
@@ -340,7 +284,6 @@
       });
     }
 
-    // 关闭侧边栏当选择分类时
     const categoryMenu = document.getElementById('category-menu');
     if (categoryMenu && sidebar) {
       categoryMenu.addEventListener('click', () => {
@@ -354,8 +297,196 @@
   }
 
   /**
-   * 页面加载完成后初始化
+   * 绑定滚轮切换分类
    */
+  function bindCategoryWheelSwitch() {
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent || !window.UIRenderer) {
+      return;
+    }
+
+    mainContent.addEventListener('wheel', handleCategoryWheelSwitch, { passive: false });
+  }
+
+  /**
+   * 绑定侧栏折叠切换
+   */
+  function bindSidebarToggle() {
+    const toggleTrigger = document.getElementById('sidebar-toggle-trigger') || document.querySelector('.user-avatar');
+    if (!toggleTrigger) {
+      return;
+    }
+
+    applySidebarCollapsedState(getInitialSidebarCollapsedState(), false);
+
+    toggleTrigger.addEventListener('click', () => {
+      const nextCollapsed = !document.body.classList.contains('sidebar-collapsed');
+      applySidebarCollapsedState(nextCollapsed, true);
+    });
+
+    toggleTrigger.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+      event.preventDefault();
+      const nextCollapsed = !document.body.classList.contains('sidebar-collapsed');
+      applySidebarCollapsedState(nextCollapsed, true);
+    });
+  }
+
+  /**
+   * 绑定时间区域双击切换，仅显示时间与背景
+   */
+  function bindTimeFocusToggle() {
+    const timeInfo = document.querySelector('.time-info');
+    if (!timeInfo) {
+      return;
+    }
+
+    timeInfo.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      document.body.classList.toggle(TIME_FOCUS_MODE_CLASS);
+    });
+  }
+
+  function loadSidebarCollapsedState() {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function getInitialSidebarCollapsedState() {
+    const root = document.documentElement;
+    const preloadedState = root.dataset.sidebarCollapsed;
+    if (preloadedState === '1' || preloadedState === '0') {
+      return preloadedState === '1';
+    }
+
+    const collapsed = loadSidebarCollapsedState();
+    root.dataset.sidebarCollapsed = collapsed ? '1' : '0';
+    return collapsed;
+  }
+
+  function saveSidebarCollapsedState(collapsed) {
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch (_error) {
+      // ignore storage failures
+    }
+  }
+
+  function applySidebarCollapsedState(collapsed, persist) {
+    if (window.innerWidth <= 768) {
+      collapsed = false;
+    }
+
+    document.documentElement.dataset.sidebarCollapsed = collapsed ? '1' : '0';
+    document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+
+    const toggleTrigger = document.getElementById('sidebar-toggle-trigger') || document.querySelector('.user-avatar');
+    if (toggleTrigger) {
+      toggleTrigger.title = collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏';
+      toggleTrigger.setAttribute('aria-label', collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏');
+      toggleTrigger.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+
+    if (persist) {
+      saveSidebarCollapsedState(collapsed);
+    }
+  }
+
+  function showSidebarToggleHintIfNeeded() {
+    if (window.innerWidth <= 768) {
+      return;
+    }
+
+    try {
+      if (window.localStorage.getItem(SIDEBAR_HINT_SHOWN_KEY) === '1') {
+        return;
+      }
+
+      document.body.classList.add('sidebar-hint-visible');
+      window.localStorage.setItem(SIDEBAR_HINT_SHOWN_KEY, '1');
+
+      window.setTimeout(() => {
+        document.body.classList.remove('sidebar-hint-visible');
+      }, 3400);
+    } catch (_error) {
+      document.body.classList.add('sidebar-hint-visible');
+      window.setTimeout(() => {
+        document.body.classList.remove('sidebar-hint-visible');
+      }, 3400);
+    }
+  }
+
+  /**
+   * 处理滚轮切换分类
+   * @param {WheelEvent} event
+   */
+  function handleCategoryWheelSwitch(event) {
+    if (window.innerWidth <= 768) return;
+    if (!window.UIRenderer || typeof UIRenderer.switchAdjacentCategory !== 'function') return;
+    if (shouldIgnoreWheelSwitch(event)) return;
+
+    const now = Date.now();
+    if (now < wheelCooldownUntil) {
+      event.preventDefault();
+      return;
+    }
+
+    wheelDeltaAccumulator += event.deltaY;
+    if (Math.abs(wheelDeltaAccumulator) < WHEEL_SWITCH_THRESHOLD) {
+      return;
+    }
+
+    const direction = wheelDeltaAccumulator > 0 ? 1 : -1;
+    wheelDeltaAccumulator = 0;
+    wheelCooldownUntil = now + WHEEL_SWITCH_COOLDOWN;
+
+    const nextCategory = UIRenderer.switchAdjacentCategory(direction);
+    if (!nextCategory) {
+      return;
+    }
+
+    event.preventDefault();
+    const categories = typeof UIRenderer.getCategorySequence === 'function'
+      ? UIRenderer.getCategorySequence()
+      : [];
+    const displayName = nextCategory === 'all' ? '全部' : nextCategory;
+    const currentIndex = Math.max(0, categories.indexOf(nextCategory));
+    const maxIndex = Math.max(1, categories.length - 1);
+
+    UIRenderer.showSyncStatus(`已切换到分类：${displayName} (${currentIndex}/${maxIndex})`, 'info');
+  }
+
+  /**
+   * 判断当前滚轮事件是否应忽略
+   * @param {WheelEvent} event
+   * @returns {boolean}
+   */
+  function shouldIgnoreWheelSwitch(event) {
+    if (document.body.classList.contains(TIME_FOCUS_MODE_CLASS)) {
+      return true;
+    }
+
+    const target = event.target;
+    if (!target) return false;
+
+    if (target.closest('input, textarea, select, button, .modal-content, .quick-search-panel')) {
+      return true;
+    }
+
+    const quickSearchModal = document.getElementById('quick-search-modal');
+    if (quickSearchModal && quickSearchModal.classList.contains('active')) {
+      return true;
+    }
+
+    return !!document.querySelector('.modal.active');
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {

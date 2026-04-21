@@ -7,6 +7,30 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>水果导航</title>
 
+  <script>
+    (function() {
+      var root = document.documentElement;
+      var collapsed = '0';
+
+      try {
+        collapsed = window.localStorage.getItem('chromeNav_sidebarCollapsed') === '1' ? '1' : '0';
+      } catch (_error) {
+        // ignore storage failures during initial paint
+      }
+
+      root.dataset.sidebarCollapsed = collapsed;
+      root.classList.toggle('sidebar-collapsed', collapsed === '1');
+    })();
+  </script>
+
+  <style>
+    html[data-sidebar-collapsed="1"] .sidebar {
+      width: 84px;
+      min-width: 84px;
+      transition: none !important;
+    }
+  </style>
+
   <!-- Icons -->
   <link rel="icon" href="img/logo-new.svg">
   <link rel="icon" type="image/png" sizes="16x16" href="img/icons/icon-16.png">
@@ -22,21 +46,34 @@
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/bootstrap-icons.css">
   <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
   <!-- Art Deco 背景层 -->
-  <div class="artdeco-bg"></div>
+  <div class="artdeco-bg">
+    <div class="background-image-layer"></div>
+    <div class="background-overlay-layer"></div>
+  </div>
   <div class="artdeco-grid"></div>
 
   <!-- 桌面端主题切换按钮 -->
-  <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题">
-    <i class="bi bi-moon-fill"></i>
-  </button>
+  <div class="theme-toggle-anchor">
+    <div class="theme-shortcut-hint" aria-hidden="true">
+      <kbd>Shift</kbd>
+      <span>双击或 Ctrl+F 快速搜索</span>
+    </div>
+    <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题">
+      <i class="bi bi-moon-fill"></i>
+    </button>
+  </div>
 
   <div class="container">
     <!-- 左侧侧边栏 -->
     <aside class="sidebar" id="sidebar">
+      <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="折叠侧栏" aria-label="折叠侧栏" aria-expanded="true">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
       <div class="user-avatar">
         <svg class="logo-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
           <style>
@@ -273,21 +310,19 @@
           aria-label="网站快速搜索输入框"
         >
       </div>
-      <div class="quick-search-hint">↑/↓ 切换，Enter 打开，Esc 关闭</div>
+      <div class="quick-search-hint">Shift 双击 / Ctrl+F 唤起，↑/↓ 切换，Enter 打开，Esc 关闭</div>
       <ul id="quick-search-list" class="quick-search-list" role="listbox"></ul>
       <div id="quick-search-empty" class="quick-search-empty">没有匹配的网站</div>
     </div>
   </div>
 
-  <!-- 底部搜索提示 -->
-  <div id="search-hint-toast" class="search-hint-toast" aria-hidden="true">
-    <kbd>Shift</kbd> 双击快速搜索
-  </div>
-
   <!-- Scripts -->
   <script src="lib/lunar.js"></script>
   <script src="js/modules/storage.js"></script>
+  <script src="js/modules/background-config.js"></script>
+  <script src="js/modules/background-storage.js"></script>
   <script src="js/modules/feishu-api.js"></script>
+  <script src="js/modules/background-manager.js"></script>
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/ui-renderer.js"></script>
   <script src="js/modules/link-manager.js"></script>

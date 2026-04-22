@@ -79,9 +79,9 @@ const ThemeManager = (function() {
           '--gold-dark': '#cc0052',
           '--gold-dim': 'rgba(184, 134, 11, 0.2)',
           '--gold-glow': 'rgba(255, 0, 102, 0.3)',
-          '--bg-primary': '#f5f7fa',
-          '--bg-secondary': 'rgba(255, 255, 255, 0.98)',
-          '--bg-card': 'rgba(255, 255, 255, 0.8)',
+          '--bg-primary': '#ffffff',
+          '--bg-secondary': 'rgba(255, 255, 255, 0.96)',
+          '--bg-card': 'rgba(255, 255, 255, 0.86)',
           '--text-primary': '#1a1a1a',
           '--text-secondary': '#cc0052',
           '--text-muted': '#888888',
@@ -218,20 +218,6 @@ const ThemeManager = (function() {
         icon.className = isDark ? 'bi-sun-fill' : 'bi-moon-fill';
       }
     });
-
-    const modeToggle = document.getElementById('theme-mode-toggle');
-    if (!modeToggle) return;
-
-    const icon = modeToggle.querySelector('i');
-    const label = modeToggle.querySelector('span');
-
-    if (icon) {
-      icon.className = isDark ? 'bi-sun' : 'bi-moon';
-    }
-
-    if (label) {
-      label.textContent = isDark ? '亮色模式' : '暗黑模式';
-    }
   }
 
   async function setSkin(skin) {
@@ -250,25 +236,6 @@ const ThemeManager = (function() {
     currentMode = currentMode === 'dark' ? 'light' : 'dark';
     applyTheme(true);
     updateSkinSelectorUI();
-  }
-
-  function setMode(mode) {
-    if (mode !== 'dark' && mode !== 'light') return;
-    currentMode = mode;
-    applyTheme(true);
-    updateSkinSelectorUI();
-  }
-
-  function getSkin() {
-    return currentSkin;
-  }
-
-  function getMode() {
-    return currentMode;
-  }
-
-  function getAllThemes() {
-    return SKIN_THEMES;
   }
 
   function syncSkinSelectorState(isExpanded) {
@@ -305,14 +272,6 @@ const ThemeManager = (function() {
       });
     });
 
-    const modeToggle = document.getElementById('theme-mode-toggle');
-    if (modeToggle) {
-      modeToggle.addEventListener('click', event => {
-        event.stopPropagation();
-        toggleMode();
-      });
-    }
-
     document.querySelectorAll('#desktop-theme-toggle-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleMode();
@@ -323,11 +282,7 @@ const ThemeManager = (function() {
   return {
     init,
     setSkin,
-    setMode,
     toggleMode,
-    getSkin,
-    getMode,
-    getAllThemes,
     bindEvents
   };
 })();

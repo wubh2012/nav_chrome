@@ -422,15 +422,6 @@ const UIRenderer = (function() {
   }
 
   /**
-   * 刷新当前分类的工具显示
-   */
-  function refreshCurrentCategory() {
-    if (cachedNavData) {
-      switchCategory(currentCategory);
-    }
-  }
-
-  /**
    * 获取导航数据快照（深拷贝）
    */
   function getNavDataSnapshot() {
@@ -478,7 +469,6 @@ const UIRenderer = (function() {
     getCurrentCategory,
     getCategorySequence,
     switchAdjacentCategory,
-    refreshCurrentCategory,
     getNavDataSnapshot,
     setNavDataAndRefresh
   };

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -27,6 +27,17 @@
     html[data-sidebar-collapsed="1"] .sidebar {
       width: 84px;
       min-width: 84px;
+      transition: none !important;
+    }
+
+    html[data-sidebar-collapsed="1"] .user-avatar {
+      padding: 36px 0 16px;
+    }
+
+    html[data-sidebar-collapsed="1"] .user-avatar img,
+    html[data-sidebar-collapsed="1"] .user-avatar .logo-svg {
+      width: 40px;
+      height: 40px;
       transition: none !important;
     }
   </style>
@@ -71,9 +82,6 @@
   <div class="container">
     <!-- 左侧侧边栏 -->
     <aside class="sidebar" id="sidebar">
-      <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="折叠侧栏" aria-label="折叠侧栏" aria-expanded="true">
-        <i class="bi bi-layout-sidebar-inset"></i>
-      </button>
       <div class="user-avatar">
         <svg class="logo-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
           <style>
@@ -146,11 +154,6 @@
                 <span class="skin-label">霓虹风格</span>
               </div>
 
-            </div>
-
-            <div class="skin-mode-toggle" id="theme-mode-toggle">
-              <i class="bi bi-moon"></i>
-              <span>暗黑模式</span>
             </div>
           </div>
         </div>

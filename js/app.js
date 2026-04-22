@@ -47,7 +47,7 @@
         QuickSearchManager.init();
       }
 
-      bindMobileEvents();
+      bindPageActions();
       bindSidebarToggle();
       bindCategoryWheelSwitch();
       bindTimeFocusToggle();
@@ -251,47 +251,13 @@
   }
 
   /**
-   * 绑定移动端事件
+   * 绑定页面操作
    */
-  function bindMobileEvents() {
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobile-overlay');
-
-    if (hamburgerBtn && sidebar) {
-      hamburgerBtn.addEventListener('click', () => {
-        hamburgerBtn.classList.toggle('active');
-        sidebar.classList.toggle('active');
-
-        if (overlay) {
-          overlay.classList.toggle('active');
-        }
-      });
-    }
-
-    if (overlay) {
-      overlay.addEventListener('click', () => {
-        if (hamburgerBtn) hamburgerBtn.classList.remove('active');
-        if (sidebar) sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-      });
-    }
-
+  function bindPageActions() {
     const settingsBtn = document.getElementById('open-settings-btn');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
-      });
-    }
-
-    const categoryMenu = document.getElementById('category-menu');
-    if (categoryMenu && sidebar) {
-      categoryMenu.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-          if (hamburgerBtn) hamburgerBtn.classList.remove('active');
-          sidebar.classList.remove('active');
-          if (overlay) overlay.classList.remove('active');
-        }
       });
     }
   }
@@ -312,7 +278,7 @@
    * 绑定侧栏折叠切换
    */
   function bindSidebarToggle() {
-    const toggleTrigger = document.getElementById('sidebar-toggle-trigger') || document.querySelector('.user-avatar');
+    const toggleTrigger = document.querySelector('.user-avatar');
     if (!toggleTrigger) {
       return;
     }
@@ -386,7 +352,7 @@
     document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
     document.body.classList.toggle('sidebar-collapsed', collapsed);
 
-    const toggleTrigger = document.getElementById('sidebar-toggle-trigger') || document.querySelector('.user-avatar');
+    const toggleTrigger = document.querySelector('.user-avatar');
     if (toggleTrigger) {
       toggleTrigger.title = collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏';
       toggleTrigger.setAttribute('aria-label', collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏');

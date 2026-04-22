@@ -208,16 +208,6 @@ const Storage = (function() {
       return null;
     }
   }
-
-  /**
-   * 检查是否已配置飞书
-   * @returns {Promise<boolean>}
-   */
-  async function isFeishuConfigured() {
-    const config = await loadFeishuConfig();
-    return !!(config && config.appId && config.appSecret && config.appToken);
-  }
-
   // ==================== 主题偏好操作 ====================
 
   /**
@@ -316,30 +306,6 @@ const Storage = (function() {
     console.log('[Storage] 所有存储数据已清除');
   }
 
-  /**
-   * 获取存储使用量
-   * @returns {Promise<Object>}
-   */
-  async function getUsage() {
-    return new Promise((resolve, reject) => {
-      try {
-        chrome.storage.local.getBytesInUse(null, (bytes) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-          } else {
-            resolve({
-              used: bytes,
-              quota: 5 * 1024 * 1024, // Chrome 扩展通常 5MB
-              percentage: ((bytes / (5 * 1024 * 1024)) * 100).toFixed(2)
-            });
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
   // ==================== 公共 API ====================
 
   return {
@@ -351,7 +317,6 @@ const Storage = (function() {
     set,
     remove,
     clear,
-    getUsage,
 
     // 导航数据
     saveNavData,
@@ -362,7 +327,6 @@ const Storage = (function() {
     // 飞书配置
     saveFeishuConfig,
     loadFeishuConfig,
-    isFeishuConfigured,
 
     // 主题偏好
     saveThemePreference,

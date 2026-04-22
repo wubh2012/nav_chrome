@@ -51,21 +51,6 @@ const FeishuAPI = (function() {
     }
   }
 
-  /**
-   * 获取网站图标 URL（用于 img src）
-   * @param {string} url - 网站 URL
-   * @returns {string} Google Favicon URL
-   */
-  function getGoogleFaviconUrl(url) {
-    try {
-      const domain = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
-    } catch (e) {
-      console.warn('[FeishuAPI] 解析域名失败:', url);
-      return '';
-    }
-  }
-
   // 模拟数据（测试模式用）
   const MOCK_DATA = {
     'Code': [

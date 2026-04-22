@@ -93,12 +93,6 @@ const BackgroundManager = (function() {
     });
   }
 
-  async function resetToDefault() {
-    clearImage();
-    await Storage.clearBackgroundSettings();
-    await BackgroundStorage.clearUploadedBackground();
-  }
-
   function clearImage() {
     if (!imageLayer) return;
 
@@ -121,8 +115,7 @@ const BackgroundManager = (function() {
 
   return {
     init,
-    applyCurrentBackground,
-    resetToDefault
+    applyCurrentBackground
   };
 })();
 

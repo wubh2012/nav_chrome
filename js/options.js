@@ -1,12 +1,12 @@
 /**
- * 配置页脚本
+ * Options page logic.
  */
 (function() {
   'use strict';
 
   console.log('[Options] 正在初始化...');
 
-  // DOM 元素
+  // DOM references
   const elements = {
     appId: document.getElementById('app-id'),
     appSecret: document.getElementById('app-secret'),
@@ -40,7 +40,7 @@
   let pendingBackgroundFile = null;
 
   /**
-   * 初始化
+   * Initialize page state.
    */
   async function init() {
     await loadConfig();
@@ -49,11 +49,11 @@
   }
 
   /**
-   * 加载配置
+   * Load persisted settings.
    */
   async function loadConfig() {
     try {
-      // 加载飞书配置
+      // Load Feishu config.
       const config = await Storage.loadFeishuConfig();
       if (config) {
         elements.appId.value = config.appId || '';
@@ -62,7 +62,7 @@
         elements.tableId.value = config.tableId || '';
       }
 
-      // 加载测试模式状态
+      // Load test mode state.
       const testMode = await Storage.getTestMode();
       elements.testModeToggle.checked = testMode;
       updateTestModeUI(testMode);
@@ -77,25 +77,25 @@
   }
 
   /**
-   * 绑定事件
+   * Bind event listeners.
    */
   function bindEvents() {
-    // 保存配置
+    // Save config.
     elements.saveBtn.addEventListener('click', saveConfig);
 
-    // 测试连接
+    // Test connection.
     elements.testBtn.addEventListener('click', testConnection);
 
-    // 测试模式切换
+    // Toggle test mode.
     elements.testModeToggle.addEventListener('change', toggleTestMode);
 
-    // 清除缓存
+    // Clear cache.
     elements.clearCacheBtn.addEventListener('click', clearCache);
 
-    // 重置所有
+    // Reset all settings.
     elements.resetBtn.addEventListener('click', resetAll);
 
-    // 查看指南
+    // Open guide.
     elements.viewGuideBtn.addEventListener('click', showGuide);
 
     elements.backgroundModeInputs.forEach((input) => {
@@ -130,9 +130,7 @@
   }
 
   /**
-   * 显示状态消息
-   * @param {string} message - 消息内容
-   * @param {string} type - 消息类型 (success/error/info)
+   * Show a status message.
    */
   function showStatus(message, type = 'info', target = elements.statusMessage) {
     if (!target) return;
@@ -351,7 +349,7 @@
   }
 
   /**
-   * 保存配置
+   * Save Feishu config.
    */
   async function saveConfig() {
     const config = {
@@ -361,13 +359,13 @@
       tableId: elements.tableId.value.trim()
     };
 
-    // 验证必填字段
+    // Validate required fields.
     if (!config.appId || !config.appSecret || !config.appToken || !config.tableId) {
       showStatus('请填写所有必填字段', 'error');
       return;
     }
 
-    // 禁用保存按钮
+    // Disable the button while saving.
     elements.saveBtn.disabled = true;
     elements.saveBtn.textContent = '保存中...';
 
@@ -375,10 +373,8 @@
       await Storage.saveFeishuConfig(config);
       showStatus('配置已保存', 'success');
 
-      // 清除 Token 缓存，强制重新获取
+      // Refresh token and nav cache after config changes.
       await FeishuAPI.clearTokenCache();
-
-      // 清除导航缓存，下次打开时重新加载
       await Storage.clearNavCache();
     } catch (error) {
       console.error('[Options] 保存配置失败:', error);
@@ -390,16 +386,16 @@
   }
 
   /**
-   * 测试连接
+   * Test Feishu connectivity.
    */
   async function testConnection() {
-    // 检查测试模式
+    // Skip network tests while mock mode is enabled.
     if (elements.testModeToggle.checked) {
       showStatus('测试模式已启用，无法测试飞书连接', 'info');
       return;
     }
 
-    // 验证必填字段
+    // Validate required fields.
     const appId = elements.appId.value.trim();
     const appSecret = elements.appSecret.value.trim();
 
@@ -408,7 +404,7 @@
       return;
     }
 
-    // 禁用测试按钮
+    // Disable the button while testing.
     elements.testBtn.disabled = true;
     elements.testBtn.textContent = '测试中...';
 
@@ -432,7 +428,7 @@
   }
 
   /**
-   * 切换测试模式
+   * Toggle test mode.
    */
   async function toggleTestMode() {
     const enabled = elements.testModeToggle.checked;
@@ -441,7 +437,7 @@
       await Storage.saveTestMode(enabled);
       updateTestModeUI(enabled);
 
-      // 清除导航缓存
+      // Force nav data refresh on next load.
       await Storage.clearNavCache();
 
       if (enabled) {
@@ -455,13 +451,13 @@
   }
 
   /**
-   * 更新测试模式 UI
+   * Sync the test mode UI.
    * @param {boolean} enabled
    */
   function updateTestModeUI(enabled) {
     if (enabled) {
       elements.testModeNotice.classList.add('show');
-      // 禁用飞书配置相关字段
+      // Lock Feishu fields in mock mode.
       elements.appId.disabled = true;
       elements.appSecret.disabled = true;
       elements.appToken.disabled = true;
@@ -478,7 +474,7 @@
   }
 
   /**
-   * 清除缓存
+   * Clear cached nav data.
    */
   async function clearCache() {
     if (!confirm('确定要清除缓存吗？这不会删除您的配置。')) {
@@ -495,7 +491,7 @@
   }
 
   /**
-   * 重置所有
+   * Reset all stored settings.
    */
   async function resetAll() {
     if (!confirm('确定要重置所有设置吗？此操作不可撤销。')) {
@@ -515,7 +511,7 @@
   }
 
   /**
-   * 显示配置指南
+   * Show the setup guide.
    */
   function showGuide(e) {
     e.preventDefault();
@@ -551,7 +547,7 @@
     alert(guide);
   }
 
-  // 页面加载完成后初始化
+  // Initialize once the DOM is ready.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

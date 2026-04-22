@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    Chrome Nav theme
    ======================================== */
 * {
@@ -57,6 +57,14 @@ body {
   --shadow-gold: 0 0 28px rgba(255, 255, 255, 0.08);
   --shadow-hover: 0 24px 70px rgba(0, 0, 0, 0.48);
   --background-overlay-opacity: 0.46;
+  --artdeco-rotate-primary: rgba(255, 255, 255, 0.14);
+  --artdeco-rotate-secondary: rgba(255, 255, 255, 0.08);
+  --tooltip-bg: rgba(12, 12, 12, 0.72);
+  --tooltip-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --icon-surface-bg: rgba(255, 255, 255, 0.04);
+  --card-hover-bg: rgba(40, 40, 40, 0.85);
+  --card-hover-border: var(--gold-primary);
+  --card-hover-shadow: var(--shadow-hover);
 
   --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -174,7 +182,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--icon-surface-bg);
   color: var(--gold-primary);
 }
 
@@ -227,10 +235,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  .sidebar-toggle-btn {
-    display: none;
-  }
-
   .quick-search-panel {
     top: 8vh;
     width: 94vw;
@@ -263,6 +267,14 @@ body {
   --shadow-gold: 0 0 20px rgba(23, 24, 27, 0.05);
   --shadow-hover: 0 24px 60px rgba(17, 18, 22, 0.16);
   --background-overlay-opacity: 0.16;
+  --artdeco-rotate-primary: rgba(23, 24, 27, 0.1);
+  --artdeco-rotate-secondary: rgba(23, 24, 27, 0.05);
+  --tooltip-bg: rgba(255, 255, 255, 0.94);
+  --tooltip-shadow: 0 10px 28px rgba(17, 18, 22, 0.12);
+  --icon-surface-bg: rgba(255, 255, 255, 0.72);
+  --card-hover-bg: color-mix(in srgb, white 84%, var(--gold-primary) 4%);
+  --card-hover-border: color-mix(in srgb, var(--gold-primary) 20%, white);
+  --card-hover-shadow: 0 16px 34px rgba(17, 18, 22, 0.09);
 }
 
 /* Background system */
@@ -309,40 +321,40 @@ body {
   background:
     conic-gradient(from 0deg at 50% 50%,
       transparent 0deg,
-      var(--gold-dim) 5deg,
+      var(--artdeco-rotate-primary) 5deg,
       transparent 10deg,
       transparent 30deg,
-      var(--gold-dim) 35deg,
+      var(--artdeco-rotate-secondary) 35deg,
       transparent 40deg,
       transparent 60deg,
-      var(--gold-dim) 65deg,
+      var(--artdeco-rotate-primary) 65deg,
       transparent 70deg,
       transparent 90deg,
-      var(--gold-dim) 95deg,
+      var(--artdeco-rotate-secondary) 95deg,
       transparent 100deg,
       transparent 120deg,
-      var(--gold-dim) 125deg,
+      var(--artdeco-rotate-primary) 125deg,
       transparent 130deg,
       transparent 150deg,
-      var(--gold-dim) 155deg,
+      var(--artdeco-rotate-secondary) 155deg,
       transparent 160deg,
       transparent 180deg,
-      var(--gold-dim) 185deg,
+      var(--artdeco-rotate-primary) 185deg,
       transparent 190deg,
       transparent 210deg,
-      var(--gold-dim) 215deg,
+      var(--artdeco-rotate-secondary) 215deg,
       transparent 220deg,
       transparent 240deg,
-      var(--gold-dim) 245deg,
+      var(--artdeco-rotate-primary) 245deg,
       transparent 250deg,
       transparent 270deg,
-      var(--gold-dim) 275deg,
+      var(--artdeco-rotate-secondary) 275deg,
       transparent 280deg,
       transparent 300deg,
-      var(--gold-dim) 305deg,
+      var(--artdeco-rotate-primary) 305deg,
       transparent 310deg,
       transparent 330deg,
-      var(--gold-dim) 335deg,
+      var(--artdeco-rotate-secondary) 335deg,
       transparent 340deg,
       transparent 360deg
     );
@@ -432,10 +444,6 @@ body.has-custom-background .artdeco-bg::after {
   overflow: visible;
 }
 
-.sidebar-toggle-btn {
-  display: none;
-}
-
 .sidebar-collapsed .sidebar {
   width: var(--sidebar-collapsed-width);
   min-width: var(--sidebar-collapsed-width);
@@ -450,7 +458,6 @@ body.has-custom-background .artdeco-bg::after {
 
 .sidebar-collapsed .current-skin-name,
 .sidebar-collapsed .skin-label,
-.sidebar-collapsed .skin-mode-toggle span,
 .sidebar-collapsed .settings-menu span {
   display: none;
 }
@@ -514,20 +521,6 @@ body:not(.loaded) .user-avatar .logo-svg {
   z-index: -1;
 }
 
-.sidebar::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg,
-    var(--gold-primary) 0%,
-    var(--gold-dark) 50%,
-    var(--gold-primary) 100%);
-  z-index: 20;
-}
-
 /* Logo area */
 .user-avatar {
   text-align: center;
@@ -535,21 +528,6 @@ body:not(.loaded) .user-avatar .logo-svg {
   position: relative;
   border-bottom: var(--border-dim);
   cursor: pointer;
-}
-
-.user-avatar::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 12px;
-  background: linear-gradient(90deg,
-    transparent,
-    var(--gold-dim),
-    transparent);
-  clip-path: polygon(0% 50%, 20% 0%, 50% 100%, 80% 0%, 100% 50%);
 }
 
 .user-avatar::before {
@@ -567,8 +545,8 @@ body:not(.loaded) .user-avatar .logo-svg {
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--gold-primary) 18%, transparent);
-  background: rgba(12, 12, 12, 0.72);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  background: var(--tooltip-bg);
+  box-shadow: var(--tooltip-shadow);
   backdrop-filter: blur(10px);
   pointer-events: none;
   transition: var(--transition-smooth);
@@ -734,9 +712,23 @@ body:not(.loaded) .user-avatar .logo-svg {
   border: 1px solid var(--gold-light);
 }
 
+[data-theme="light"] .current-skin-preview {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-primary) 14%, white),
+    color-mix(in srgb, var(--gold-dark) 18%, white)
+  );
+  border-color: color-mix(in srgb, var(--gold-primary) 22%, white);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--gold-primary) 8%, transparent);
+}
+
 .current-skin-preview i {
   font-size: 12px;
   color: var(--bg-primary);
+}
+
+[data-theme="light"] .current-skin-preview i {
+  color: color-mix(in srgb, var(--gold-dark) 78%, black);
 }
 
 .current-skin-name {
@@ -832,33 +824,6 @@ body:not(.loaded) .user-avatar .logo-svg {
   text-overflow: ellipsis;
   text-align: center;
   max-width: 100%;
-}
-
-.skin-mode-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  margin: 0 14px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: var(--border-thin);
-  border-radius: 8px;
-  cursor: pointer;
-  gap: 8px;
-}
-
-.skin-mode-toggle:hover {
-  background: color-mix(in srgb, var(--gold-primary) 8%, transparent);
-}
-
-.skin-mode-toggle i {
-  font-size: 16px;
-  color: var(--gold-primary);
-}
-
-.skin-mode-toggle span {
-  font-size: 14px;
-  color: var(--text-primary);
 }
 
 /* Settings menu */
@@ -1044,15 +1009,15 @@ body:not(.loaded) .user-avatar .logo-svg {
 }
 
 .tool-item:hover {
-  background: rgba(40, 40, 40, 0.85);
-  border-color: var(--gold-primary);
+  background: var(--card-hover-bg);
+  border-color: var(--card-hover-border);
   transform: translateY(-6px);
-  box-shadow: var(--shadow-card), var(--shadow-hover);
+  box-shadow: var(--shadow-card), var(--card-hover-shadow);
 }
 
 .tool-item:hover::before,
 .tool-item:hover::after {
-  border-color: var(--gold-primary);
+  border-color: var(--card-hover-border);
 }
 
 .tool-item:hover .tool-icon {
@@ -1772,9 +1737,19 @@ button:focus {
 
 /* Neon skin */
 [data-skin="neon"] {
-  --gold-primary: #ff0066;
-  --gold-light: #ff66a3;
-  --gold-dark: #cc0052;
-  --gold-dim: rgba(255, 0, 102, 0.25);
+  --bg-secondary: rgba(24, 8, 20, 0.9);
+  --bg-card: rgba(42, 12, 32, 0.76);
+  --border-gold: 1px solid rgba(255, 143, 209, 0.2);
+  --border-thin: 1px solid rgba(255, 45, 154, 0.14);
+  --border-dim: 1px solid rgba(255, 45, 154, 0.08);
+  --gold-primary: #ff2d9a;
+  --gold-light: #ff8fd1;
+  --gold-dark: #d41472;
+  --gold-dim: rgba(255, 45, 154, 0.24);
+  --gold-glow: rgba(255, 79, 182, 0.3);
+  --shadow-gold: 0 0 24px rgba(255, 45, 154, 0.18);
+  --shadow-hover: 0 24px 70px rgba(255, 45, 154, 0.16);
+  --artdeco-rotate-primary: rgba(255, 0, 128, 0.24);
+  --artdeco-rotate-secondary: rgba(255, 102, 196, 0.18);
 }
 

@@ -63,7 +63,7 @@ const UIRenderer = (function() {
 
     // 添加分类选项
     sortedCategories.forEach(category => {
-      const icon = getCategoryIcon(category);
+      const icon = resolveCategoryIcon(category);
       html += `<li data-category="${category}"><i class="bi ${icon}"></i> ${category}</li>`;
     });
 
@@ -454,6 +454,67 @@ const UIRenderer = (function() {
     }
 
     renderDateTime(cachedDateInfo);
+  }
+
+  function resolveCategoryIcon(category) {
+    const normalized = String(category || '').trim();
+    if (!normalized) {
+      return 'bi-folder';
+    }
+
+    const exactIconMap = {
+      '主页': 'bi-house-door',
+      '首页': 'bi-house-door',
+      'Home': 'bi-house-door',
+      'AI': 'bi-cpu',
+      'AIGC': 'bi-cpu',
+      'Code': 'bi-code-slash',
+      '开发': 'bi-code-square',
+      '编程': 'bi-code-square',
+      '技术': 'bi-code-square',
+      '文档': 'bi-journal-text',
+      '设计': 'bi-palette',
+      '工具': 'bi-tools',
+      '效率': 'bi-lightning-charge',
+      '学习': 'bi-book',
+      '娱乐': 'bi-controller',
+      '生活': 'bi-cup-hot',
+      '社交': 'bi-people',
+      '办公': 'bi-briefcase',
+      '资讯': 'bi-newspaper',
+      '新闻': 'bi-newspaper',
+      '搜索': 'bi-search',
+      '未分类': 'bi-folder'
+    };
+
+    if (exactIconMap[normalized]) {
+      return exactIconMap[normalized];
+    }
+
+    const keywordIconMap = [
+      { test: /ai|gpt|模型|智能/i, icon: 'bi-cpu' },
+      { test: /code|开发|编程|技术|程序/i, icon: 'bi-code-square' },
+      { test: /设计|创意|ui|ux/i, icon: 'bi-palette' },
+      { test: /工具|效率|实用/i, icon: 'bi-tools' },
+      { test: /学习|教程|课程|知识|文档/i, icon: 'bi-book' },
+      { test: /娱乐|游戏|影音|影视|视频|音乐/i, icon: 'bi-controller' },
+      { test: /生活|日常|消费|美食|出行/i, icon: 'bi-cup-hot' },
+      { test: /社交|社区|论坛/i, icon: 'bi-people' },
+      { test: /办公|工作|协作/i, icon: 'bi-briefcase' },
+      { test: /资讯|新闻|媒体/i, icon: 'bi-newspaper' },
+      { test: /搜索|导航/i, icon: 'bi-search' }
+    ];
+
+    const keywordMatch = keywordIconMap.find(({ test }) => test.test(normalized));
+    if (keywordMatch) {
+      return keywordMatch.icon;
+    }
+
+    if (typeof getCategoryIcon === 'function') {
+      return getCategoryIcon(normalized);
+    }
+
+    return 'bi-folder2';
   }
 
   // ==================== 公共 API ====================

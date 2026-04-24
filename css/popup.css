@@ -19,9 +19,9 @@
   --accent-primary: #c9962a;
   --accent-soft: #e0bf7a;
   --accent-strong: #a9751b;
-  --selected-bg: rgba(111, 139, 61, 0.16);
-  --selected-text: #4b5d29;
-  --selected-border: rgba(111, 139, 61, 0.24);
+  --selected-bg: rgba(107, 142, 36, 0.16);
+  --selected-text: #465d17;
+  --selected-border: rgba(107, 142, 36, 0.24);
   --border-soft-color: rgba(120, 96, 62, 0.14);
   --border-strong-color: rgba(120, 96, 62, 0.24);
   --shadow-soft: 0 10px 30px rgba(120, 93, 57, 0.08);

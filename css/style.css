@@ -1059,7 +1059,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px;
+  padding: 12px 10px 11px;
   box-shadow: var(--shadow-soft);
 }
 
@@ -1120,10 +1120,10 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 
 /* Tool icon */
 .tool-icon {
-  font-size: 32px;
+  font-size: 30px;
   color: var(--gold-primary);
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: contain;
   display: block;
@@ -1141,13 +1141,13 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 
 /* Text icon */
 .text-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   margin-left: auto;
   margin-right: auto;
@@ -1157,30 +1157,34 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 
 /* Emoji icon */
 .emoji-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 22px;
   margin-left: auto;
   margin-right: auto;
 }
 
 /* Tool label */
 .tool-name {
-  font-size: 12px;
+  font-size: 13px;
   font-family: 'Noto Sans SC', 'Josefin Sans', sans-serif;
   color: var(--text-primary);
-  font-weight: 500;
-  white-space: nowrap;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 6px;
+  margin-top: 8px;
   width: 100%;
   text-align: center;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  word-break: break-word;
 }
 
 /* Card entrance animation */

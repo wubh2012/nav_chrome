@@ -43,6 +43,10 @@
    * Initialize page state.
    */
   async function init() {
+    if (window.ThemeManager) {
+      await ThemeManager.init();
+    }
+
     await loadConfig();
     bindEvents();
     console.log('[Options] 初始化完成');

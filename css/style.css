@@ -1094,6 +1094,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   box-shadow: none !important;
 }
 
+.tool-item.dragging .tool-item-edit-btn,
 .tool-item.dragging .tool-item-delete-btn {
   opacity: 0 !important;
 }
@@ -1175,11 +1176,10 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   color: var(--text-primary);
   font-weight: 600;
   line-height: 1.35;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  display: block;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
   margin-top: 8px;
   width: 100%;
   text-align: center;
@@ -1218,14 +1218,13 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 .tool-item:nth-child(7) { animation-delay: 0.14s; }
 .tool-item:nth-child(8) { animation-delay: 0.16s; }
 
-/* Delete button */
+/* Card actions */
+.tool-item-edit-btn,
 .tool-item-delete-btn {
   position: absolute;
   top: 8px;
-  right: 8px;
   width: 22px;
   height: 22px;
-  background: rgba(255, 77, 79, 0.1);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1237,13 +1236,36 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   justify-content: center;
 }
 
+.tool-item-edit-btn {
+  right: 34px;
+  background: color-mix(in srgb, var(--gold-primary) 18%, transparent);
+}
+
+.tool-item-delete-btn {
+  right: 8px;
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.tool-item-edit-btn i,
 .tool-item-delete-btn i {
   font-size: 12px;
+}
+
+.tool-item-edit-btn i {
+  color: var(--gold-primary);
+}
+
+.tool-item-delete-btn i {
   color: #ff6b6b;
 }
 
+.tool-item:hover .tool-item-edit-btn,
 .tool-item:hover .tool-item-delete-btn {
   opacity: 1;
+}
+
+.tool-item-edit-btn:hover {
+  background: color-mix(in srgb, var(--gold-primary) 28%, transparent);
 }
 
 .tool-item-delete-btn:hover {

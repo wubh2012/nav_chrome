@@ -309,6 +309,7 @@ const FeishuAPI = (function() {
         name,
         url,
         icon: getIconUrl(fallbackIcon, url),
+        customIcon: fallbackIcon,
         sort
       });
     });
@@ -335,6 +336,7 @@ const FeishuAPI = (function() {
     categories.forEach(category => {
       data[category] = MOCK_DATA[category].map((item, index) => ({
         id: `mock-${category}-${index}`,
+        customIcon: item.icon || '',
         ...item
       }));
     });
@@ -356,6 +358,92 @@ const FeishuAPI = (function() {
    * @param {number} linkData.sort - 排序
    * @returns {Promise<Object>} 添加结果
    */
+  function buildRecordFields(linkData) {
+    const fields = {};
+    fields[FIELD_MAPPING.name] = linkData.name;
+    fields[FIELD_MAPPING.category] = linkData.category;
+    fields[FIELD_MAPPING.sort] = linkData.sort || 999;
+
+    if (linkData.url) {
+      fields[FIELD_MAPPING.url] = {
+        link: linkData.url,
+        text: linkData.name
+      };
+    }
+
+    fields[FIELD_MAPPING.icon] = linkData.icon
+      ? { link: linkData.icon }
+      : null;
+
+    return fields;
+  }
+
+  async function updateRecord(recordId, linkData, canRetry = true) {
+    if (!recordId) {
+      throw new Error('记录 ID 不能为空');
+    }
+
+    if (await isTestMode()) {
+      console.log('[FeishuAPI] 测试模式：更新记录', recordId, linkData);
+      return {
+        success: true,
+        message: '测试模式下记录已更新'
+      };
+    }
+
+    const config = await getConfig();
+    if (!config || !config.appToken || !config.tableId) {
+      throw new Error('飞书配置不完整');
+    }
+
+    const token = await getTenantAccessToken();
+    const fields = buildRecordFields(linkData);
+
+    try {
+      console.log('[FeishuAPI] 正在更新记录...', recordId);
+
+      const response = await fetch(
+        `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ fields })
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.code !== 0) {
+        if (result.code === 99991663 && canRetry) {
+          console.log('[FeishuAPI] Token 过期，尝试重新获取...');
+          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+          return await updateRecord(recordId, linkData, false);
+        }
+        if (isRecordNotFoundError(result)) {
+          return {
+            success: true,
+            skipped: true,
+            message: '记录不存在，已跳过'
+          };
+        }
+        console.error('[FeishuAPI] 更新记录失败:', result.msg);
+        throw new Error(`更新记录失败: ${result.msg}`);
+      }
+
+      return {
+        success: true,
+        skipped: false,
+        message: '更新成功'
+      };
+    } catch (error) {
+      console.error('[FeishuAPI] 更新记录异常:', error);
+      throw error;
+    }
+  }
+
   async function addRecord(linkData) {
     // 测试模式
     if (await isTestMode()) {
@@ -389,7 +477,7 @@ const FeishuAPI = (function() {
 
     // 处理图标
     if (linkData.icon) {
-      fields[FIELD_MAPPING.icon] = linkData.icon;
+      fields[FIELD_MAPPING.icon] = { link: linkData.icon };
     }
 
     try {
@@ -790,6 +878,7 @@ const FeishuAPI = (function() {
     getTenantAccessToken,
     getRecords,
     addRecord,
+    updateRecord,
     deleteRecord,
     updateRecordSort,
     batchUpdateRecordSorts,

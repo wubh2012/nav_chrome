@@ -1,219 +1,275 @@
 /**
- * 链接管理器 - 处理链接的添加、删除等操作
- * 改造自 navsite
+ * 链接管理器 - 处理链接的新增、编辑、删除等操作
  */
 const LinkManager = (function() {
   'use strict';
 
-  // 当前操作的链接数据
   let currentDeleteLink = null;
-
-  // 缓存的分类列表
+  let currentEditingLink = null;
   let cachedCategories = [];
 
-  /**
-   * 初始化链接管理器
-   * @param {Array} categories - 分类列表
-   */
   async function init(categories) {
-    cachedCategories = categories;
-
-    // 绑定模态框事件
+    cachedCategories = Array.isArray(categories) ? categories : [];
+    ensureFormFields();
     bindModalEvents();
-
-    // 绑定表单事件
     bindFormEvents();
-
+    bindToolEditActions();
     console.log('[LinkManager] 初始化完成');
   }
 
-  /**
-   * 绑定模态框事件
-   */
-  function bindModalEvents() {
-    // 添加链接模态框
-    const addModal = document.getElementById('add-link-modal');
-    if (addModal) {
-      // 打开添加模态框
-      const addBtn = document.getElementById('add-link-btn');
-      if (addBtn) {
-        addBtn.addEventListener('click', () => {
-          openAddModal();
-        });
-      }
+  function ensureFormFields() {
+    const form = document.getElementById('add-link-form');
+    const nameError = document.getElementById('name-error');
+    if (!form || !nameError || document.getElementById('site-icon')) return;
 
-      // 关闭按钮
-      const closeBtn = document.getElementById('close-modal-btn');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          closeAddModal();
-        });
-      }
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group';
+    wrapper.innerHTML = `
+      <label for="site-icon">Icon URL</label>
+      <input type="url" id="site-icon" name="site-icon" placeholder="https://example.com/icon.png">
+      <div class="error-message" id="icon-error"></div>
+    `;
 
-      // 取消按钮
-      const cancelBtn = document.getElementById('cancel-add-btn');
-      if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-          closeAddModal();
-        });
-      }
-
-      // 点击遮罩关闭
-      const overlay = addModal.querySelector('.modal-overlay');
-      if (overlay) {
-        overlay.addEventListener('click', () => {
-          closeAddModal();
-        });
-      }
-    }
-
-    // 删除确认模态框
-    const deleteModal = document.getElementById('delete-link-modal');
-    if (deleteModal) {
-      // 关闭按钮
-      const closeBtn = document.getElementById('close-delete-modal-btn');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          closeDeleteModal();
-        });
-      }
-
-      // 取消按钮
-      const cancelBtn = document.getElementById('cancel-delete-btn');
-      if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-          closeDeleteModal();
-        });
-      }
-
-      // 确认删除按钮
-      const confirmBtn = document.getElementById('confirm-delete-btn');
-      if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-          confirmDelete();
-        });
-      }
-
-      // 点击遮罩关闭
-      const overlay = deleteModal.querySelector('.modal-overlay');
-      if (overlay) {
-        overlay.addEventListener('click', () => {
-          closeDeleteModal();
-        });
-      }
+    const nameGroup = nameError.closest('.form-group');
+    if (nameGroup?.nextSibling) {
+      form.insertBefore(wrapper, nameGroup.nextSibling);
+    } else {
+      form.appendChild(wrapper);
     }
   }
 
-  /**
-   * 绑定表单事件
-   */
+  function bindModalEvents() {
+    const addModal = document.getElementById('add-link-modal');
+    if (addModal) {
+      bindOnce(document.getElementById('add-link-btn'), 'click', openAddModal);
+      bindOnce(document.getElementById('close-modal-btn'), 'click', closeAddModal);
+      bindOnce(document.getElementById('cancel-add-btn'), 'click', closeAddModal);
+      bindOnce(addModal.querySelector('.modal-overlay'), 'click', closeAddModal);
+    }
+
+    const deleteModal = document.getElementById('delete-link-modal');
+    if (deleteModal) {
+      bindOnce(document.getElementById('close-delete-modal-btn'), 'click', closeDeleteModal);
+      bindOnce(document.getElementById('cancel-delete-btn'), 'click', closeDeleteModal);
+      bindOnce(document.getElementById('confirm-delete-btn'), 'click', confirmDelete);
+      bindOnce(deleteModal.querySelector('.modal-overlay'), 'click', closeDeleteModal);
+    }
+  }
+
   function bindFormEvents() {
     const urlInput = document.getElementById('site-url');
-    const nameInput = document.getElementById('site-name');
     const categorySelect = document.getElementById('site-category');
     const saveBtn = document.getElementById('save-link-btn');
 
-    // 网址输入事件 - 自动提取名称
-    if (urlInput) {
+    if (urlInput && !urlInput.dataset.linkManagerBound) {
+      urlInput.dataset.linkManagerBound = 'true';
       urlInput.addEventListener('input', debounce(() => {
         extractSiteNameFromUrl();
       }, 500));
     }
 
-    // 分类选择事件 - 自定义分类
-    if (categorySelect) {
-      categorySelect.addEventListener('change', () => {
-        const customContainer = document.getElementById('custom-category-container');
-        if (customContainer) {
-          if (categorySelect.value === '__custom__') {
-            customContainer.style.display = 'block';
-          } else {
-            customContainer.style.display = 'none';
-          }
-        }
-      });
+    if (categorySelect && !categorySelect.dataset.linkManagerBound) {
+      categorySelect.dataset.linkManagerBound = 'true';
+      categorySelect.addEventListener('change', handleCategoryChange);
     }
 
-    // 保存按钮
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
-        saveLink();
-      });
+    if (saveBtn && !saveBtn.dataset.linkManagerBound) {
+      saveBtn.dataset.linkManagerBound = 'true';
+      saveBtn.addEventListener('click', saveLink);
     }
   }
 
-  /**
-   * 打开添加模态框
-   */
-  async function openAddModal() {
+  function bindOnce(element, eventName, handler) {
+    if (!element || element.dataset.linkManagerBound) return;
+    element.dataset.linkManagerBound = 'true';
+    element.addEventListener(eventName, handler);
+  }
+
+  function bindToolEditActions() {
+    if (!document.body.dataset.linkManagerToolActionsBound) {
+      document.body.dataset.linkManagerToolActionsBound = 'true';
+      document.addEventListener('chromeNav:toolsRendered', injectEditButtons);
+    }
+    injectEditButtons();
+  }
+
+  function injectEditButtons() {
+    const cards = document.querySelectorAll('.tool-item');
+    cards.forEach(card => {
+      if (card.querySelector('.tool-item-edit-btn')) return;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'tool-item-edit-btn';
+      editBtn.title = '编辑';
+      editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+      editBtn.addEventListener('click', event => {
+        event.stopPropagation();
+        const tool = resolveToolFromCard(card);
+        if (tool) {
+          openEditModal(tool);
+        }
+      });
+
+      const deleteBtn = card.querySelector('.tool-item-delete-btn');
+      if (deleteBtn) {
+        card.insertBefore(editBtn, deleteBtn);
+      } else {
+        card.appendChild(editBtn);
+      }
+    });
+  }
+
+  function resolveToolFromCard(card) {
+    const recordId = card?.getAttribute('data-id');
+    const category = card?.getAttribute('data-category');
+    const snapshot = window.UIRenderer?.getNavDataSnapshot?.();
+    const items = snapshot?.data?.[category] || [];
+    const match = items.find(item => item?.id === recordId);
+    return match ? { ...match, category } : null;
+  }
+
+  function openAddModal() {
+    currentEditingLink = null;
+    prepareModal('add');
+  }
+
+  function openEditModal(link) {
+    if (!link || !link.id) return;
+    currentEditingLink = link;
+    prepareModal('edit', link);
+  }
+
+  function prepareModal(mode, link = null) {
     const modal = document.getElementById('add-link-modal');
     const form = document.getElementById('add-link-form');
-    const categorySelect = document.getElementById('site-category');
+    const titleEl = getModalTitleElement(modal);
+    const saveBtn = document.getElementById('save-link-btn');
 
     if (!modal || !form) return;
 
-    // 重置表单
     form.reset();
-    document.getElementById('url-error').textContent = '';
-    document.getElementById('name-error').textContent = '';
-    document.getElementById('category-error').textContent = '';
+    clearFormErrors();
+    populateCategoryOptions(link?.category || '');
 
-    // 填充分类选项
-    if (categorySelect) {
-      let optionsHtml = '';
-      cachedCategories.forEach(cat => {
-        optionsHtml += `<option value="${cat}">${cat}</option>`;
-      });
-      optionsHtml += '<option value="__custom__">+ 自定义分类</option>';
-      categorySelect.innerHTML = optionsHtml;
+    if (mode === 'edit' && link) {
+      if (titleEl) titleEl.textContent = '修改网站';
+      if (saveBtn) saveBtn.textContent = '更新';
+      setFormValues(link);
+    } else {
+      if (titleEl) titleEl.textContent = '添加网站';
+      if (saveBtn) saveBtn.textContent = '保存';
+      setDefaultFormValues();
     }
 
-    // 显示模态框
     modal.classList.add('active');
   }
 
-  /**
-   * 关闭添加模态框
-   */
+  function getModalTitleElement(modal) {
+    return document.getElementById('link-modal-title') || modal?.querySelector('.modal-header h2') || null;
+  }
+
+  function setDefaultFormValues() {
+    setInputValue('site-url', 'https://');
+    setInputValue('site-name', '');
+    setInputValue('site-icon', '');
+    setInputValue('site-sort', '200');
+    setInputValue('custom-category', '');
+    handleCategoryChange();
+  }
+
+  function setFormValues(link) {
+    setInputValue('site-url', link.url || 'https://');
+    setInputValue('site-name', link.name || '');
+    setInputValue('site-icon', link.customIcon || '');
+    setInputValue('site-sort', Number.isFinite(Number(link.sort)) ? String(link.sort) : '999');
+    setInputValue('custom-category', '');
+
+    const categorySelect = document.getElementById('site-category');
+    if (categorySelect) {
+      categorySelect.value = link.category || cachedCategories[0] || '__custom__';
+    }
+    handleCategoryChange();
+  }
+
+  function setInputValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.value = value;
+    }
+  }
+
+  function populateCategoryOptions(selectedCategory) {
+    const categorySelect = document.getElementById('site-category');
+    if (!categorySelect) return;
+
+    const categories = Array.from(new Set([
+      ...cachedCategories,
+      ...(selectedCategory && selectedCategory !== '__custom__' ? [selectedCategory] : [])
+    ].filter(Boolean)));
+
+    let optionsHtml = '';
+    categories.forEach(cat => {
+      optionsHtml += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
+    optionsHtml += '<option value="__custom__">+ 自定义分类</option>';
+    categorySelect.innerHTML = optionsHtml;
+
+    if (selectedCategory && categories.includes(selectedCategory)) {
+      categorySelect.value = selectedCategory;
+    } else if (categories.length > 0) {
+      categorySelect.value = categories[0];
+    } else {
+      categorySelect.value = '__custom__';
+    }
+  }
+
+  function handleCategoryChange() {
+    const categorySelect = document.getElementById('site-category');
+    const customContainer = document.getElementById('custom-category-container');
+    if (!categorySelect || !customContainer) return;
+    customContainer.style.display = categorySelect.value === '__custom__' ? 'block' : 'none';
+  }
+
   function closeAddModal() {
     const modal = document.getElementById('add-link-modal');
+    const saveBtn = document.getElementById('save-link-btn');
+    const titleEl = getModalTitleElement(modal);
+
+    currentEditingLink = null;
+    clearFormErrors();
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '保存';
+    }
+    if (titleEl) {
+      titleEl.textContent = '添加网站';
+    }
     if (modal) {
       modal.classList.remove('active');
     }
   }
 
-  /**
-   * 打开删除确认模态框
-   * @param {Object} link - 链接数据
-   */
   function showDeleteModal(link) {
     const modal = document.getElementById('delete-link-modal');
     const nameEl = document.getElementById('delete-site-name');
-
     if (!modal) return;
 
     currentDeleteLink = link;
     if (nameEl) {
-      nameEl.textContent = link.name || '';
+      nameEl.textContent = link?.name || '';
     }
-
     modal.classList.add('active');
   }
 
-  /**
-   * 关闭删除确认模态框
-   */
   function closeDeleteModal() {
     const modal = document.getElementById('delete-link-modal');
     if (modal) {
       modal.classList.remove('active');
-      currentDeleteLink = null;
     }
+    currentDeleteLink = null;
   }
 
-  /**
-   * 确认删除
-   */
   async function confirmDelete() {
     if (!currentDeleteLink || !currentDeleteLink.id) {
       console.error('[LinkManager] 无效的删除请求');
@@ -228,23 +284,13 @@ const LinkManager = (function() {
 
     try {
       const result = await FeishuAPI.deleteRecord(currentDeleteLink.id);
-
-      if (result.success) {
-        // 关闭模态框
-        closeDeleteModal();
-
-        // 显示成功提示
-        if (result.skipped) {
-          UIRenderer.showSyncStatus('飞书中该记录已不存在，已刷新本地缓存', 'info');
-        } else {
-          UIRenderer.showSyncStatus('删除成功', 'success');
-        }
-
-        // 刷新数据
-        await refreshData();
-      } else {
+      if (!result.success) {
         throw new Error(result.message || '删除失败');
       }
+
+      closeDeleteModal();
+      UIRenderer.showSyncStatus(result.skipped ? '记录不存在，已刷新本地数据' : '删除成功', result.skipped ? 'info' : 'success');
+      await refreshData();
     } catch (error) {
       console.error('[LinkManager] 删除失败:', error);
       UIRenderer.showSyncStatus(error.message || '删除失败', 'error');
@@ -256,97 +302,79 @@ const LinkManager = (function() {
     }
   }
 
-  /**
-   * 保存链接
-   */
   async function saveLink() {
-    // 获取表单值
-    const url = document.getElementById('site-url').value.trim();
-    const name = document.getElementById('site-name').value.trim();
-    let category = document.getElementById('site-category').value;
+    const formData = getFormData();
+    const errors = validateForm(formData);
+    clearFormErrors();
 
-    // 验证
-    const errors = validateForm(url, name, category);
     if (errors.hasErrors) {
       showFormErrors(errors);
       return;
     }
 
-    // 处理自定义分类
-    if (category === '__custom__') {
-      category = document.getElementById('custom-category').value.trim();
-      if (!category) {
-        showFormErrors({ url: '', name: '', category: '请输入自定义分类名称' });
-        return;
-      }
-    }
-
-    // 获取排序值
-    const sort = parseInt(document.getElementById('site-sort').value) || 999;
-
-    // 禁用保存按钮
     const saveBtn = document.getElementById('save-link-btn');
+    const isEditing = Boolean(currentEditingLink?.id);
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.textContent = '保存中...';
+      saveBtn.textContent = isEditing ? '更新中...' : '保存中...';
     }
 
     try {
-      // 添加到飞书
-      const result = await FeishuAPI.addRecord({
-        name,
-        url,
-        category,
-        sort,
-        icon: ''
-      });
+      const result = isEditing
+        ? await FeishuAPI.updateRecord(currentEditingLink.id, formData)
+        : await FeishuAPI.addRecord(formData);
 
-      if (result.success) {
-        // 关闭模态框
-        closeAddModal();
-
-        // 显示成功提示
-        UIRenderer.showSyncStatus('添加成功', 'success');
-
-        // 刷新数据
-        await refreshData();
-      } else {
-        throw new Error(result.message || '添加失败');
+      if (!result.success) {
+        throw new Error(result.message || (isEditing ? '更新失败' : '添加失败'));
       }
+
+      closeAddModal();
+      UIRenderer.showSyncStatus(isEditing ? '修改成功' : '添加成功', 'success');
+      await refreshData();
     } catch (error) {
-      console.error('[LinkManager] 添加失败:', error);
-      UIRenderer.showSyncStatus(error.message || '添加失败', 'error');
-    } finally {
+      console.error('[LinkManager] 保存失败:', error);
+      UIRenderer.showSyncStatus(error.message || (isEditing ? '更新失败' : '添加失败'), 'error');
       if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.textContent = '保存';
+        saveBtn.textContent = isEditing ? '更新' : '保存';
       }
     }
   }
 
-  /**
-   * 验证表单
-   * @param {string} url - 网址
-   * @param {string} name - 名称
-   * @param {string} category - 分类
-   */
-  function validateForm(url, name, category) {
-    const errors = { hasErrors: false, url: '', name: '', category: '' };
+  function getFormData() {
+    const url = document.getElementById('site-url')?.value.trim() || '';
+    const name = document.getElementById('site-name')?.value.trim() || '';
+    const icon = document.getElementById('site-icon')?.value.trim() || '';
+    const categorySelect = document.getElementById('site-category');
+    const customCategoryInput = document.getElementById('custom-category');
+    const sortValue = document.getElementById('site-sort')?.value;
+    let category = categorySelect?.value || '';
 
-    // 验证网址
+    if (category === '__custom__') {
+      category = customCategoryInput?.value.trim() || '';
+    }
+
+    return {
+      url,
+      name,
+      icon,
+      category,
+      sort: parseInt(sortValue, 10) || 999
+    };
+  }
+
+  function validateForm(formData) {
+    const { url, name, icon, category } = formData;
+    const errors = { hasErrors: false, url: '', name: '', icon: '', category: '' };
+
     if (!url || url === 'https://') {
       errors.hasErrors = true;
       errors.url = '请输入网址';
-    } else {
-      try {
-        new URL(url);
-      } catch (e) {
-        errors.hasErrors = true;
-        errors.url = '网址格式不正确';
-      }
+    } else if (!isValidUrl(url)) {
+      errors.hasErrors = true;
+      errors.url = '网址格式不正确';
     }
 
-    // 验证名称
     if (!name) {
       errors.hasErrors = true;
       errors.name = '请输入网站名称';
@@ -355,7 +383,11 @@ const LinkManager = (function() {
       errors.name = '名称不能超过50个字符';
     }
 
-    // 验证分类
+    if (icon && !isValidUrl(icon)) {
+      errors.hasErrors = true;
+      errors.icon = '图标网址格式不正确';
+    }
+
     if (!category) {
       errors.hasErrors = true;
       errors.category = '请选择分类';
@@ -364,68 +396,60 @@ const LinkManager = (function() {
     return errors;
   }
 
-  /**
-   * 显示表单错误
-   * @param {Object} errors - 错误信息
-   */
+  function clearFormErrors() {
+    ['url-error', 'name-error', 'icon-error', 'category-error'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = '';
+      }
+    });
+  }
+
   function showFormErrors(errors) {
-    if (errors.url) {
-      document.getElementById('url-error').textContent = errors.url;
-    }
-    if (errors.name) {
-      document.getElementById('name-error').textContent = errors.name;
-    }
-    if (errors.category) {
-      document.getElementById('category-error').textContent = errors.category;
+    setError('url-error', errors.url);
+    setError('name-error', errors.name);
+    setError('icon-error', errors.icon);
+    setError('category-error', errors.category);
+  }
+
+  function setError(id, message) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = message || '';
     }
   }
 
-  /**
-   * 从网址自动提取名称
-   */
   function extractSiteNameFromUrl() {
     const urlInput = document.getElementById('site-url');
     const nameInput = document.getElementById('site-name');
 
-    if (!urlInput || !nameInput || nameInput.value) return;
+    if (!urlInput || !nameInput || nameInput.value.trim() || currentEditingLink) {
+      return;
+    }
 
     const url = urlInput.value.trim();
-    if (!url || url === 'https://') return;
+    if (!isValidUrl(url)) {
+      return;
+    }
 
     try {
       const urlObj = new URL(url);
       let domain = urlObj.hostname;
-
-      // 移除 www. 前缀
       if (domain.startsWith('www.')) {
         domain = domain.substring(4);
       }
-
-      // 移除扩展名（如 .com、.cn 等）
       domain = domain.replace(/\.[a-z]+$/i, '');
-
-      // 首字母大写
       nameInput.value = domain.charAt(0).toUpperCase() + domain.slice(1);
-    } catch (e) {
-      // URL 格式不正确，不处理
+    } catch (error) {
+      console.warn('[LinkManager] 自动提取名称失败:', error);
     }
   }
 
-  /**
-   * 刷新数据
-   */
   async function refreshData() {
     try {
-      // 获取最新数据
       const result = await FeishuAPI.getRecords();
-
-      // 保存到存储
       await Storage.saveNavData(result.data, result.categories, result.dateInfo);
-
-      // 更新缓存
       cachedCategories = result.categories;
-
-      // 刷新 UI
       UIRenderer.init(result.data, result.categories, result.dateInfo);
     } catch (error) {
       console.error('[LinkManager] 刷新数据失败:', error);
@@ -433,41 +457,44 @@ const LinkManager = (function() {
     }
   }
 
-  /**
-   * 防抖函数
-   * @param {Function} func - 要执行的函数
-   * @param {number} wait - 等待时间
-   */
+  function updateCategories(categories) {
+    cachedCategories = Array.isArray(categories) ? categories : [];
+  }
+
+  function isValidUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
       clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
+      timeout = setTimeout(() => func(...args), wait);
     };
   }
-
-  /**
-   * 更新分类列表
-   * @param {Array} categories - 新的分类列表
-   */
-  function updateCategories(categories) {
-    cachedCategories = categories;
-  }
-
-  // ==================== 公共 API ====================
 
   return {
     init,
     openAddModal,
+    openEditModal,
     showDeleteModal,
     saveLink,
     updateCategories
   };
 })();
 
-// 导出到全局
 window.LinkManager = LinkManager;

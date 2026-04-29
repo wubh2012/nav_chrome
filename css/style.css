@@ -1,5 +1,11 @@
 /* ========================================
    Chrome Nav theme
+
+   职责与边界：定义新标签页、侧栏、工具卡片、弹窗与主题皮肤的视觉布局；
+   不负责数据获取、链接 CRUD、同步流程或业务状态管理。
+   关键副作用：仅通过 CSS 变量、布局与动画影响页面渲染，不读写网络、文件或存储。
+   关键依赖与约束：依赖 newtab.html 的 DOM 结构、Bootstrap Icons 字体以及
+   Google Fonts 中的 Noto Sans SC / Josefin Sans；卡片尺寸需兼顾拖拽和响应式网格。
    ======================================== */
 * {
   margin: 0;
@@ -1033,7 +1039,7 @@ body:not(.loaded) .user-avatar .logo-svg {
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 12px;
   width: 100%;
   justify-content: center;
@@ -1046,7 +1052,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   border: var(--border-thin);
   border-radius: 12px;
   aspect-ratio: 1;
-  min-height: 90px;
+  min-height: 96px;
   text-align: center;
   cursor: pointer;
   user-select: none;
@@ -1059,7 +1065,7 @@ body:not(.loaded) .user-avatar .logo-svg {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 10px 11px;
+  padding: 9px 8px;
   box-shadow: var(--shadow-soft);
 }
 
@@ -1123,8 +1129,8 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 .tool-icon {
   font-size: 30px;
   color: var(--gold-primary);
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: contain;
   display: block;
@@ -1172,7 +1178,7 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
 /* Tool label */
 .tool-name {
   font-size: 13px;
-  font-family: 'Noto Sans SC', 'Josefin Sans', sans-serif;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   color: var(--text-primary);
   font-weight: 600;
   line-height: 1.35;
@@ -1180,11 +1186,10 @@ body.drag-sort-saving .tools-grid .tool-item[draggable="true"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 8px;
+  margin-top: 6px;
   width: 100%;
   text-align: center;
   letter-spacing: 0.01em;
-  word-break: break-word;
 }
 
 /* Card entrance animation */

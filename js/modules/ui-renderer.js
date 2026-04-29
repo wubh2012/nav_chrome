@@ -1,6 +1,12 @@
 /**
- * UI 渲染器 - 处理页面元素的动态渲染
- * 改造自 navsite
+ * UI 渲染器
+ *
+ * 职责与边界：根据已加载的导航数据渲染分类菜单、工具卡片、时间信息与同步提示；
+ * 不负责数据拉取、持久化、飞书 API 通信或链接表单校验。
+ * 关键副作用：会读写当前页面 DOM、绑定点击事件、触发 window.open，并启动/清理时间刷新定时器；
+ * 不直接读写网络、文件、数据库或浏览器存储。
+ * 关键依赖与约束：依赖 newtab.html 中的固定容器 ID、Bootstrap Icons 样式、
+ * 全局 Lunar 工具以及调用方传入的导航数据结构。
  */
 const UIRenderer = (function() {
   'use strict';
@@ -182,14 +188,20 @@ const UIRenderer = (function() {
   }
 
   /**
-   * 创建工具卡片
-   * @param {Object} tool - 工具数据
+   * 创建单个工具卡片，并为图标、名称和删除按钮绑定展示与交互行为。
+   *
+   * @param {Object} tool - 工具数据；期望包含 name、url、icon、id、category 等字段，
+   *   name 会作为显示文本和悬浮提示，url 会在卡片点击时打开。
+   * @returns {HTMLDivElement} 可插入工具网格的卡片节点。
+   * @throws {Error} 本函数不主动抛错；若传入字段类型异常，DOM API 或下游 openLink 可能失败。
+   * @sideeffects 创建 DOM、写入 innerHTML、绑定点击事件和删除按钮事件；不执行外部 I/O。
    */
   function createToolCard(tool) {
     const card = document.createElement('div');
     card.className = 'tool-item';
     card.setAttribute('data-id', tool.id || '');
     card.setAttribute('data-category', tool.category || '');
+    card.title = tool.name || '';
 
     // 解析图标
     let iconHtml = '';
@@ -220,6 +232,11 @@ const UIRenderer = (function() {
         <i class="bi bi-x"></i>
       </button>
     `;
+
+    const nameEl = card.querySelector('.tool-name');
+    if (nameEl) {
+      nameEl.title = tool.name || '';
+    }
 
     // 点击打开链接
     card.addEventListener('click', (e) => {

@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  设置页界面
+
+  职责与边界：提供扩展配置入口，包括飞书配置向导、测试模式、背景设置和数据管理；
+  不负责执行飞书 API 细节、导航数据渲染或后台同步调度。
+  关键副作用：通过加载的脚本读写 chrome.storage.local、调用飞书网络检测、处理本地背景图并修改页面 DOM。
+  关键依赖与约束：必须作为 Chrome 扩展 options 页运行；依赖 Bootstrap Icons、本地模块脚本和 Chrome Extension API。
+-->
 <html lang="zh-CN">
 
 <head>
@@ -433,6 +441,149 @@
     color: var(--accent-primary);
   }
 
+  .setup-wizard {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .wizard-progress {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .wizard-step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--border-soft-color);
+    border-radius: 14px;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .wizard-step-indicator span {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface-raised);
+    color: var(--accent-strong);
+  }
+
+  .wizard-step-indicator.active,
+  .wizard-step-indicator.complete {
+    border-color: var(--selected-border);
+    background: color-mix(in srgb, var(--selected-bg) 58%, var(--surface-raised));
+    color: var(--selected-text);
+  }
+
+  .wizard-step-indicator.active span,
+  .wizard-step-indicator.complete span {
+    background: var(--accent-primary);
+    color: #fffaf1;
+  }
+
+  .wizard-panel {
+    display: none;
+  }
+
+  .wizard-panel.active {
+    display: block;
+  }
+
+  .wizard-intro {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+
+  .setup-checklist,
+  .field-template,
+  .connection-checks {
+    display: grid;
+    gap: 10px;
+  }
+
+  .setup-checklist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checklist-item,
+  .field-row,
+  .connection-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid var(--border-soft-color);
+    border-radius: 14px;
+    background: var(--surface-2);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .checklist-item i,
+  .field-row i,
+  .connection-check i {
+    color: var(--accent-primary);
+    margin-top: 2px;
+  }
+
+  .field-row {
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .field-name {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .field-type {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .connection-check.success {
+    border-color: color-mix(in srgb, var(--success-text) 26%, transparent);
+    background: color-mix(in srgb, var(--success-soft) 82%, var(--surface-raised));
+  }
+
+  .connection-check.error {
+    border-color: color-mix(in srgb, var(--error-text) 26%, transparent);
+    background: color-mix(in srgb, var(--error-soft) 82%, var(--surface-raised));
+  }
+
+  .connection-check.pending {
+    color: var(--text-muted);
+  }
+
+  .connection-check.success i {
+    color: var(--success-text);
+  }
+
+  .connection-check.error i {
+    color: var(--error-text);
+  }
+
+  .wizard-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .wizard-actions .btn {
+    flex: 1;
+  }
+
   .background-section {
     margin-top: 18px;
   }
@@ -531,6 +682,11 @@
     .mode-grid {
       grid-template-columns: 1fr;
     }
+
+    .wizard-progress,
+    .setup-checklist {
+      grid-template-columns: 1fr;
+    }
   }
   </style>
 </head>
@@ -554,40 +710,102 @@
         <div class="card">
           <div class="card-title">
             <i class="bi bi-table"></i>
-            飞书多维表格配置
+            飞书配置向导
           </div>
 
-          <div class="form-group">
-            <label for="app-id">APP_ID *</label>
-            <input type="text" id="app-id" placeholder="请输入飞书应用 ID">
-            <div class="hint">登录飞书开放平台，在应用凭证中获取</div>
-          </div>
+          <div class="setup-wizard">
+            <div class="wizard-progress" aria-label="飞书配置步骤">
+              <div class="wizard-step-indicator active" data-step-indicator="1"><span>1</span>准备资源</div>
+              <div class="wizard-step-indicator" data-step-indicator="2"><span>2</span>填写凭证</div>
+              <div class="wizard-step-indicator" data-step-indicator="3"><span>3</span>检测保存</div>
+            </div>
 
-          <div class="form-group">
-            <label for="app-secret">APP_SECRET *</label>
-            <input type="password" id="app-secret" placeholder="请输入飞书应用密钥">
-            <div class="hint">请妥善保管，不要泄露给他人</div>
-          </div>
+            <section class="wizard-panel active" data-wizard-panel="1" aria-label="准备飞书资源">
+              <p class="wizard-intro">以下内容需要在飞书侧完成，本插件不会自动创建应用、多维表格或字段。建议一次性创建完整，避免后续编辑网站卡片时因为字段缺失而保存失败。</p>
+              <div class="setup-checklist">
+                <div class="checklist-item"><i class="bi bi-check2-square"></i><div>创建飞书自建应用，并复制应用凭证。</div></div>
+                <div class="checklist-item"><i class="bi bi-shield-check"></i><div>开通多维表格读写权限，并确保应用可访问目标表格。</div></div>
+                <div class="checklist-item"><i class="bi bi-table"></i><div>创建多维表格和数据表，准备 APP_TOKEN 与 TABLE_ID。</div></div>
+                <div class="checklist-item"><i class="bi bi-columns-gap"></i><div>创建下方 5 个字段；备用图标字段可留空，但字段本身必须存在。</div></div>
+              </div>
 
-          <div class="form-group">
-            <label for="app-token">APP_TOKEN (多维表格 Token) *</label>
-            <input type="text" id="app-token" placeholder="请输入多维表格 Token">
-            <div class="hint">多维表格 URL 中的 app_token 参数</div>
-          </div>
+              <div class="divider"></div>
 
-          <div class="form-group">
-            <label for="table-id">TABLE_ID (表格 ID) *</label>
-            <input type="text" id="table-id" placeholder="请输入表格 ID">
-            <div class="hint">多维表格 URL 中的表格 ID</div>
-          </div>
+              <div class="field-template" aria-label="字段模板">
+                <div class="field-row"><span class="field-name">分类</span><span class="field-type">文本</span></div>
+                <div class="field-row"><span class="field-name">站点名称</span><span class="field-type">文本</span></div>
+                <div class="field-row"><span class="field-name">网址</span><span class="field-type">链接</span></div>
+                <div class="field-row"><span class="field-name">排序</span><span class="field-type">数字</span></div>
+                <div class="field-row"><span class="field-name">备用图标</span><span class="field-type">链接，可为空；填写后减少首页 favicon 请求</span></div>
+              </div>
 
-          <div class="btn-group">
-            <button class="btn btn-secondary" id="test-connection-btn">
-              <i class="bi bi-plug"></i> 测试连接
-            </button>
-            <button class="btn btn-primary" id="save-btn">
-              <i class="bi bi-check-lg"></i> 保存配置
-            </button>
+              <div class="wizard-actions">
+                <a class="btn btn-secondary" href="https://open.feishu.cn/" target="_blank" rel="noreferrer">
+                  <i class="bi bi-box-arrow-up-right"></i> 打开飞书开放平台
+                </a>
+                <button class="btn btn-primary" type="button" data-next-step="2">
+                  <i class="bi bi-arrow-right"></i> 下一步
+                </button>
+              </div>
+            </section>
+
+            <section class="wizard-panel" data-wizard-panel="2" aria-label="填写飞书凭证">
+              <div class="form-group">
+                <label for="app-id">APP_ID *</label>
+                <input type="text" id="app-id" placeholder="请输入飞书应用 ID">
+                <div class="hint">登录飞书开放平台，在应用凭证中获取</div>
+              </div>
+
+              <div class="form-group">
+                <label for="app-secret">APP_SECRET *</label>
+                <input type="password" id="app-secret" placeholder="请输入飞书应用密钥">
+                <div class="hint">请妥善保管，不要泄露给他人</div>
+              </div>
+
+              <div class="form-group">
+                <label for="app-token">APP_TOKEN (多维表格 Token) *</label>
+                <input type="text" id="app-token" placeholder="请输入多维表格 Token">
+                <div class="hint">多维表格 URL 中的 app_token 参数</div>
+              </div>
+
+              <div class="form-group">
+                <label for="table-id">TABLE_ID (表格 ID) *</label>
+                <input type="text" id="table-id" placeholder="请输入表格 ID">
+                <div class="hint">多维表格 URL 中的表格 ID</div>
+              </div>
+
+              <div class="wizard-actions">
+                <button class="btn btn-secondary" type="button" data-prev-step="1">
+                  <i class="bi bi-arrow-left"></i> 上一步
+                </button>
+                <button class="btn btn-primary" type="button" data-next-step="3">
+                  <i class="bi bi-arrow-right"></i> 下一步检测
+                </button>
+              </div>
+            </section>
+
+            <section class="wizard-panel" data-wizard-panel="3" aria-label="检测并保存飞书配置">
+              <p class="wizard-intro">检测会验证凭证、表格访问权限、字段完整性和记录读取能力。全部通过后再保存配置。</p>
+              <div class="connection-checks" id="connection-checks">
+                <div class="connection-check pending" data-check="credentials"><i class="bi bi-circle"></i><div>等待检查连接凭证</div></div>
+                <div class="connection-check pending" data-check="token"><i class="bi bi-circle"></i><div>等待获取飞书 Token</div></div>
+                <div class="connection-check pending" data-check="table"><i class="bi bi-circle"></i><div>等待访问多维表格</div></div>
+                <div class="connection-check pending" data-check="fields"><i class="bi bi-circle"></i><div>等待检查表格字段</div></div>
+                <div class="connection-check pending" data-check="records"><i class="bi bi-circle"></i><div>等待读取记录</div></div>
+              </div>
+
+              <div class="wizard-actions">
+                <button class="btn btn-secondary" type="button" data-prev-step="2">
+                  <i class="bi bi-arrow-left"></i> 上一步
+                </button>
+                <button class="btn btn-secondary" id="test-connection-btn" type="button">
+                  <i class="bi bi-plug"></i> 测试连接
+                </button>
+                <button class="btn btn-primary" id="save-btn" type="button">
+                  <i class="bi bi-check-lg"></i> 保存配置
+                </button>
+              </div>
+            </section>
           </div>
 
           <div class="status-message" id="status-message"></div>
@@ -693,17 +911,12 @@
         <div class="card">
           <div class="card-title">
             <i class="bi bi-question-circle"></i>
-            配置帮助
+            相关链接
           </div>
 
           <div class="link-item">
             <i class="bi bi-link-45deg"></i>
             <a href="https://open.feishu.cn/" target="_blank">飞书开放平台</a>
-          </div>
-
-          <div class="link-item">
-            <i class="bi bi-link-45deg"></i>
-            <a href="#" id="view-guide-btn">查看配置指南</a>
           </div>
 
           <div class="link-item">
@@ -736,6 +949,7 @@
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/background-config.js"></script>
   <script src="js/modules/background-storage.js"></script>
+  <script src="js/modules/feishu-config-check-core.js"></script>
   <script src="js/modules/feishu-api.js"></script>
   <script src="js/options.js"></script>
 </body>

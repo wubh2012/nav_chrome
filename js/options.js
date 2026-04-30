@@ -1,5 +1,11 @@
 /**
  * Options page logic.
+ *
+ * 职责与边界：管理扩展设置页的表单、飞书配置向导、背景配置和数据管理交互；
+ * 不负责实现飞书 API 协议、导航首页渲染或 popup 同步状态面板。
+ * 关键副作用：读写 chrome.storage.local、调用飞书网络检测、处理本地背景图、修改 options 页 DOM。
+ * 关键依赖与约束：依赖 Storage、FeishuAPI、FeishuConfigCheckCore、ThemeManager 和 BackgroundStorage 全局模块；
+ * 飞书配置必须先通过连接与字段检测再保存。
  */
 (function() {
   'use strict';
@@ -14,12 +20,16 @@
     tableId: document.getElementById('table-id'),
     saveBtn: document.getElementById('save-btn'),
     testBtn: document.getElementById('test-connection-btn'),
+    wizardPanels: document.querySelectorAll('[data-wizard-panel]'),
+    wizardIndicators: document.querySelectorAll('[data-step-indicator]'),
+    nextStepBtns: document.querySelectorAll('[data-next-step]'),
+    prevStepBtns: document.querySelectorAll('[data-prev-step]'),
+    connectionChecks: document.querySelectorAll('[data-check]'),
     testModeToggle: document.getElementById('test-mode-toggle'),
     statusMessage: document.getElementById('status-message'),
     testModeNotice: document.getElementById('test-mode-notice'),
     clearCacheBtn: document.getElementById('clear-cache-btn'),
     resetBtn: document.getElementById('reset-btn'),
-    viewGuideBtn: document.getElementById('view-guide-btn'),
     backgroundModeInputs: document.querySelectorAll('input[name="background-mode"]'),
     backgroundModeOptions: document.querySelectorAll('.mode-option'),
     backgroundUploadSection: document.getElementById('background-upload-section'),
@@ -38,22 +48,38 @@
   };
 
   let pendingBackgroundFile = null;
+  let currentWizardStep = 1;
+  let lastConnectionPassed = false;
 
   /**
-   * Initialize page state.
+   * 初始化设置页状态。
+   *
+   * @returns {Promise<void>} 页面配置加载和事件绑定完成后 resolve。
+   * @throws {Error} 依赖模块初始化失败时向上抛出。
+   * @sideeffects 初始化主题、读取存储配置、修改表单和向导 DOM 状态。
    */
   async function init() {
     if (window.ThemeManager) {
-      await ThemeManager.init();
+      try {
+        await ThemeManager.init();
+      } catch (error) {
+        console.warn('[Options] 主题初始化失败，继续加载设置页:', error);
+      }
     }
 
     await loadConfig();
+    updateWizardStep(currentWizardStep);
+    resetConnectionChecks();
     bindEvents();
     console.log('[Options] 初始化完成');
   }
 
   /**
-   * Load persisted settings.
+   * 加载已保存设置并回填页面控件。
+   *
+   * @returns {Promise<void>} 所有可读取配置处理完成后 resolve。
+   * @throws {Error} 内部捕获存储异常，不向调用方抛出。
+   * @sideeffects 读取 chrome.storage.local，并更新飞书表单、测试模式和背景配置控件。
    */
   async function loadConfig() {
     try {
@@ -64,6 +90,9 @@
         elements.appSecret.value = config.appSecret || '';
         elements.appToken.value = config.appToken || '';
         elements.tableId.value = config.tableId || '';
+        currentWizardStep = window.FeishuConfigCheckCore
+          ? FeishuConfigCheckCore.getInitialWizardStep(config)
+          : (config.appId && config.appSecret && config.appToken && config.tableId ? 3 : 1);
       }
 
       // Load test mode state.
@@ -81,7 +110,11 @@
   }
 
   /**
-   * Bind event listeners.
+   * 绑定设置页交互事件。
+   *
+   * @returns {void}
+   * @throws {Error} 不主动抛错；缺失 DOM 节点会在调用点按可选绑定跳过。
+   * @sideeffects 为保存、检测、向导切换、背景配置和数据管理控件注册事件监听。
    */
   function bindEvents() {
     // Save config.
@@ -99,8 +132,25 @@
     // Reset all settings.
     elements.resetBtn.addEventListener('click', resetAll);
 
-    // Open guide.
-    elements.viewGuideBtn.addEventListener('click', showGuide);
+    elements.nextStepBtns.forEach((button) => {
+      button.addEventListener('click', () => {
+        const step = Number(button.getAttribute('data-next-step'));
+        if (step === 3 && !validateConfigForm()) {
+          return;
+        }
+        updateWizardStep(step);
+      });
+    });
+
+    elements.prevStepBtns.forEach((button) => {
+      button.addEventListener('click', () => {
+        updateWizardStep(Number(button.getAttribute('data-prev-step')));
+      });
+    });
+
+    [elements.appId, elements.appSecret, elements.appToken, elements.tableId].forEach((input) => {
+      input?.addEventListener('input', resetConnectionChecks);
+    });
 
     elements.backgroundModeInputs.forEach((input) => {
       input.addEventListener('change', () => {
@@ -134,7 +184,14 @@
   }
 
   /**
-   * Show a status message.
+   * 显示设置页状态消息。
+   *
+   * @param {string} message - 要展示给用户的消息内容。
+   * @param {string} type - 消息类型，支持 info、success、error。
+   * @param {HTMLElement|null} target - 消息容器；默认使用飞书配置状态容器。
+   * @returns {void}
+   * @throws {Error} 不主动抛错；目标元素缺失时直接返回。
+   * @sideeffects 修改目标 DOM 的文本和样式类，并在 5 秒后隐藏。
    */
   function showStatus(message, type = 'info', target = elements.statusMessage) {
     if (!target) return;
@@ -145,6 +202,134 @@
     setTimeout(() => {
       target.classList.remove('show');
     }, 5000);
+  }
+
+  /**
+   * 切换飞书配置向导步骤。
+   *
+   * @param {number} step - 目标步骤编号，范围为 1 到 3；非法值会被夹取到有效范围。
+   * @returns {void}
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 修改向导面板和步骤指示器 DOM 状态。
+   */
+  function updateWizardStep(step) {
+    currentWizardStep = Math.min(3, Math.max(1, Number(step) || 1));
+
+    elements.wizardPanels.forEach((panel) => {
+      panel.classList.toggle('active', Number(panel.getAttribute('data-wizard-panel')) === currentWizardStep);
+    });
+
+    elements.wizardIndicators.forEach((indicator) => {
+      const indicatorStep = Number(indicator.getAttribute('data-step-indicator'));
+      indicator.classList.toggle('active', indicatorStep === currentWizardStep);
+      indicator.classList.toggle('complete', indicatorStep < currentWizardStep);
+    });
+  }
+
+  /**
+   * 从表单收集飞书配置。
+   *
+   * @returns {Object} 包含 appId、appSecret、appToken、tableId 的配置对象。
+   * @throws {Error} 不主动抛错；缺失输入元素按空字符串处理。
+   * @sideeffects 无外部副作用。
+   */
+  function collectFeishuConfig() {
+    return {
+      appId: elements.appId?.value.trim() || '',
+      appSecret: elements.appSecret?.value.trim() || '',
+      appToken: elements.appToken?.value.trim() || '',
+      tableId: elements.tableId?.value.trim() || ''
+    };
+  }
+
+  /**
+   * 校验飞书配置表单的本地必填字段。
+   *
+   * @returns {boolean} 所有必填字段已填写时返回 true。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 可能显示错误状态消息。
+   */
+  function validateConfigForm() {
+    const config = collectFeishuConfig();
+    const result = window.FeishuConfigCheckCore
+      ? FeishuConfigCheckCore.validateRequiredConfig(config)
+      : { success: Boolean(config.appId && config.appSecret && config.appToken && config.tableId), message: '请填写所有必填字段' };
+
+    if (!result.success) {
+      showStatus(result.message, 'error');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 重置连接检测分项展示。
+   *
+   * @returns {void}
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 修改检测项 DOM 状态，并清空上一次成功检测标记。
+   */
+  function resetConnectionChecks() {
+    lastConnectionPassed = false;
+    const defaults = {
+      credentials: '等待检查连接凭证',
+      token: '等待获取飞书 Token',
+      table: '等待访问多维表格',
+      fields: '等待检查表格字段',
+      records: '等待读取记录'
+    };
+
+    Object.keys(defaults).forEach((key) => {
+      renderConnectionCheck(key, { status: 'pending', message: defaults[key] });
+    });
+  }
+
+  /**
+   * 渲染单个连接检测项。
+   *
+   * @param {string} key - 检测项键名，如 credentials、token、table、fields、records。
+   * @param {Object} check - 检测项结果；包含 status 和 message。
+   * @returns {void}
+   * @throws {Error} 不主动抛错；找不到对应 DOM 时跳过。
+   * @sideeffects 修改检测项 DOM 的图标、文本和样式类。
+   */
+  function renderConnectionCheck(key, check) {
+    const element = document.querySelector(`[data-check="${key}"]`);
+    if (!element) return;
+
+    const status = check?.status || 'pending';
+    const icon = element.querySelector('i');
+    const text = element.querySelector('div');
+    element.className = `connection-check ${status}`;
+
+    if (icon) {
+      icon.className = status === 'success'
+        ? 'bi bi-check-circle'
+        : status === 'error'
+          ? 'bi bi-x-circle'
+          : 'bi bi-circle';
+    }
+
+    if (text) {
+      text.textContent = check?.message || '等待检测';
+    }
+  }
+
+  /**
+   * 渲染完整连接检测结果。
+   *
+   * @param {Object} result - FeishuAPI.testConnection 返回的结构化结果。
+   * @returns {void}
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 更新所有检测项 DOM，并记录检测是否通过。
+   */
+  function renderConnectionResult(result) {
+    lastConnectionPassed = Boolean(result?.success);
+    const checks = result?.checks || {};
+    ['credentials', 'token', 'table', 'fields', 'records'].forEach((key) => {
+      renderConnectionCheck(key, checks[key] || { status: 'pending', message: '等待检测' });
+    });
   }
 
   function populateBackgroundSettings(settings) {
@@ -353,27 +538,40 @@
   }
 
   /**
-   * Save Feishu config.
+   * 保存飞书配置。
+   *
+   * @returns {Promise<void>} 配置检测通过并保存完成后 resolve。
+   * @throws {Error} 内部捕获保存和检测异常，不向调用方抛出。
+   * @sideeffects 可能发起飞书连接检测，写入 chrome.storage.local，清理 token 和导航缓存，并更新 DOM 状态。
    */
   async function saveConfig() {
-    const config = {
-      appId: elements.appId.value.trim(),
-      appSecret: elements.appSecret.value.trim(),
-      appToken: elements.appToken.value.trim(),
-      tableId: elements.tableId.value.trim()
-    };
+    const config = collectFeishuConfig();
 
-    // Validate required fields.
-    if (!config.appId || !config.appSecret || !config.appToken || !config.tableId) {
-      showStatus('请填写所有必填字段', 'error');
+    if (elements.testModeToggle.checked) {
+      showStatus('测试模式已启用，关闭后再保存飞书配置', 'info');
+      return;
+    }
+
+    if (!validateConfigForm()) {
       return;
     }
 
     // Disable the button while saving.
     elements.saveBtn.disabled = true;
-    elements.saveBtn.textContent = '保存中...';
+    elements.saveBtn.textContent = '检测中...';
 
     try {
+      if (!lastConnectionPassed) {
+        const result = await FeishuAPI.testConnection(config);
+        renderConnectionResult(result);
+        if (!result.success) {
+          updateWizardStep(3);
+          showStatus(result.message || '连接检测未通过，暂不保存配置', 'error');
+          return;
+        }
+      }
+
+      elements.saveBtn.textContent = '保存中...';
       await Storage.saveFeishuConfig(config);
       showStatus('配置已保存', 'success');
 
@@ -390,7 +588,11 @@
   }
 
   /**
-   * Test Feishu connectivity.
+   * 测试当前表单中的飞书连接配置。
+   *
+   * @returns {Promise<void>} 检测流程完成并渲染结果后 resolve。
+   * @throws {Error} 内部捕获飞书检测异常，不向调用方抛出。
+   * @sideeffects 可能发起飞书网络请求，更新分项检测 DOM 和状态消息。
    */
   async function testConnection() {
     // Skip network tests while mock mode is enabled.
@@ -399,12 +601,8 @@
       return;
     }
 
-    // Validate required fields.
-    const appId = elements.appId.value.trim();
-    const appSecret = elements.appSecret.value.trim();
-
-    if (!appId || !appSecret) {
-      showStatus('请先填写 APP_ID 和 APP_SECRET', 'error');
+    const config = collectFeishuConfig();
+    if (!validateConfigForm()) {
       return;
     }
 
@@ -415,12 +613,13 @@
     try {
       showStatus('正在测试连接...', 'info');
 
-      const result = await FeishuAPI.testConnection();
+      const result = await FeishuAPI.testConnection(config);
+      renderConnectionResult(result);
 
       if (result.success) {
-        showStatus('连接成功！', 'success');
+        showStatus(result.message || '连接成功！', 'success');
       } else {
-        showStatus('连接失败: ' + result.message, 'error');
+        showStatus(result.message || '连接失败', 'error');
       }
     } catch (error) {
       console.error('[Options] 测试连接失败:', error);
@@ -455,8 +654,12 @@
   }
 
   /**
-   * Sync the test mode UI.
-   * @param {boolean} enabled
+   * 同步测试模式对飞书向导的禁用状态。
+   *
+   * @param {boolean} enabled - 是否启用测试模式。
+   * @returns {void}
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 修改飞书表单、检测按钮、保存按钮和测试模式提示 DOM。
    */
   function updateTestModeUI(enabled) {
     if (enabled) {
@@ -467,6 +670,7 @@
       elements.appToken.disabled = true;
       elements.tableId.disabled = true;
       elements.testBtn.disabled = true;
+      elements.saveBtn.disabled = true;
     } else {
       elements.testModeNotice.classList.remove('show');
       elements.appId.disabled = false;
@@ -474,7 +678,9 @@
       elements.appToken.disabled = false;
       elements.tableId.disabled = false;
       elements.testBtn.disabled = false;
+      elements.saveBtn.disabled = false;
     }
+    resetConnectionChecks();
   }
 
   /**
@@ -512,43 +718,6 @@
       console.error('[Options] 重置失败:', error);
       showStatus('重置失败', 'error');
     }
-  }
-
-  /**
-   * Show the setup guide.
-   */
-  function showGuide(e) {
-    e.preventDefault();
-
-    const guide = `
-配置指南：
-
-1. 创建飞书应用
-   - 访问 https://open.feishu.cn/
-   - 登录后创建应用
-   - 获取 APP_ID 和 APP_SECRET
-
-2. 配置应用权限
-   - 在"权限管理"中开启以下权限：
-     * bitable:app 读写多维表格
-
-3. 创建多维表格
-   - 在飞书中创建多维表格
-   - 获取多维表格的 APP_TOKEN
-
-4. 配置表格字段
-   确保表格包含以下字段：
-   - 分类（单行文本）
-   - 站点名称（单行文本）
-   - 网址（超链接）
-   - 排序（数字）
-   - 图标（单行文本/超链接）
-
-5. 获取 TABLE_ID
-   - 在多维表格 URL 中获取表格 ID
-    `;
-
-    alert(guide);
   }
 
   // Initialize once the DOM is ready.

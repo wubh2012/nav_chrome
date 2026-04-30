@@ -1,6 +1,10 @@
 /**
  * 飞书 API 模块
- * 处理与飞书多维表格的通信
+ *
+ * 职责与边界：封装插件与飞书开放平台、多维表格 API 的通信，负责获取 token、读取和写入导航记录、
+ * 检测连接与表格字段；不负责渲染 DOM、管理 options 表单状态或决定页面交互流程。
+ * 关键副作用：发起飞书网络请求，读写 chrome.storage.local 中的 token 缓存和导航相关配置。
+ * 关键依赖与约束：依赖 Storage 模块和 FeishuConfigCheckCore；字段名必须与用户多维表格中的字段保持一致。
  */
 const FeishuAPI = (function() {
   'use strict';
@@ -24,6 +28,10 @@ const FeishuAPI = (function() {
     sort: '排序',
     icon: '备用图标'
   };
+
+  const ConfigCheckCore = typeof FeishuConfigCheckCore !== 'undefined'
+    ? FeishuConfigCheckCore
+    : null;
 
   // ==================== 工具函数 ====================
 
@@ -124,18 +132,24 @@ const FeishuAPI = (function() {
   }
 
   /**
-   * 获取 tenant_access_token
-   * @returns {Promise<string>}
+   * 获取 tenant_access_token。
+   *
+   * @param {Object|null} configOverride - 可选配置；传入时用于检测未保存的表单配置并跳过旧 token 缓存。
+   * @returns {Promise<string>} 飞书 tenant_access_token。
+   * @throws {Error} 配置缺失、飞书返回非 0 code 或网络异常时抛出。
+   * @sideeffects 未传入 configOverride 时会读取和写入本地 token 缓存；始终可能发起飞书网络请求。
    */
-  async function getTenantAccessToken() {
-    // 先检查缓存
-    const cachedToken = await getCachedToken();
-    if (cachedToken) {
-      console.log('[FeishuAPI] 使用缓存的 Token');
-      return cachedToken;
+  async function getTenantAccessToken(configOverride = null) {
+    if (!configOverride) {
+      // 先检查缓存
+      const cachedToken = await getCachedToken();
+      if (cachedToken) {
+        console.log('[FeishuAPI] 使用缓存的 Token');
+        return cachedToken;
+      }
     }
 
-    const config = await getConfig();
+    const config = configOverride || await getConfig();
     if (!config || !config.appId || !config.appSecret) {
       throw new Error('飞书配置不完整，请先配置 APP_ID 和 APP_SECRET');
     }
@@ -161,8 +175,10 @@ const FeishuAPI = (function() {
         throw new Error(`获取 Token 失败: ${result.msg}`);
       }
 
-      // 缓存 Token
-      await cacheToken(result.tenant_access_token);
+      if (!configOverride) {
+        // 缓存 Token
+        await cacheToken(result.tenant_access_token);
+      }
       console.log('[FeishuAPI] Token 获取成功');
 
       return result.tenant_access_token;
@@ -376,6 +392,75 @@ const FeishuAPI = (function() {
       : null;
 
     return fields;
+  }
+
+  /**
+   * 读取指定配置对应的数据表字段列表。
+   *
+   * @param {Object|null} configOverride - 可选飞书配置；传入时用于检测尚未保存的表单配置。
+   * @param {string|null} tokenOverride - 可选 tenant_access_token；省略时按配置获取。
+   * @returns {Promise<Array<Object>>} 飞书字段对象数组。
+   * @throws {Error} 缺少 APP_TOKEN/TABLE_ID、权限不足、表格不存在或网络异常时抛出。
+   * @sideeffects 可能发起飞书网络请求；未传入 tokenOverride 时可能读取或刷新 token。
+   */
+  async function listTableFields(configOverride = null, tokenOverride = null) {
+    const config = configOverride || await getConfig();
+    if (!config || !config.appToken || !config.tableId) {
+      throw new Error('飞书配置不完整，请先配置 APP_TOKEN 和 TABLE_ID');
+    }
+
+    const token = tokenOverride || await getTenantAccessToken(configOverride);
+    const response = await fetch(
+      `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/fields?page_size=100`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const result = await response.json();
+
+    if (result.code !== 0) {
+      const classified = classifyConnectionError(result);
+      throw new Error(classified.message);
+    }
+
+    return result.data?.items || [];
+  }
+
+  /**
+   * 使用指定配置读取记录，用于连接向导检测未保存的表单配置。
+   *
+   * @param {Object} config - 飞书配置对象，必须包含 appToken 和 tableId。
+   * @param {string} token - 已获取的 tenant_access_token。
+   * @returns {Promise<Object>} 与 getRecords 一致的转换后导航数据结果。
+   * @throws {Error} 飞书返回错误、JSON 解析失败或网络异常时抛出。
+   * @sideeffects 发起飞书记录读取网络请求，不读写本地导航缓存。
+   */
+  async function fetchRecordsForConfig(config, token) {
+    const response = await fetch(
+      `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records?page_size=100`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const result = await response.json();
+
+    if (result.code !== 0) {
+      const classified = classifyConnectionError(result);
+      throw new Error(classified.message);
+    }
+
+    return {
+      success: true,
+      ...transformRecords(result.data?.items || [])
+    };
   }
 
   async function updateRecord(recordId, linkData, canRetry = true) {
@@ -805,42 +890,151 @@ const FeishuAPI = (function() {
   }
 
   /**
-   * 测试连接
-   * @returns {Promise<Object>} 测试结果
+   * 创建连接检测步骤结果。
+   *
+   * @param {string} status - pending、success 或 error。
+   * @param {string} message - 面向用户的步骤说明。
+   * @param {Object} extra - 需要附加到步骤上的结构化信息。
+   * @returns {Object} 单个检测步骤对象。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 无外部副作用。
    */
-  async function testConnection() {
+  function createConnectionCheck(status, message, extra = {}) {
+    return { status, message, ...extra };
+  }
+
+  /**
+   * 构建连接检测结果的初始结构。
+   *
+   * @returns {Object} 包含所有检测步骤的结果对象。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 无外部副作用。
+   */
+  function createConnectionResult() {
+    return {
+      success: false,
+      message: '连接检测未完成',
+      missingFields: [],
+      checks: {
+        credentials: createConnectionCheck('pending', '等待检查连接凭证'),
+        token: createConnectionCheck('pending', '等待获取飞书 Token'),
+        table: createConnectionCheck('pending', '等待访问多维表格'),
+        fields: createConnectionCheck('pending', '等待检查表格字段'),
+        records: createConnectionCheck('pending', '等待读取记录')
+      }
+    };
+  }
+
+  /**
+   * 归类飞书连接检测中的异常。
+   *
+   * @param {Object|Error|string|null} errorLike - 飞书响应、异常或错误文本。
+   * @returns {Object} 包含 category、message、code、rawMessage 的错误归类结果。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 无外部副作用。
+   */
+  function classifyConnectionError(errorLike) {
+    if (ConfigCheckCore && typeof ConfigCheckCore.classifyFeishuError === 'function') {
+      return ConfigCheckCore.classifyFeishuError(errorLike);
+    }
+
+    return {
+      category: 'unknown',
+      message: errorLike?.message || errorLike?.msg || String(errorLike || '飞书请求失败'),
+      code: errorLike?.code || null,
+      rawMessage: errorLike?.msg || errorLike?.message || ''
+    };
+  }
+
+  /**
+   * 测试飞书连接并检查字段完整性。
+   *
+   * @param {Object|null} configOverride - 可选飞书配置；传入时检测尚未保存的表单输入。
+   * @returns {Promise<Object>} 结构化测试结果，包含 success、message、checks 和 missingFields。
+   * @throws {Error} 内部捕获并转为失败结果；通常不向调用方抛出。
+   * @sideeffects 可能发起飞书 token、字段列表和记录读取网络请求；不会保存配置或导航缓存。
+   */
+  async function testConnection(configOverride = null) {
+    const result = createConnectionResult();
+    const core = ConfigCheckCore;
+
     try {
       // 先检查测试模式
       if (await isTestMode()) {
-        return {
-          success: true,
-          message: '测试模式已启用'
-        };
+        result.success = true;
+        result.message = '测试模式已启用';
+        result.checks.credentials = createConnectionCheck('success', '测试模式下无需飞书凭证');
+        return result;
       }
 
-      // 尝试获取 Token
-      await getTenantAccessToken();
+      const config = configOverride || await getConfig();
+      const configCheck = core && typeof core.validateRequiredConfig === 'function'
+        ? core.validateRequiredConfig(config)
+        : { success: !!(config && config.appId && config.appSecret && config.appToken && config.tableId), message: '飞书连接凭证已填写完整', missingKeys: [] };
 
-      // 尝试获取数据
-      const config = await getConfig();
-      if (!config || !config.appToken || !config.tableId) {
-        return {
-          success: false,
-          message: 'APP_TOKEN 和 TABLE_ID 未配置'
-        };
+      if (!configCheck.success) {
+        result.message = configCheck.message;
+        result.checks.credentials = createConnectionCheck('error', configCheck.message, {
+          category: configCheck.category,
+          missingKeys: configCheck.missingKeys || []
+        });
+        return result;
+      }
+      result.checks.credentials = createConnectionCheck('success', '飞书连接凭证已填写完整');
+
+      let token = '';
+      try {
+        token = await getTenantAccessToken(config);
+        result.checks.token = createConnectionCheck('success', 'APP_ID / APP_SECRET 有效');
+      } catch (error) {
+        const classified = classifyConnectionError(error);
+        result.message = classified.message;
+        result.checks.token = createConnectionCheck('error', classified.message, classified);
+        return result;
       }
 
-      await getRecords();
+      let fields = [];
+      try {
+        fields = await listTableFields(config, token);
+        result.checks.table = createConnectionCheck('success', 'APP_TOKEN / TABLE_ID 可访问');
+      } catch (error) {
+        const classified = classifyConnectionError(error);
+        result.message = classified.message;
+        result.checks.table = createConnectionCheck('error', classified.message, classified);
+        return result;
+      }
 
-      return {
-        success: true,
-        message: '连接成功'
-      };
+      const fieldCheck = core && typeof core.analyzeFieldList === 'function'
+        ? core.analyzeFieldList(fields)
+        : { success: true, message: '字段检查通过', missingFields: [] };
+      result.missingFields = fieldCheck.missingFields || [];
+      if (!fieldCheck.success) {
+        result.message = fieldCheck.message;
+        result.checks.fields = createConnectionCheck('error', fieldCheck.message, {
+          category: fieldCheck.category,
+          missingFields: fieldCheck.missingFields || []
+        });
+        return result;
+      }
+      result.checks.fields = createConnectionCheck('success', fieldCheck.message);
+
+      try {
+        await fetchRecordsForConfig(config, token);
+        result.checks.records = createConnectionCheck('success', '可以读取表格记录');
+      } catch (error) {
+        const classified = classifyConnectionError(error);
+        result.message = classified.message;
+        result.checks.records = createConnectionCheck('error', classified.message, classified);
+        return result;
+      }
+
+      result.success = true;
+      result.message = '连接成功，字段完整，可以保存配置';
+      return result;
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      result.success = false;
+      result.message = error.message || '连接检测失败';
+      return result;
     }
   }
 
@@ -882,6 +1076,7 @@ const FeishuAPI = (function() {
     deleteRecord,
     updateRecordSort,
     batchUpdateRecordSorts,
+    listTableFields,
     testConnection,
 
     // Token 管理

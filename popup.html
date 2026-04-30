@@ -16,14 +16,51 @@
   <div class="artdeco-bg"></div>
 
   <div class="popup-container">
-    <div class="menu-item" id="openOptions">
-      <i class="bi bi-gear"></i>
-      <span>插件设置</span>
-    </div>
+    <section class="sync-panel" aria-label="同步状态面板">
+      <div class="sync-panel-header">
+        <div>
+          <div class="panel-kicker">同步状态</div>
+          <h1 id="sync-status-title">加载中</h1>
+        </div>
+        <span id="sync-status-dot" class="status-dot info" aria-hidden="true"></span>
+      </div>
+
+      <dl class="status-grid">
+        <div class="status-row">
+          <dt>数据来源</dt>
+          <dd id="sync-source">--</dd>
+        </div>
+        <div class="status-row">
+          <dt>上次同步</dt>
+          <dd id="sync-last-time">--</dd>
+        </div>
+        <div class="status-row">
+          <dt>自动同步</dt>
+          <dd id="sync-auto">--</dd>
+        </div>
+      </dl>
+
+      <div id="sync-message" class="sync-message">正在读取同步状态...</div>
+
+      <div class="action-row">
+        <button id="sync-now-btn" class="primary-action" type="button">
+          <i class="bi bi-arrow-repeat"></i>
+          <span>立即同步</span>
+        </button>
+        <button id="refresh-status-btn" class="icon-action" type="button" title="刷新状态" aria-label="刷新状态">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button id="openOptions" class="icon-action" type="button" title="插件设置" aria-label="插件设置">
+          <i class="bi bi-gear"></i>
+        </button>
+      </div>
+    </section>
   </div>
 
   <script src="js/modules/storage.js"></script>
+  <script src="js/modules/feishu-api.js"></script>
   <script src="js/modules/theme-manager.js"></script>
+  <script src="js/modules/popup-status-core.js"></script>
   <script src="js/popup.js"></script>
 </body>
 </html>

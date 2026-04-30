@@ -296,13 +296,13 @@
           id="quick-search-input"
           class="quick-search-input"
           type="text"
-          placeholder="输入名称、网址或分类进行搜索"
+          placeholder="输入名称、拼音、首字母、网址或分类"
           autocomplete="off"
           spellcheck="false"
           aria-label="网站快速搜索输入框"
         >
       </div>
-      <div class="quick-search-hint">Shift 双击 / Ctrl+F 唤起，↑/↓ 切换，Enter 打开，Esc 关闭</div>
+      <div class="quick-search-hint">Shift 双击 / Ctrl+F 唤起，支持中文、拼音和首字母，↑/↓ 切换，Enter 打开，Esc 关闭</div>
       <ul id="quick-search-list" class="quick-search-list" role="listbox"></ul>
       <div id="quick-search-empty" class="quick-search-empty">没有匹配的网站</div>
     </div>
@@ -310,6 +310,7 @@
 
   <!-- Scripts -->
   <script src="lib/lunar.js"></script>
+  <script src="lib/pinyin-pro.js"></script>
   <script src="js/modules/storage.js"></script>
   <script src="js/modules/background-config.js"></script>
   <script src="js/modules/background-storage.js"></script>
@@ -320,6 +321,7 @@
   <script src="js/modules/link-manager.js"></script>
   <script src="js/modules/drag-sort-manager.js"></script>
   <script src="js/modules/sync-manager.js"></script>
+  <script src="js/modules/quick-search-core.js"></script>
   <script src="js/modules/quick-search-manager.js"></script>
   <script src="js/app.js"></script>
 </body>

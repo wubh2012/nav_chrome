@@ -244,9 +244,38 @@ body {
   color: var(--text-primary);
   font-size: 16px;
   line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.quick-search-item-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-search-item-name mark,
+.quick-search-highlight {
+  color: var(--selected-text);
+  background: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.quick-search-match-badge {
+  flex: 0 0 auto;
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--selected-bg) 72%, transparent);
+  border: var(--border-dim);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 600;
 }
 
 .quick-search-item-meta {

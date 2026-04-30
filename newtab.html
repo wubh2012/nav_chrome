@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  职责与边界：定义水果导航新标签页的静态 DOM、资源加载顺序和主要交互容器；
+  不负责业务数据获取、飞书 API 调用、链接 CRUD 实现或主题状态持久化。
+  关键副作用：加载页面脚本后会初始化扩展 UI、读取浏览器存储并可能注册 Chrome Extension 事件；
+  HTML 本身不直接读写网络、文件或数据库。
+  关键依赖与约束：依赖 Manifest V3 扩展环境、css/style.css、Bootstrap Icons、
+  js/modules 下的全局模块加载顺序以及 newtab 页面固定容器 ID。
+-->
 <html lang="zh-CN">
 
 <head>
@@ -234,6 +242,23 @@
             <div class="error-message" id="name-error"></div>
           </div>
           <div class="form-group">
+            <label for="site-icon">图标 URL（可选）</label>
+            <div class="icon-input-row">
+              <input type="url" id="site-icon" name="site-icon" placeholder="根据网址自动建议 favicon">
+              <button type="button" id="use-favicon-btn" class="icon-suggest-btn" title="使用网址生成图标建议" aria-label="使用网址生成图标建议">
+                <i class="bi bi-stars"></i>
+              </button>
+            </div>
+            <div class="icon-preview-row" id="site-icon-preview-row">
+              <div class="icon-preview-box is-empty" id="site-icon-preview-box" aria-hidden="true">
+                <img id="site-icon-preview" alt="">
+                <i class="bi bi-image"></i>
+              </div>
+              <span class="icon-preview-status" id="icon-preview-status" aria-live="polite">输入网址后自动建议 favicon</span>
+            </div>
+            <div class="error-message" id="icon-error"></div>
+          </div>
+          <div class="form-group">
             <label for="site-category">分类 *</label>
             <select id="site-category" name="site-category">
               <!-- 动态生成的分类选项 -->
@@ -318,6 +343,7 @@
   <script src="js/modules/background-manager.js"></script>
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/ui-renderer.js"></script>
+  <script src="js/modules/link-manager-core.js"></script>
   <script src="js/modules/link-manager.js"></script>
   <script src="js/modules/drag-sort-manager.js"></script>
   <script src="js/modules/sync-manager.js"></script>

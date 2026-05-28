@@ -16,11 +16,11 @@
 
 ### 方式一：安装发布版本（推荐）
 
-1. 下载已打包的插件文件
+1. 下载已打包的插件文件，或使用 `npm run package` 生成发布包
 2. 打开 Chrome 浏览器，访问 `chrome://extensions/`
 3. 开启右上角的「开发者模式」
 4. 点击「加载已解压的扩展程序」
-5. 选择插件文件夹完成安装
+5. 选择 `dist/chrome-store-package-版本号` 文件夹完成安装
 
 ### 方式二：本地开发
 
@@ -35,6 +35,61 @@ cd nav_chrome
 # 打开 chrome://extensions/，开启开发者模式
 # 点击"加载已解压的扩展程序"，选择项目目录
 ```
+
+## 打包发布
+
+项目内置 Chrome Web Store 上传包生成脚本。发布前请先确认 `manifest.json` 中的 `version` 高于线上版本，否则 Chrome 商店会拒绝上传。
+
+### 完整打包
+
+```bash
+npm run package
+```
+
+该命令会执行以下步骤：
+
+1. 运行 `npm test`
+2. 读取 `manifest.json` 中的版本号
+3. 复制发布所需文件到 `dist/chrome-store-package-版本号`
+4. 生成 `dist/shuiguo-nav-chrome-版本号.zip`
+5. 输出压缩包大小、文件数量和 SHA256
+
+### 快速打包
+
+如果只是重复生成上传包，不需要重新跑测试，可以使用：
+
+```bash
+npm run package:skip-tests
+```
+
+### 上传 Chrome 商店
+
+上传 Chrome Web Store 时选择生成的 zip 文件：
+
+```text
+dist/shuiguo-nav-chrome-版本号.zip
+```
+
+打包脚本只包含插件运行必需文件：
+
+- `manifest.json`
+- `newtab.html`
+- `options.html`
+- `popup.html`
+- `privacy-policy.html`
+- `privacy-policy.md`
+- `css/`
+- `img/`
+- `js/`
+- `lib/`
+
+以下开发内容会被排除：
+
+- `.git/`
+- `node_modules/`
+- `tests/`
+- `docs/`
+- `dist/`
 
 ## 配置使用
 
@@ -130,13 +185,16 @@ nav_chrome/
 ├── newtab.html             # 起始页（主页面）
 ├── options.html            # 设置页
 ├── popup.html              # 快捷操作弹窗
-├── background.js           # 后台 Service Worker
+├── package.json            # npm 脚本
+├── scripts/
+│   └── package-extension.js # Chrome 商店打包脚本
 ├── css/
 │   ├── style.css           # 主样式
-│   ├── options.css        # 设置页样式
-│   └── popup.css          # 弹窗样式
+│   ├── popup.css           # 弹窗样式
+│   └── bootstrap-icons.css # 图标字体样式
 ├── js/
 │   ├── app.js             # 主入口
+│   ├── background.js      # 后台 Service Worker
 │   ├── popup.js           # 弹窗脚本
 │   ├── options.js         # 设置页脚本
 │   └── modules/
@@ -147,9 +205,9 @@ nav_chrome/
 │       ├── ui-renderer.js  # UI 渲染
 │       └── link-manager.js # 链接管理
 ├── lib/
-│   ├── axios.min.js        # HTTP 客户端
-│   └── lunar.js           # 农历处理
-└── img/                   # 图标资源
+│   ├── lunar.js           # 农历处理
+│   └── pinyin-pro.js      # 拼音搜索支持
+└── img/                   # 图标与图片资源
 ```
 
 ## 技术栈

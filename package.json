@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "package": "node scripts/package-extension.js",
+    "package:skip-tests": "node scripts/package-extension.js --skip-tests"
   },
   "dependencies": {
     "sharp": "^0.34.5"

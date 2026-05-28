@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "水果导航",
   "short_name": "水果导航",
-  "version": "1.0.1",
-  "description": "基于飞书多维表格的导航起始页插件，支持多主题、自定义导航，让您的浏览器新标签页更加美观实用。",
+  "version": "1.0.2",
+  "description": "水果导航是一款基于飞书多维表格同步的 Chrome 新标签页导航插件，支持自定义站点、多主题、暗黑模式和背景设置",
   "author": "水果芋头",
   "icons": {
     "16": "img/icons/icon-16.png",

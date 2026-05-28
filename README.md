@@ -6,15 +6,19 @@
 
 - **替代默认起始页** - 打开新标签页时显示个性化导航页面
 - **飞书数据同步** - 导航数据存储在飞书多维表格中，支持多设备同步
+- **飞书配置向导** - 分步骤填写凭证，检测权限、字段完整性和记录读取能力
+- **快速搜索** - 支持按站点名称、拼音、拼音首字母和网址快速查找
 - **多主题风格** - 霓虹风格、海洋蓝调、暗金色等多种皮肤
 - **暗黑模式** - 支持一键切换深色/浅色模式
+- **自定义背景** - 支持默认背景、本地上传图片和外部图片 URL
+- **同步状态面板** - 在插件弹窗中查看同步来源、上次同步时间并手动同步
 - **Art Deco 设计** - 精美的装饰艺术风格背景
 - **农历显示** - 集成农历日期显示
 - **图标获取** - 自动获取网站 Favicon 图标
 
 ## 快速开始
 
-### 方式一：安装发布版本（推荐）
+### 方式一：本地安装发布版本
 
 1. 下载已打包的插件文件，或使用 `npm run package` 生成发布包
 2. 打开 Chrome 浏览器，访问 `chrome://extensions/`
@@ -30,6 +34,9 @@ git clone https://github.com/wubh2012/nav_chrome.git
 
 # 进入项目目录
 cd nav_chrome
+
+# 安装依赖
+npm install
 
 # 使用 Chrome 加载扩展
 # 打开 chrome://extensions/，开启开发者模式
@@ -64,20 +71,20 @@ npm run package:skip-tests
 
 ### 上传 Chrome 商店
 
-上传 Chrome Web Store 时选择生成的 zip 文件：
+上传 Chrome Web Store 时选择生成的 zip 文件，不要上传解压后的目录：
 
 ```text
 dist/shuiguo-nav-chrome-版本号.zip
 ```
 
-打包脚本只包含插件运行必需文件：
+Chrome Web Store 的隐私政策要求在开发者后台填写一个公网可访问的隐私政策 URL。仓库中的 `privacy-policy.html` 和 `privacy-policy.md` 可作为隐私政策内容源，但商店并不要求它们必须存在于上传 zip 中。
+
+打包脚本默认只包含发布相关文件：
 
 - `manifest.json`
 - `newtab.html`
 - `options.html`
 - `popup.html`
-- `privacy-policy.html`
-- `privacy-policy.md`
 - `css/`
 - `img/`
 - `js/`
@@ -129,7 +136,7 @@ dist/shuiguo-nav-chrome-版本号.zip
 | 网址 | 超链接 | 网站地址 |
 | 分类 | 单行文本 | 分类标签 |
 | 排序 | 数字 | 越小越靠前 |
-| 备用图标 | 附件/图片 | 可选 |
+| 备用图标 | 链接 | 可选；填写后优先使用该图标，减少首页 favicon 请求 |
 
 3. 获取多维表格的 `APP_TOKEN`（URL 中的 `app_token` 参数）
 4. 获取表格的 `TABLE_ID`（URL 中的 `table_id` 参数）
@@ -154,6 +161,8 @@ dist/shuiguo-nav-chrome-版本号.zip
 - **时间显示** - 顶部显示当前时间和农历日期
 - **工具图标** - 主内容区显示常用网站快捷入口
 - **添加按钮** - 点击右下角 + 按钮添加新网站
+- **快速搜索** - 双击时间区域、按 `Ctrl+F` 或使用页面提示入口打开搜索面板
+- **同步提示** - 首页和弹窗会显示当前同步状态
 
 ### 添加网站
 
@@ -177,6 +186,16 @@ dist/shuiguo-nav-chrome-版本号.zip
 - 选择不同的主题风格
 - 点击月亮图标切换暗黑模式
 
+### 设置背景
+
+在插件设置页的「背景设置」中可以选择：
+
+- **默认背景** - 使用内置 Art Deco 背景
+- **本地上传** - 上传图片并保存到浏览器本地
+- **图片 URL** - 使用可直接访问的外部图片链接
+
+可同时调整图片适配方式、遮罩强度和模糊强度。
+
 ## 项目结构
 
 ```
@@ -198,10 +217,15 @@ nav_chrome/
 │   ├── popup.js           # 弹窗脚本
 │   ├── options.js         # 设置页脚本
 │   └── modules/
+│       ├── background-manager.js # 背景渲染
+│       ├── drag-sort-manager.js  # 拖拽排序
 │       ├── feishu-api.js  # 飞书 API
+│       ├── feishu-config-check-core.js # 飞书配置检测
 │       ├── storage.js     # 存储封装
 │       ├── sync-manager.js # 同步管理
 │       ├── theme-manager.js # 主题管理
+│       ├── quick-search-core.js # 快速搜索核心逻辑
+│       ├── quick-search-manager.js # 快速搜索交互
 │       ├── ui-renderer.js  # UI 渲染
 │       └── link-manager.js # 链接管理
 ├── lib/
@@ -217,6 +241,7 @@ nav_chrome/
 - **CSS3**（Art Deco 风格设计）
 - **飞书开放平台 API**
 - **农历库 (lunar.js)**
+- **pinyin-pro**（拼音搜索支持）
 
 ## 常见问题
 
@@ -229,6 +254,18 @@ nav_chrome/
 1. 检查飞书应用的权限是否已开启
 2. 确认多维表格的字段名称是否正确
 3. 点击「测试连接」查看具体错误信息
+
+### Q: 为什么测试连接提示缺少备用图标字段？
+
+`备用图标` 字段本身必须存在，但内容可以为空。插件会优先使用该字段中的图标链接；为空时会自动使用网站 favicon。
+
+### Q: Chrome 商店上传时要上传哪个文件？
+
+运行 `npm run package` 后，上传 `dist/shuiguo-nav-chrome-版本号.zip`。不要上传 `dist/chrome-store-package-版本号` 目录，也不要上传整个项目目录。
+
+### Q: 隐私政策文件需要打包进 zip 吗？
+
+Chrome Web Store 要求在开发者后台填写公网可访问的隐私政策 URL，不强制要求 zip 内包含 `privacy-policy.html` 或 `privacy-policy.md`。当前仓库保留这两个文件作为隐私政策内容源。
 
 ### Q: 如何备份数据？
 
@@ -245,6 +282,14 @@ GitHub 仓库：https://github.com/wubh2012/nav_chrome
 MIT License
 
 ## 更新日志
+
+### v1.0.2
+- 优化飞书配置向导和连接检测体验
+- 支持检查字段完整性和记录读取状态
+- 优化同步状态弹窗展示
+- 增强快速搜索和站点匹配能力
+- 优化背景设置、缓存清理和数据管理体验
+- 修复若干交互和稳定性问题
 
 ### v1.0.0
 - 初始版本发布

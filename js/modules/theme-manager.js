@@ -293,8 +293,8 @@ const ThemeManager = (function() {
     }
   };
 
-  const DEFAULT_SKIN = 'graphite';
-  const DEFAULT_MODE = 'dark';
+  const DEFAULT_SKIN = 'cream';
+  const DEFAULT_MODE = 'light';
 
   let currentSkin = DEFAULT_SKIN;
   let currentMode = DEFAULT_MODE;

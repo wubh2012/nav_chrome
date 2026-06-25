@@ -11,6 +11,45 @@
 const UIRenderer = (function() {
   'use strict';
 
+  const rendererCore = (typeof globalThis !== 'undefined' && globalThis.UIRendererCore)
+    ? globalThis.UIRendererCore
+    : {
+        getCategoryPriority(category) {
+          const normalized = String(category || '').trim();
+          if (normalized === '主页') return 1;
+          if (normalized === 'AI') return 2;
+          if (normalized === 'Code') return 3;
+          if (normalized === '影视') return 5;
+          return 4;
+        },
+        sortCategoriesByPriority(categories) {
+          const safeCategories = Array.isArray(categories) ? categories : [];
+          return [...safeCategories].sort((a, b) => {
+            const priorityDiff = this.getCategoryPriority(a) - this.getCategoryPriority(b);
+            if (priorityDiff !== 0) {
+              return priorityDiff;
+            }
+
+            return String(a || '').localeCompare(String(b || ''), 'zh-Hans-CN');
+          });
+        },
+        flattenToolsByCategoryPriority(data) {
+          if (!data || typeof data !== 'object') {
+            return [];
+          }
+
+          const tools = [];
+          this.sortCategoriesByPriority(Object.keys(data)).forEach((category) => {
+            const categoryTools = Array.isArray(data[category]) ? data[category] : [];
+            categoryTools.forEach((tool) => {
+              tools.push({ ...tool, category });
+            });
+          });
+
+          return tools;
+        }
+      };
+
   // 当前选中的分类
   let currentCategory = 'all';
 
@@ -53,16 +92,7 @@ const UIRenderer = (function() {
     const menu = document.getElementById('category-menu');
     if (!menu) return;
 
-    // 分类排序：全部 → 主页 → AI → Code → 其他（按原顺序）
-    const categoryOrder = ['主页', 'AI', 'Code'];
-    const sortedCategories = [...categories].sort((a, b) => {
-      const indexA = categoryOrder.indexOf(a);
-      const indexB = categoryOrder.indexOf(b);
-      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
+    const sortedCategories = rendererCore.sortCategoriesByPriority(categories);
 
     // 保留"全部"选项
     let html = `<li class="active" data-category="all"><i class="bi bi-house-door"></i> 全部</li>`;
@@ -142,15 +172,7 @@ const UIRenderer = (function() {
     grid.style.visibility = 'hidden';
     grid.innerHTML = '';
 
-    const tools = [];
-
-    // 收集所有工具
-    Object.keys(data).forEach(category => {
-      const categoryTools = data[category] || [];
-      categoryTools.forEach(tool => {
-        tools.push({ ...tool, category });
-      });
-    });
+    const tools = rendererCore.flattenToolsByCategoryPriority(data);
 
     if (tools.length === 0) {
       grid.innerHTML = '<div class="empty-state">暂无数据，请添加链接</div>';
@@ -404,17 +426,7 @@ const UIRenderer = (function() {
    * @returns {Array<string>}
    */
   function getCategorySequence() {
-    const categoryOrder = ['主页', 'AI', 'Code'];
-    const sortedCategories = [...cachedCategories].sort((a, b) => {
-      const indexA = categoryOrder.indexOf(a);
-      const indexB = categoryOrder.indexOf(b);
-      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
-
-    return ['all', ...sortedCategories];
+    return ['all', ...rendererCore.sortCategoriesByPriority(cachedCategories)];
   }
 
   /**

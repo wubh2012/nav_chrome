@@ -7,7 +7,7 @@
   关键依赖与约束：依赖 Manifest V3 扩展环境、css/style.css、Bootstrap Icons、
   js/modules 下的全局模块加载顺序以及 newtab 页面固定容器 ID。
 -->
-<html lang="zh-CN">
+<html lang="zh-CN" data-skin="cream" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
@@ -134,9 +134,9 @@
         <div class="skin-selector" id="skin-selector">
           <div class="current-skin">
             <div class="current-skin-preview">
-              <i class="bi bi-stars current-skin-icon"></i>
+              <i class="bi bi-flower1 current-skin-icon"></i>
             </div>
-            <span class="current-skin-name">石墨中性</span>
+            <span class="current-skin-name">奶油复古</span>
             <button class="skin-expand-btn">
               <i class="bi bi-chevron-down"></i>
             </button>
@@ -144,7 +144,7 @@
 
           <div class="skin-options">
             <div class="skin-grid">
-              <div class="skin-option active" data-skin="graphite">
+              <div class="skin-option" data-skin="graphite">
                 <div class="skin-colors">
                   <div class="color-dot primary"></div>
                   <div class="color-dot secondary"></div>
@@ -162,7 +162,7 @@
                 <span class="skin-label">霓虹风格</span>
               </div>
 
-              <div class="skin-option" data-skin="cream">
+              <div class="skin-option active" data-skin="cream">
                 <div class="skin-colors">
                   <div class="color-dot primary"></div>
                   <div class="color-dot secondary"></div>
@@ -342,6 +342,7 @@
   <script src="js/modules/feishu-api.js"></script>
   <script src="js/modules/background-manager.js"></script>
   <script src="js/modules/theme-manager.js"></script>
+  <script src="js/modules/ui-renderer-core.js"></script>
   <script src="js/modules/ui-renderer.js"></script>
   <script src="js/modules/link-manager-core.js"></script>
   <script src="js/modules/link-manager.js"></script>

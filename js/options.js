@@ -37,6 +37,7 @@
     backgroundFileInput: document.getElementById('background-file'),
     backgroundFileMeta: document.getElementById('background-file-meta'),
     backgroundUrl: document.getElementById('background-url'),
+    backgroundAdvancedSection: document.getElementById('background-advanced-section'),
     backgroundSize: document.getElementById('background-size'),
     backgroundOverlay: document.getElementById('background-overlay'),
     backgroundOverlayValue: document.getElementById('background-overlay-value'),
@@ -50,6 +51,7 @@
   let pendingBackgroundFile = null;
   let currentWizardStep = 1;
   let lastConnectionPassed = false;
+  let hasSavedUploadedBackground = false;
 
   /**
    * 初始化设置页状态。
@@ -102,7 +104,7 @@
 
       if (Storage.loadBackgroundSettings) {
         const backgroundSettings = await Storage.loadBackgroundSettings();
-        populateBackgroundSettings(backgroundSettings);
+        await populateBackgroundSettings(backgroundSettings);
       }
     } catch (error) {
       console.error('[Options] 加载配置失败:', error);
@@ -160,6 +162,12 @@
 
     if (elements.backgroundFileInput) {
       elements.backgroundFileInput.addEventListener('change', handleBackgroundFileChange);
+    }
+
+    if (elements.backgroundUrl) {
+      elements.backgroundUrl.addEventListener('input', () => {
+        updateBackgroundModeUI(getSelectedBackgroundMode());
+      });
     }
 
     if (elements.backgroundOverlay) {
@@ -332,10 +340,14 @@
     });
   }
 
-  function populateBackgroundSettings(settings) {
+  async function populateBackgroundSettings(settings) {
     const safeSettings = Storage.normalizeBackgroundSettings
       ? Storage.normalizeBackgroundSettings(settings)
       : settings;
+    const savedUpload = window.BackgroundStorage && typeof BackgroundStorage.getUploadedBackground === 'function'
+      ? await BackgroundStorage.getUploadedBackground()
+      : null;
+    hasSavedUploadedBackground = Boolean(savedUpload && savedUpload.blob instanceof Blob);
     const mode = safeSettings.mode || 'default';
     const modeInput = Array.from(elements.backgroundModeInputs).find((input) => input.value === mode);
 
@@ -358,7 +370,7 @@
 
     updateBackgroundModeUI(mode);
     updateRangeLabels();
-    setBackgroundFileMeta(mode === 'upload' ? '已保存本地背景图或等待重新上传' : '未选择文件');
+    setBackgroundFileMeta(resolveBackgroundFileMeta(mode));
   }
 
   function updateBackgroundModeUI(mode) {
@@ -372,6 +384,10 @@
 
     if (elements.backgroundUrlSection) {
       elements.backgroundUrlSection.classList.toggle('hidden', mode !== 'url');
+    }
+
+    if (elements.backgroundAdvancedSection) {
+      elements.backgroundAdvancedSection.classList.toggle('hidden', !shouldShowBackgroundAdvanced(mode));
     }
   }
 
@@ -391,6 +407,30 @@
     }
   }
 
+  function resolveBackgroundFileMeta(mode) {
+    if (pendingBackgroundFile) {
+      return `${pendingBackgroundFile.name} (${Math.round(pendingBackgroundFile.size / 1024)} KB)`;
+    }
+
+    if (mode === 'upload' && hasSavedUploadedBackground) {
+      return '已保存本地背景图，可重新上传替换';
+    }
+
+    return '未选择文件';
+  }
+
+  function shouldShowBackgroundAdvanced(mode) {
+    if (mode === 'upload') {
+      return Boolean(pendingBackgroundFile || hasSavedUploadedBackground);
+    }
+
+    if (mode === 'url') {
+      return Boolean(elements.backgroundUrl?.value.trim());
+    }
+
+    return false;
+  }
+
   function getSelectedBackgroundMode() {
     const selected = Array.from(elements.backgroundModeInputs).find((input) => input.checked);
     return selected ? selected.value : 'default';
@@ -399,7 +439,8 @@
   function handleBackgroundFileChange(event) {
     const [file] = event.target.files || [];
     pendingBackgroundFile = file || null;
-    setBackgroundFileMeta(file ? `${file.name} (${Math.round(file.size / 1024)} KB)` : '未选择文件');
+    setBackgroundFileMeta(resolveBackgroundFileMeta(getSelectedBackgroundMode()));
+    updateBackgroundModeUI(getSelectedBackgroundMode());
   }
 
   async function saveBackgroundSettings() {
@@ -433,6 +474,7 @@
         if (pendingBackgroundFile) {
           const processedBlob = await prepareBackgroundImage(pendingBackgroundFile);
           await BackgroundStorage.saveUploadedBackground(processedBlob);
+          hasSavedUploadedBackground = true;
           pendingBackgroundFile = null;
         } else {
           const existing = await BackgroundStorage.getUploadedBackground();
@@ -452,7 +494,7 @@
 
       await Storage.saveBackgroundSettings(nextSettings);
       showStatus('背景设置已保存', 'success', elements.backgroundStatusMessage);
-      populateBackgroundSettings(nextSettings);
+      await populateBackgroundSettings(nextSettings);
     } catch (error) {
       console.error('[Options] 保存背景失败:', error);
       showStatus(error.message || '保存背景失败', 'error', elements.backgroundStatusMessage);
@@ -472,7 +514,8 @@
 
       await Storage.clearBackgroundSettings();
       await BackgroundStorage.clearUploadedBackground();
-      populateBackgroundSettings(Storage.DEFAULT_BACKGROUND_SETTINGS || {});
+      hasSavedUploadedBackground = false;
+      await populateBackgroundSettings(Storage.DEFAULT_BACKGROUND_SETTINGS || {});
       showStatus('已恢复默认背景', 'success', elements.backgroundStatusMessage);
     } catch (error) {
       console.error('[Options] 重置背景失败:', error);

@@ -21,18 +21,19 @@ const BackgroundManager = (function() {
 
   async function applyCurrentBackground() {
     const settings = await Storage.loadBackgroundSettings();
-    applyVisualSettings(settings);
-
     if (settings.mode === 'default') {
+      resetVisualSettings();
       clearImage();
       return;
     }
 
     if (settings.mode === 'url') {
       if (!settings.url) {
+        resetVisualSettings();
         clearImage();
         return;
       }
+      applyVisualSettings(settings);
       void loadIntoLayer(settings.url, true);
       return;
     }
@@ -40,10 +41,12 @@ const BackgroundManager = (function() {
     if (settings.mode === 'upload') {
       const saved = await BackgroundStorage.getUploadedBackground();
       if (!saved || !(saved.blob instanceof Blob)) {
+        resetVisualSettings();
         clearImage();
         return;
       }
 
+      applyVisualSettings(settings);
       revokeObjectUrl();
       activeObjectUrl = URL.createObjectURL(saved.blob);
       void loadIntoLayer(activeObjectUrl, false);
@@ -58,6 +61,16 @@ const BackgroundManager = (function() {
     imageLayer.style.backgroundPosition = settings.position;
     imageLayer.style.filter = settings.blurPx > 0 ? `blur(${settings.blurPx}px)` : 'none';
     document.body.classList.toggle('has-custom-background', settings.mode !== 'default');
+  }
+
+  function resetVisualSettings() {
+    if (!overlayLayer || !imageLayer) return;
+
+    overlayLayer.style.background = 'rgba(0, 0, 0, var(--background-overlay-opacity))';
+    imageLayer.style.backgroundSize = 'cover';
+    imageLayer.style.backgroundPosition = 'center center';
+    imageLayer.style.filter = 'none';
+    document.body.classList.remove('has-custom-background');
   }
 
   function loadIntoLayer(url, resetOnFailure) {

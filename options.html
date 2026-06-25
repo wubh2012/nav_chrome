@@ -7,7 +7,7 @@
   关键副作用：通过加载的脚本读写 chrome.storage.local、调用飞书网络检测、处理本地背景图并修改页面 DOM。
   关键依赖与约束：必须作为 Chrome 扩展 options 页运行；依赖 Bootstrap Icons、本地模块脚本和 Chrome Extension API。
 -->
-<html lang="zh-CN">
+<html lang="zh-CN" data-skin="cream" data-theme="light">
 
 <head>
   <meta charset="UTF-8">
@@ -333,14 +333,14 @@
   .btn-primary {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
-    color: #fffaf1;
+    color: var(--btn-primary-text, #fffaf1);
     box-shadow: var(--shadow-soft);
   }
 
   .btn-primary:hover {
     background: var(--accent-soft);
     border-color: var(--accent-soft);
-    color: var(--text-primary);
+    color: var(--btn-primary-hover-text, var(--text-primary));
     transform: translateY(-2px);
     box-shadow: var(--shadow-float);
   }
@@ -590,6 +590,15 @@
 
   .background-section.hidden {
     display: none;
+  }
+
+  .background-advanced.hidden {
+    display: none;
+  }
+
+  [data-skin="graphite"][data-theme="dark"] {
+    --btn-primary-text: #141519;
+    --btn-primary-hover-text: #141519;
   }
 
   .form-group input[type="range"],
@@ -851,27 +860,29 @@
             <div class="subtle-note">请使用可直接访问的图片地址；加载失败会自动回退默认背景。</div>
           </div>
 
-          <div class="form-group">
-            <label for="background-size">图片适配</label>
-            <select id="background-size">
-              <option value="cover">Cover</option>
-              <option value="contain">Contain</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="background-overlay">遮罩强度</label>
-            <div class="range-row">
-              <input type="range" id="background-overlay" min="0" max="0.85" step="0.01" value="0.38">
-              <div class="range-value" id="background-overlay-value">38%</div>
+          <div id="background-advanced-section" class="background-advanced hidden">
+            <div class="form-group">
+              <label for="background-size">图片适配</label>
+              <select id="background-size">
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+              </select>
             </div>
-          </div>
 
-          <div class="form-group">
-            <label for="background-blur">模糊强度</label>
-            <div class="range-row">
-              <input type="range" id="background-blur" min="0" max="24" step="1" value="0">
-              <div class="range-value" id="background-blur-value">0px</div>
+            <div class="form-group">
+              <label for="background-overlay">遮罩强度</label>
+              <div class="range-row">
+                <input type="range" id="background-overlay" min="0" max="0.85" step="0.01" value="0.38">
+                <div class="range-value" id="background-overlay-value">38%</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="background-blur">模糊强度</label>
+              <div class="range-row">
+                <input type="range" id="background-blur" min="0" max="24" step="1" value="0">
+                <div class="range-value" id="background-blur-value">0px</div>
+              </div>
             </div>
           </div>
 

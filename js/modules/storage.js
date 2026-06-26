@@ -14,7 +14,8 @@ const Storage = (function() {
     THEME_PREFERENCE: 'chromeNav_theme',
     SYNC_STATUS: 'chromeNav_syncStatus',
     SYNC_TIME: 'chromeNav_lastSyncTime',
-    TEST_MODE: 'chromeNav_testMode'
+    TEST_MODE: 'chromeNav_testMode',
+    PENDING_SORT_SYNC: 'chromeNav_pendingSortSync'
   };
 
   // 缓存有效期（7天）
@@ -112,7 +113,11 @@ const Storage = (function() {
    * @param {Object} dateInfo - 日期信息
    * @returns {Promise<void>}
    */
-  async function saveNavData(data, categories, dateInfo) {
+  async function saveNavData(data, categories, dateInfo, options = {}) {
+    const preservedSyncTime = options.preserveSyncTime ? await getSyncTime() : null;
+    const nextSyncTime = typeof options.syncTime === 'number'
+      ? options.syncTime
+      : (preservedSyncTime || Date.now());
     const cacheData = {
       data: data,
       categories: categories,
@@ -123,7 +128,7 @@ const Storage = (function() {
       [KEYS.NAV_DATA]: cacheData.data,
       [KEYS.NAV_CATEGORIES]: cacheData.categories,
       [KEYS.DATE_INFO]: cacheData.dateInfo,
-      [KEYS.SYNC_TIME]: Date.now()
+      [KEYS.SYNC_TIME]: nextSyncTime
     });
     console.log('[Storage] 导航数据已保存');
   }
@@ -262,6 +267,48 @@ const Storage = (function() {
     }
   }
 
+  // ==================== 待同步排序操作 ====================
+
+  /**
+   * 保存待同步拖拽排序。
+   * @param {Object|null} pendingSort
+   * @returns {Promise<void>}
+   */
+  async function savePendingSortSync(pendingSort) {
+    if (!pendingSort) {
+      await clearPendingSortSync();
+      return;
+    }
+
+    await set({
+      [KEYS.PENDING_SORT_SYNC]: {
+        ...pendingSort,
+        updatedAt: pendingSort.updatedAt || Date.now()
+      }
+    });
+  }
+
+  /**
+   * 获取待同步拖拽排序。
+   * @returns {Promise<Object|null>}
+   */
+  async function loadPendingSortSync() {
+    try {
+      const result = await get(KEYS.PENDING_SORT_SYNC);
+      return result[KEYS.PENDING_SORT_SYNC] || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * 清除待同步拖拽排序。
+   * @returns {Promise<void>}
+   */
+  async function clearPendingSortSync() {
+    await remove(KEYS.PENDING_SORT_SYNC);
+  }
+
   // ==================== 测试模式操作 ====================
 
   /**
@@ -293,7 +340,14 @@ const Storage = (function() {
    * @returns {Promise<void>}
    */
   async function clearNavCache() {
-    await remove([KEYS.NAV_DATA, KEYS.NAV_CATEGORIES, KEYS.DATE_INFO, KEYS.SYNC_TIME, KEYS.SYNC_STATUS]);
+    await remove([
+      KEYS.NAV_DATA,
+      KEYS.NAV_CATEGORIES,
+      KEYS.DATE_INFO,
+      KEYS.SYNC_TIME,
+      KEYS.SYNC_STATUS,
+      KEYS.PENDING_SORT_SYNC
+    ]);
     console.log('[Storage] 导航缓存已清除');
   }
 
@@ -335,6 +389,11 @@ const Storage = (function() {
     // 同步状态
     saveSyncStatus,
     getSyncStatus,
+
+    // 待同步排序
+    savePendingSortSync,
+    loadPendingSortSync,
+    clearPendingSortSync,
 
     // 测试模式
     saveTestMode,

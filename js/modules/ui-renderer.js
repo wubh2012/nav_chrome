@@ -485,6 +485,28 @@ const UIRenderer = (function() {
     renderDateTime(cachedDateInfo);
   }
 
+  /**
+   * 仅更新指定分类的缓存顺序，不触发整页重渲染。
+   * @param {string} category
+   * @param {Array<Object>} items
+   */
+  function updateCategoryOrder(category, items) {
+    const normalizedCategory = String(category || '').trim();
+    if (!normalizedCategory) {
+      return;
+    }
+
+    if (!cachedNavData || typeof cachedNavData !== 'object') {
+      cachedNavData = {};
+    }
+
+    cachedNavData[normalizedCategory] = Array.isArray(items) ? items : [];
+
+    if (!cachedCategories.includes(normalizedCategory)) {
+      cachedCategories = [...cachedCategories, normalizedCategory];
+    }
+  }
+
   function resolveCategoryIcon(category) {
     const normalized = String(category || '').trim();
     if (!normalized) {
@@ -560,9 +582,10 @@ const UIRenderer = (function() {
     getCategorySequence,
     switchAdjacentCategory,
     getNavDataSnapshot,
-    setNavDataAndRefresh
+    setNavDataAndRefresh,
+    updateCategoryOrder
   };
 })();
 
 // 导出到全局
-window.UIRenderer = UIRenderer;
+globalThis.UIRenderer = UIRenderer;

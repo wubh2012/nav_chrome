@@ -121,18 +121,51 @@
    * 检查是否首次安装
    */
   async function loadStartupState() {
-    const [testMode, feishuConfig, cached] = await Promise.all([
+    const [testMode, feishuConfig, cached, pendingSortSync] = await Promise.all([
       Storage.getTestMode(),
       Storage.loadFeishuConfig(),
-      Storage.loadNavData()
+      Storage.loadNavData(),
+      Storage.loadPendingSortSync()
     ]);
 
     return {
       testMode,
       feishuConfig,
       cached,
+      pendingSortSync,
       isFirstInstall: !feishuConfig
     };
+  }
+
+  /**
+   * 在渲染前用本地待同步排序覆盖远端数据，避免刷新覆盖掉本地最新顺序。
+   * @param {Object} data
+   * @param {Object|null} pendingSortSync
+   * @returns {Object}
+   */
+  function resolveNavDataForRender(data, pendingSortSync = null) {
+    if (!pendingSortSync || !globalThis.DragSortCore) {
+      return data;
+    }
+
+    return DragSortCore.applyPendingSortToNavData(data, pendingSortSync);
+  }
+
+  /**
+   * 统一渲染导航数据并同步分类缓存。
+   * @param {Object} data
+   * @param {Array<string>} categories
+   * @param {Object} dateInfo
+   * @param {Object|null} pendingSortSync
+   */
+  function renderResolvedNavigation(data, categories, dateInfo, pendingSortSync = null) {
+    const resolvedData = resolveNavDataForRender(data, pendingSortSync);
+    UIRenderer.init(resolvedData, categories, dateInfo);
+    window.cachedCategories = categories;
+
+    if (window.LinkManager) {
+      LinkManager.updateCategories(categories);
+    }
   }
 
   /**
@@ -152,8 +185,12 @@
 
       if (state.cached && !state.isFirstInstall) {
         console.log('[ChromeNav] 使用缓存数据');
-        UIRenderer.init(state.cached.data, state.cached.categories, getCurrentDateInfo(state.cached.dateInfo));
-        window.cachedCategories = state.cached.categories;
+        renderResolvedNavigation(
+          state.cached.data,
+          state.cached.categories,
+          getCurrentDateInfo(state.cached.dateInfo),
+          state.pendingSortSync
+        );
         return;
       }
 
@@ -177,8 +214,12 @@
         console.warn('[ChromeNav] 获取飞书数据失败:', error);
 
         if (state.cached) {
-          UIRenderer.init(state.cached.data, state.cached.categories, getCurrentDateInfo(state.cached.dateInfo));
-          window.cachedCategories = state.cached.categories;
+          renderResolvedNavigation(
+            state.cached.data,
+            state.cached.categories,
+            getCurrentDateInfo(state.cached.dateInfo),
+            state.pendingSortSync
+          );
           UIRenderer.showSyncStatus('使用缓存数据', 'info');
         } else {
           await loadTestData();
@@ -196,14 +237,10 @@
   async function loadFeishuData() {
     const result = await FeishuAPI.getRecords();
     const dateInfo = getCurrentDateInfo(result.dateInfo);
+    const pendingSortSync = await Storage.loadPendingSortSync();
 
     await Storage.saveNavData(result.data, result.categories, dateInfo);
-    UIRenderer.init(result.data, result.categories, dateInfo);
-    window.cachedCategories = result.categories;
-
-    if (window.LinkManager) {
-      LinkManager.updateCategories(result.categories);
-    }
+    renderResolvedNavigation(result.data, result.categories, dateInfo, pendingSortSync);
 
     UIRenderer.showSyncStatus('数据加载完成', 'success');
     console.log('[ChromeNav] 飞书数据加载完成');
@@ -220,12 +257,7 @@
     const categories = Object.keys(mockData);
 
     await Storage.saveNavData(mockData, categories, mockDateInfo);
-    UIRenderer.init(mockData, categories, mockDateInfo);
-    window.cachedCategories = categories;
-
-    if (window.LinkManager) {
-      LinkManager.updateCategories(categories);
-    }
+    renderResolvedNavigation(mockData, categories, mockDateInfo, null);
 
     UIRenderer.showSyncStatus('测试模式已启用', 'info');
   }

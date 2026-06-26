@@ -789,9 +789,13 @@ const LinkManager = (function() {
   async function refreshData() {
     try {
       const result = await FeishuAPI.getRecords();
+      const pendingSortSync = await Storage.loadPendingSortSync();
       await Storage.saveNavData(result.data, result.categories, result.dateInfo);
       cachedCategories = result.categories;
-      UIRenderer.init(result.data, result.categories, result.dateInfo);
+      const resolvedData = pendingSortSync && globalThis.DragSortCore
+        ? DragSortCore.applyPendingSortToNavData(result.data, pendingSortSync)
+        : result.data;
+      UIRenderer.init(resolvedData, result.categories, result.dateInfo);
     } catch (error) {
       console.error('[LinkManager] 刷新数据失败:', error);
       UIRenderer.showSyncStatus(error.message || '刷新数据失败', 'error');

@@ -1094,4 +1094,4 @@ const FeishuAPI = (function() {
 })();
 
 // 导出到全局
-window.FeishuAPI = FeishuAPI;
+globalThis.FeishuAPI = FeishuAPI;

@@ -227,11 +227,13 @@ const UIRenderer = (function() {
 
     // 解析图标
     let iconHtml = '';
+    let useImageIcon = false;
     if (tool.icon) {
 
       if (tool.icon.startsWith('http') || tool.icon.startsWith('data:')) {
         // 图片图标
-        iconHtml = `<img src="${tool.icon}" alt="${tool.name}" class="tool-icon" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'text-icon\\'>${getInitial(tool.name)}</span>'">`;
+        iconHtml = `<img src="${escapeHtml(tool.icon)}" alt="${escapeHtml(tool.name)}" class="tool-icon">`;
+        useImageIcon = true;
       } else if (tool.icon.startsWith('bi-') || tool.icon.startsWith('fa-')) {
         // Bootstrap Icons 或 Font Awesome
         iconHtml = `<i class="bi ${tool.icon} tool-icon"></i>`;
@@ -260,6 +262,15 @@ const UIRenderer = (function() {
       nameEl.title = tool.name || '';
     }
 
+    if (useImageIcon) {
+      const imageIcon = card.querySelector('.tool-icon');
+      if (imageIcon) {
+        imageIcon.addEventListener('error', () => {
+          imageIcon.replaceWith(createTextIconElement(getInitial(tool.name)));
+        }, { once: true });
+      }
+    }
+
     // 点击打开链接
     card.addEventListener('click', (e) => {
       if (!e.target.closest('.tool-item-delete-btn')) {
@@ -286,6 +297,11 @@ const UIRenderer = (function() {
    * @param {string} text - 文字
    */
   function createTextIcon(text) {
+    const element = createTextIconElement(text);
+    return element.outerHTML;
+  }
+
+  function createTextIconElement(text) {
     const colors = [
       'linear-gradient(135deg, #ff6b6b, #ee5a24)',
       'linear-gradient(135deg, #feca57, #ff9f43)',
@@ -295,7 +311,11 @@ const UIRenderer = (function() {
       'linear-gradient(135deg, #fc5c65, #eb3b5a)'
     ];
     const color = colors[Math.abs(hashCode(text)) % colors.length];
-    return `<span class="text-icon" style="background: ${color}">${text}</span>`;
+    const element = document.createElement('span');
+    element.className = 'text-icon';
+    element.style.background = color;
+    element.textContent = text;
+    return element;
   }
 
   /**

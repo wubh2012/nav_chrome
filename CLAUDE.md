@@ -7,7 +7,7 @@ Chrome 导航起始页插件，将 navsite 网站导航功能迁移为 Chrome �
 ## 项目结构
 
 ```
-d:\AI\chrome_nav\
+chrome_nav\
 ├── manifest.json              # 插件配置（V3）
 ├── newtab.html               # 起始页（主页面）
 ├── options.html              # 配置页

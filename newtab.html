@@ -15,21 +15,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>水果导航</title>
 
-  <script>
-    (function() {
-      var root = document.documentElement;
-      var collapsed = '0';
-
-      try {
-        collapsed = window.localStorage.getItem('chromeNav_sidebarCollapsed') === '1' ? '1' : '0';
-      } catch (_error) {
-        // ignore storage failures during initial paint
-      }
-
-      root.dataset.sidebarCollapsed = collapsed;
-      root.classList.toggle('sidebar-collapsed', collapsed === '1');
-    })();
-  </script>
+  <script src="js/sidebar-state-init.js"></script>
 
   <style>
     html[data-sidebar-collapsed="1"] .sidebar {

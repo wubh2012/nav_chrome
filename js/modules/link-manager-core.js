@@ -183,8 +183,219 @@
     return errors;
   }
 
+  function cloneSnapshot(snapshot) {
+    return {
+      data: JSON.parse(JSON.stringify(snapshot?.data || {})),
+      categories: Array.isArray(snapshot?.categories) ? [...snapshot.categories] : [],
+      dateInfo: snapshot?.dateInfo ? JSON.parse(JSON.stringify(snapshot.dateInfo)) : null
+    };
+  }
+
+  function createLocalLinkRecord(formData, recordId) {
+    const fallbackIcon = String(formData?.icon || '');
+    const url = String(formData?.url || '');
+    return {
+      id: recordId,
+      name: formData?.name || '',
+      url,
+      icon: fallbackIcon || resolveFaviconUrl(url) || '',
+      customIcon: fallbackIcon,
+      sort: Number.isFinite(Number(formData?.sort)) ? Number(formData.sort) : 999
+    };
+  }
+
+  function createRecordFromLink(link) {
+    return {
+      id: link?.id,
+      name: link?.name,
+      url: link?.url,
+      icon: link?.icon || link?.customIcon || '',
+      customIcon: link?.customIcon || '',
+      sort: Number.isFinite(Number(link?.sort)) ? Number(link.sort) : 999
+    };
+  }
+
+  function removeRecordFromData(data, category, recordId) {
+    const items = data?.[category];
+    if (!Array.isArray(items)) {
+      return false;
+    }
+
+    const beforeLength = items.length;
+    data[category] = items.filter(item => item?.id !== recordId);
+    return data[category].length !== beforeLength;
+  }
+
+  function removeRecordFromAllCategories(data, recordId) {
+    let removed = false;
+    Object.keys(data || {}).forEach(category => {
+      removed = removeRecordFromData(data, category, recordId) || removed;
+    });
+    return removed;
+  }
+
+  function pruneEmptyCategories(data, categories) {
+    Array.from(categories).forEach(category => {
+      if (!Array.isArray(data[category]) || data[category].length === 0) {
+        delete data[category];
+        categories.delete(category);
+      }
+    });
+  }
+
+  function sortCategoryItems(items) {
+    items.sort((a, b) => {
+      const sortDiff = (Number(a?.sort) || 999) - (Number(b?.sort) || 999);
+      if (sortDiff !== 0) return sortDiff;
+      return String(a?.name || '').localeCompare(String(b?.name || ''), 'zh-Hans-CN');
+    });
+  }
+
+  function insertLinkRecord(data, categories, category, record) {
+    const targetCategory = category || '未分类';
+    if (!Array.isArray(data[targetCategory])) {
+      data[targetCategory] = [];
+    }
+
+    data[targetCategory].push(record);
+    sortCategoryItems(data[targetCategory]);
+    categories.add(targetCategory);
+  }
+
+  function findRecordById(data, recordId) {
+    for (const [category, items] of Object.entries(data || {})) {
+      if (!Array.isArray(items)) continue;
+      const item = items.find(candidate => candidate?.id === recordId);
+      if (item) {
+        return { category, item };
+      }
+    }
+
+    return null;
+  }
+
+  function recordMatchesFormData(record, formData, category) {
+    return String(category || '') === String(formData?.category || '未分类')
+      && String(record?.name || '') === String(formData?.name || '')
+      && String(record?.url || '') === String(formData?.url || '')
+      && String(record?.customIcon || '') === String(formData?.icon || '')
+      && (Number(record?.sort) || 999) === (Number(formData?.sort) || 999);
+  }
+
+  function applyOptimisticLinkChangeToSnapshot(snapshot, formData, options = {}) {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    const nextData = nextSnapshot.data;
+    const nextCategories = new Set(nextSnapshot.categories || []);
+    const nextCategory = formData?.category || '未分类';
+    const record = createLocalLinkRecord(formData, options.recordId);
+
+    if (options.isEditing && options.previousLink) {
+      removeRecordFromData(nextData, options.previousLink.category, options.previousLink.id);
+    }
+
+    insertLinkRecord(nextData, nextCategories, nextCategory, record);
+    pruneEmptyCategories(nextData, nextCategories);
+
+    return {
+      ...nextSnapshot,
+      categories: Array.from(nextCategories),
+      changed: true
+    };
+  }
+
+  function applyOptimisticDeleteToSnapshot(snapshot, link) {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    const nextData = nextSnapshot.data;
+    const nextCategories = new Set(nextSnapshot.categories || []);
+
+    let removed = removeRecordFromData(nextData, link?.category, link?.id);
+    if (!removed) {
+      removed = removeRecordFromAllCategories(nextData, link?.id);
+    }
+
+    pruneEmptyCategories(nextData, nextCategories);
+
+    return {
+      ...nextSnapshot,
+      categories: Array.from(nextCategories),
+      changed: removed
+    };
+  }
+
+  function replaceRecordIdInSnapshot(snapshot, localRecordId, remoteRecordId) {
+    if (!localRecordId || !remoteRecordId || localRecordId === remoteRecordId) {
+      return { ...cloneSnapshot(snapshot), changed: false };
+    }
+
+    const nextSnapshot = cloneSnapshot(snapshot);
+    let changed = false;
+
+    Object.values(nextSnapshot.data || {}).forEach(items => {
+      if (!Array.isArray(items)) return;
+      items.forEach(item => {
+        if (item?.id === localRecordId) {
+          item.id = remoteRecordId;
+          changed = true;
+        }
+      });
+    });
+
+    return { ...nextSnapshot, changed };
+  }
+
+  function rollbackOptimisticSaveInSnapshot(snapshot, operation = {}) {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    const match = findRecordById(nextSnapshot.data, operation.recordId);
+    if (!match || !recordMatchesFormData(match.item, operation.formData, match.category)) {
+      return { ...nextSnapshot, changed: false };
+    }
+
+    const nextCategories = new Set(nextSnapshot.categories || []);
+    removeRecordFromAllCategories(nextSnapshot.data, operation.recordId);
+
+    if (operation.isEditing && operation.previousLink) {
+      insertLinkRecord(
+        nextSnapshot.data,
+        nextCategories,
+        operation.previousLink.category,
+        createRecordFromLink(operation.previousLink)
+      );
+    }
+
+    pruneEmptyCategories(nextSnapshot.data, nextCategories);
+    return {
+      ...nextSnapshot,
+      categories: Array.from(nextCategories),
+      changed: true
+    };
+  }
+
+  function rollbackOptimisticDeleteInSnapshot(snapshot, link) {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    if (findRecordById(nextSnapshot.data, link?.id)) {
+      return { ...nextSnapshot, changed: false };
+    }
+
+    const nextCategories = new Set(nextSnapshot.categories || []);
+    insertLinkRecord(nextSnapshot.data, nextCategories, link?.category, createRecordFromLink(link));
+    pruneEmptyCategories(nextSnapshot.data, nextCategories);
+
+    return {
+      ...nextSnapshot,
+      categories: Array.from(nextCategories),
+      changed: true
+    };
+  }
+
   return {
+    applyOptimisticDeleteToSnapshot,
+    applyOptimisticLinkChangeToSnapshot,
+    cloneSnapshot,
+    createLocalLinkRecord,
     findDuplicateUrl,
+    replaceRecordIdInSnapshot,
+    rollbackOptimisticDeleteInSnapshot,
+    rollbackOptimisticSaveInSnapshot,
     isValidHttpUrl,
     normalizeLinkUrl,
     resolveFaviconUrl,

@@ -56,39 +56,27 @@ const SyncManager = (function() {
   }
 
   async function handleSync() {
-    const testMode = await Storage.getTestMode();
-    if (testMode) {
-      console.log('[SyncManager] Test mode enabled, skipping sync');
-      return;
-    }
-
-    const feishuConfig = await Storage.loadFeishuConfig();
-    if (!feishuConfig || !feishuConfig.appId || !feishuConfig.appToken) {
-      console.log('[SyncManager] Feishu is not configured, skipping sync');
-      return;
-    }
-
     isSyncing = true;
-    await Storage.saveSyncStatus('syncing', '同步中...');
 
     try {
-      const result = await FeishuAPI.getRecords(feishuConfig.appToken, feishuConfig.tableId);
+      const result = await SyncService.syncNavigation({ reason: 'periodic' });
 
-      if (!result.success || !result.data) {
-        throw new Error(result.error || '获取数据失败');
+      if (result.skipped) {
+        console.log('[SyncManager] Sync skipped:', result.message);
+        retryCount = 0;
+        return;
       }
 
-      const { data: navData, categories, dateInfo } = result;
+      if (!result.success) {
+        throw new Error(result.error || result.message || '同步失败');
+      }
 
-      await Storage.saveNavData(navData, categories, dateInfo);
-      await Storage.saveSyncStatus('success', '同步成功');
       retryCount = 0;
 
-      console.log(`[SyncManager] Sync completed, ${categories.length} categories`);
+      console.log(`[SyncManager] Sync completed, ${result.categories.length} categories`);
       notifyFrontend();
     } catch (error) {
       console.error('[SyncManager] Sync failed:', error);
-      await Storage.saveSyncStatus('error', error.message);
       handleRetry();
     } finally {
       isSyncing = false;

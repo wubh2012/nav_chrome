@@ -31,6 +31,19 @@ test('扩展页面不包含内联 script 标签', () => {
   });
 });
 
+test('设置页样式放在外部 CSS 文件中', () => {
+  const optionsContent = fs.readFileSync(path.join(projectRoot, 'options.html'), 'utf8');
+  const optionsCssPath = path.join(projectRoot, 'css/options.css');
+
+  assert.equal(/<style\b/i.test(optionsContent), false, 'options.html contains an inline <style> block');
+  assert.equal(
+    /<link rel="stylesheet" href="css\/options\.css">/i.test(optionsContent),
+    true,
+    'options.html does not reference css/options.css'
+  );
+  assert.equal(fs.existsSync(optionsCssPath), true, 'css/options.css is missing');
+});
+
 test('源码里不出现内联事件处理属性', () => {
   const inlineHandlerPattern = /<[^>]+\son[a-z]+\s*=/i;
   const filesToCheck = [

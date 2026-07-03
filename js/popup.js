@@ -109,30 +109,16 @@ async function syncNow() {
   setStatusTone('info');
 
   try {
-    const testMode = await Storage.getTestMode();
-    if (testMode) {
-      renderMessage('测试模式下无需同步飞书数据', 'info');
-      await renderSyncStatus();
+    const result = await SyncService.syncNavigation({ reason: 'popup' });
+    if (!result.success) {
+      renderMessage(result.message || result.error || '同步失败', result.skipped ? 'info' : 'error');
       return;
     }
 
-    const config = await Storage.loadFeishuConfig();
-    if (!PopupStatusCore.isFeishuConfigured(config)) {
-      renderMessage('请先配置完整飞书凭证', 'error');
-      await renderSyncStatus();
-      return;
+    renderMessage(result.message || '同步成功', result.skipped ? 'info' : 'success');
+    if (!result.skipped) {
+      await notifyOpenPages();
     }
-
-    await Storage.saveSyncStatus('syncing', '同步中...');
-    const result = await FeishuAPI.getRecords(config.appToken, config.tableId);
-    if (!result.success || !result.data) {
-      throw new Error(result.error || result.message || '获取数据失败');
-    }
-
-    await Storage.saveNavData(result.data, result.categories, result.dateInfo);
-    await Storage.saveSyncStatus('success', '同步成功');
-    renderMessage('同步成功', 'success');
-    await notifyOpenPages();
   } catch (error) {
     console.error('[Popup] 手动同步失败:', error);
     await Storage.saveSyncStatus('error', error.message || '同步失败');

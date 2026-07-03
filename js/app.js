@@ -10,6 +10,7 @@
   const WHEEL_SWITCH_COOLDOWN = 420;
   const SIDEBAR_COLLAPSED_KEY = 'chromeNav_sidebarCollapsed';
   const SIDEBAR_HINT_SHOWN_KEY = 'chromeNav_sidebarHintShown';
+  const SHORTCUT_HINT_SHOWN_KEY = 'chromeNav_shortcutHintShown';
   const DATE_REFRESH_INTERVAL = 60 * 1000;
   const TIME_FOCUS_MODE_CLASS = 'time-focus-mode';
   let wheelDeltaAccumulator = 0;
@@ -51,10 +52,12 @@
       bindSidebarToggle();
       bindCategoryWheelSwitch();
       bindTimeFocusToggle();
+      bindShortcutHelp();
       listenSyncMessages();
 
       document.body.classList.add('loaded');
       showSidebarToggleHintIfNeeded();
+      showShortcutToastIfNeeded();
 
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
@@ -298,12 +301,19 @@
    * 绑定滚轮切换分类
    */
   function bindCategoryWheelSwitch() {
+    const categoryMenu = document.getElementById('category-menu');
     const mainContent = document.querySelector('.main-content');
-    if (!mainContent || !window.UIRenderer) {
+    if (!window.UIRenderer) {
       return;
     }
 
-    mainContent.addEventListener('wheel', handleCategoryWheelSwitch, { passive: false });
+    if (categoryMenu) {
+      categoryMenu.addEventListener('wheel', handleCategoryWheelSwitch, { passive: false });
+    }
+
+    if (mainContent) {
+      mainContent.addEventListener('wheel', handleMainContentWheelSwitch, { passive: false });
+    }
   }
 
   /**
@@ -332,6 +342,56 @@
     });
   }
 
+  function bindShortcutHelp() {
+    const anchor = document.querySelector('.theme-toggle-anchor');
+    const button = document.getElementById('shortcut-help-btn');
+    const panel = document.getElementById('shortcut-help-panel');
+    if (!anchor || !button || !panel) {
+      return;
+    }
+
+    const closePanel = () => {
+      anchor.classList.remove('shortcut-help-open');
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      button.setAttribute('aria-expanded', 'false');
+    };
+
+    const openPanel = () => {
+      anchor.classList.add('shortcut-help-open');
+      panel.classList.add('is-open');
+      panel.setAttribute('aria-hidden', 'false');
+      button.setAttribute('aria-expanded', 'true');
+      hideShortcutToast();
+      markShortcutHintShown();
+    };
+
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (panel.classList.contains('is-open')) {
+        closePanel();
+      } else {
+        openPanel();
+      }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!panel.classList.contains('is-open')) {
+        return;
+      }
+      if (anchor.contains(event.target)) {
+        return;
+      }
+      closePanel();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && panel.classList.contains('is-open')) {
+        closePanel();
+      }
+    });
+  }
+
   /**
    * 绑定时间区域双击切换，仅显示时间与背景
    */
@@ -341,9 +401,33 @@
       return;
     }
 
+    const syncTimeFocusState = () => {
+      const isFocused = document.body.classList.contains(TIME_FOCUS_MODE_CLASS);
+      timeInfo.setAttribute('aria-pressed', isFocused ? 'true' : 'false');
+      timeInfo.title = isFocused ? '双击退出时间聚焦' : '双击进入时间聚焦';
+    };
+
+    const toggleTimeFocusMode = () => {
+      document.body.classList.toggle(TIME_FOCUS_MODE_CLASS);
+      syncTimeFocusState();
+    };
+
+    timeInfo.setAttribute('role', 'button');
+    timeInfo.setAttribute('tabindex', '0');
+    timeInfo.setAttribute('aria-label', '时间聚焦模式');
+    syncTimeFocusState();
+
     timeInfo.addEventListener('dblclick', (event) => {
       event.preventDefault();
-      document.body.classList.toggle(TIME_FOCUS_MODE_CLASS);
+      toggleTimeFocusMode();
+    });
+
+    timeInfo.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+      event.preventDefault();
+      toggleTimeFocusMode();
     });
   }
 
@@ -418,6 +502,57 @@
         document.body.classList.remove('sidebar-hint-visible');
       }, 3400);
     }
+  }
+
+  function showShortcutToastIfNeeded() {
+    const toast = document.getElementById('shortcut-toast');
+    if (!toast || window.innerWidth <= 768 || hasShortcutHintShown()) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      toast.classList.add('is-visible');
+      markShortcutHintShown();
+
+      window.setTimeout(() => {
+        hideShortcutToast();
+      }, 4200);
+    }, 1200);
+  }
+
+  function hideShortcutToast() {
+    const toast = document.getElementById('shortcut-toast');
+    if (toast) {
+      toast.classList.remove('is-visible');
+    }
+  }
+
+  function hasShortcutHintShown() {
+    try {
+      return window.localStorage.getItem(SHORTCUT_HINT_SHOWN_KEY) === '1';
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function markShortcutHintShown() {
+    try {
+      window.localStorage.setItem(SHORTCUT_HINT_SHOWN_KEY, '1');
+    } catch (_error) {
+      // ignore storage failures
+    }
+  }
+
+  /**
+   * 处理主内容区 Shift + 滚轮切换分类
+   * @param {WheelEvent} event
+   */
+  function handleMainContentWheelSwitch(event) {
+    if (!event.shiftKey) {
+      return;
+    }
+
+    handleCategoryWheelSwitch(event);
   }
 
   /**

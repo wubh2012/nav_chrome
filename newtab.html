@@ -19,19 +19,19 @@
 
   <style>
     html[data-sidebar-collapsed="1"] .sidebar {
-      width: 84px;
-      min-width: 84px;
+      width: 76px;
+      min-width: 76px;
       transition: none !important;
     }
 
     html[data-sidebar-collapsed="1"] .user-avatar {
-      padding: 36px 0 16px;
+      padding: 30px 0 14px;
     }
 
     html[data-sidebar-collapsed="1"] .user-avatar img,
     html[data-sidebar-collapsed="1"] .user-avatar .logo-svg {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       transition: none !important;
     }
   </style>
@@ -43,7 +43,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="img/icons/icon-48.png">
   <link rel="icon" type="image/png" sizes="128x128" href="img/icons/icon-128.png">
 
-  <!-- Google Fonts - Art Deco 字体 -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Poiret+One&display=swap" rel="stylesheet">
@@ -55,22 +55,15 @@
 </head>
 
 <body>
-  <!-- Art Deco 背景层 -->
+  <!-- 背景层 -->
   <div class="artdeco-bg">
     <div class="background-image-layer"></div>
     <div class="background-overlay-layer"></div>
   </div>
   <div class="artdeco-grid"></div>
 
-  <!-- 桌面端主题切换按钮 -->
-  <div class="theme-toggle-anchor">
-    <div class="theme-shortcut-hint" aria-hidden="true">
-      <kbd>Shift</kbd>
-      <span>双击或 Ctrl+F 快速搜索</span>
-    </div>
-    <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题">
-      <i class="bi bi-moon-fill"></i>
-    </button>
+  <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite">
+    <span>按 Ctrl+F 快速搜索，点击键盘查看快捷键</span>
   </div>
 
   <div class="container">
@@ -112,7 +105,7 @@
       </div>
       <nav class="nav-menu">
         <ul id="category-menu">
-          <li class="active" data-category="all"><i class="bi bi-house-door"></i> 全部</li>
+          <li class="active" data-category="all"><i class="bi bi-grid-3x3-gap"></i> 全部</li>
           <!-- 动态生成的分类菜单项 -->
         </ul>
 
@@ -179,23 +172,55 @@
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <!-- 顶部信息区 -->
-      <header class="top-info">
-        <div class="time-info">
-          <div class="current-time" id="current-time">--:--:--</div>
-          <div class="date-info" id="date-info">加载中...</div>
+      <div class="main-content-inner">
+        <!-- 顶部信息区 -->
+        <header class="top-info">
+          <div class="time-info" title="双击进入时间聚焦">
+            <div class="time-stack">
+              <div class="current-time" id="current-time">--:--</div>
+              <div class="date-info" id="date-info">加载中...</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="top-actions">
+          <div class="theme-toggle-anchor">
+            <div class="theme-shortcut-hint" aria-hidden="true">
+              <kbd>Ctrl</kbd>
+              <kbd>F</kbd>
+              <span>快速搜索</span>
+            </div>
+            <button id="shortcut-help-btn" class="shortcut-help-button" title="快捷键" aria-label="查看快捷键" aria-expanded="false" aria-controls="shortcut-help-panel">
+              <i class="bi bi-keyboard"></i>
+            </button>
+            <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题" aria-label="切换主题">
+              <i class="bi bi-moon-fill"></i>
+            </button>
+            <div id="shortcut-help-panel" class="shortcut-help-panel" role="dialog" aria-label="快捷键" aria-hidden="true">
+              <div class="shortcut-help-title">快捷键</div>
+              <ul>
+                <li><span><kbd>Ctrl</kbd><kbd>F</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>↑</kbd><kbd>↓</kbd></span><strong>切换结果</strong></li>
+                <li><span><kbd>Enter</kbd></span><strong>打开结果</strong></li>
+                <li><span><kbd>Esc</kbd></span><strong>关闭搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>滚轮</kbd></span><strong>切换分类</strong></li>
+                <li><span><kbd>侧栏滚轮</kbd></span><strong>切换分类</strong></li>
+                <li><span><kbd>双击时间</kbd></span><strong>时间聚焦</strong></li>
+              </ul>
+            </div>
+          </div>
+
+          <button id="add-link-btn" class="add-link-btn" title="添加网站" aria-label="添加网站">
+            <i class="bi bi-plus-lg"></i>
+          </button>
         </div>
-      </header>
 
-      <!-- 添加链接按钮 -->
-      <button id="add-link-btn" class="add-link-btn" title="添加网站">
-        <i class="bi bi-plus-lg"></i>
-      </button>
-
-      <!-- 工具图标列表 -->
-      <div class="tools-container">
-        <div id="tools-grid" class="tools-grid">
-          <!-- 动态生成的工具图标 -->
+        <!-- 工具图标列表 -->
+        <div class="tools-container">
+          <div id="tools-grid" class="tools-grid">
+            <!-- 动态生成的工具图标 -->
+          </div>
         </div>
       </div>
 
@@ -313,7 +338,7 @@
           aria-label="网站快速搜索输入框"
         >
       </div>
-      <div class="quick-search-hint">Shift 双击 / Ctrl+F 唤起，支持中文、拼音和首字母，↑/↓ 切换，Enter 打开，Esc 关闭</div>
+      <div class="quick-search-hint">Ctrl+F / Shift 双击唤起，↑/↓ 切换，Enter 打开，Esc 关闭</div>
       <ul id="quick-search-list" class="quick-search-list" role="listbox"></ul>
       <div id="quick-search-empty" class="quick-search-empty">没有匹配的网站</div>
     </div>
@@ -334,6 +359,7 @@
   <script src="js/modules/link-manager.js"></script>
   <script src="js/modules/drag-sort-core.js"></script>
   <script src="js/modules/drag-sort-manager.js"></script>
+  <script src="js/modules/sync-service.js"></script>
   <script src="js/modules/sync-manager.js"></script>
   <script src="js/modules/quick-search-core.js"></script>
   <script src="js/modules/quick-search-manager.js"></script>

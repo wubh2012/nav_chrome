@@ -614,27 +614,6 @@ const LinkManager = (function() {
   }
 
   /**
-   * 将表单数据转换为导航卡片记录。
-   *
-   * @param {Object} formData - getFormData 返回的表单数据。
-   * @param {string} recordId - 记录 ID；新增乐观记录会先使用本地临时 ID。
-   * @returns {Object} 可写入导航数据的记录。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 无副作用。
-   */
-  function createLocalLinkRecord(formData, recordId) {
-    const fallbackIcon = formData.icon || '';
-    return {
-      id: recordId,
-      name: formData.name,
-      url: formData.url,
-      icon: fallbackIcon || core.resolveFaviconUrl?.(formData.url) || '',
-      customIcon: fallbackIcon,
-      sort: formData.sort
-    };
-  }
-
-  /**
    * 乐观应用新增或编辑结果到本地缓存和界面。
    *
    * @param {Object} snapshot - 保存前的导航快照。
@@ -648,31 +627,8 @@ const LinkManager = (function() {
    * @sideeffects 更新 UIRenderer 缓存、重渲染当前页面并写入 chrome.storage.local。
    */
   async function applyOptimisticLinkChange(snapshot, formData, options) {
-    const nextSnapshot = cloneSnapshot(snapshot);
-    const nextData = nextSnapshot.data;
-    const nextCategories = new Set(nextSnapshot.categories || []);
-    const nextCategory = formData.category || '未分类';
-    const record = createLocalLinkRecord(formData, options.recordId);
-
-    if (options.isEditing && options.previousLink) {
-      removeRecordFromData(nextData, options.previousLink.category, options.previousLink.id);
-    }
-
-    if (!Array.isArray(nextData[nextCategory])) {
-      nextData[nextCategory] = [];
-    }
-    nextData[nextCategory].push(record);
-    sortCategoryItems(nextData[nextCategory]);
-    nextCategories.add(nextCategory);
-
-    pruneEmptyCategories(nextData, nextCategories);
-    const categories = Array.from(nextCategories);
-    UIRenderer.setNavDataAndRefresh(nextData, categories, nextSnapshot.dateInfo);
-    cachedCategories = categories;
-
-    await Storage.saveNavData(nextData, categories, nextSnapshot.dateInfo, {
-      preserveSyncTime: true
-    });
+    const nextSnapshot = core.applyOptimisticLinkChangeToSnapshot(snapshot, formData, options);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
   }
 
   /**
@@ -685,23 +641,8 @@ const LinkManager = (function() {
    * @sideeffects 更新 UIRenderer 缓存、重渲染当前页面并写入 chrome.storage.local。
    */
   async function applyOptimisticDelete(snapshot, link) {
-    const nextSnapshot = cloneSnapshot(snapshot);
-    const nextData = nextSnapshot.data;
-    const nextCategories = new Set(nextSnapshot.categories || []);
-
-    const removed = removeRecordFromData(nextData, link.category, link.id);
-    if (!removed) {
-      removeRecordFromAllCategories(nextData, link.id);
-    }
-
-    pruneEmptyCategories(nextData, nextCategories);
-    const categories = Array.from(nextCategories);
-    UIRenderer.setNavDataAndRefresh(nextData, categories, nextSnapshot.dateInfo);
-    cachedCategories = categories;
-
-    await Storage.saveNavData(nextData, categories, nextSnapshot.dateInfo, {
-      preserveSyncTime: true
-    });
+    const nextSnapshot = core.applyOptimisticDeleteToSnapshot(snapshot, link);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
   }
 
   /**
@@ -718,27 +659,17 @@ const LinkManager = (function() {
       return;
     }
 
-    const snapshot = UIRenderer.getNavDataSnapshot();
-    let changed = false;
+    const nextSnapshot = core.replaceRecordIdInSnapshot(
+      UIRenderer.getNavDataSnapshot(),
+      localRecordId,
+      remoteRecordId
+    );
 
-    Object.values(snapshot.data || {}).forEach(items => {
-      if (!Array.isArray(items)) return;
-      items.forEach(item => {
-        if (item?.id === localRecordId) {
-          item.id = remoteRecordId;
-          changed = true;
-        }
-      });
-    });
-
-    if (!changed) {
+    if (!nextSnapshot.changed) {
       return;
     }
 
-    UIRenderer.setNavDataAndRefresh(snapshot.data, snapshot.categories, snapshot.dateInfo);
-    await Storage.saveNavData(snapshot.data, snapshot.categories, snapshot.dateInfo, {
-      preserveSyncTime: true
-    });
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
   }
 
   /**
@@ -833,20 +764,15 @@ const LinkManager = (function() {
    */
   async function rollbackOptimisticSave(operation) {
     try {
-      const snapshot = UIRenderer.getNavDataSnapshot();
-      const match = findRecordById(snapshot.data, operation.recordId);
-      if (!match || !recordMatchesFormData(match.item, operation.formData, match.category)) {
+      const nextSnapshot = core.rollbackOptimisticSaveInSnapshot(
+        UIRenderer.getNavDataSnapshot(),
+        operation
+      );
+      if (!nextSnapshot.changed) {
         return;
       }
 
-      const nextCategories = new Set(snapshot.categories || []);
-      removeRecordFromAllCategories(snapshot.data, operation.recordId);
-
-      if (operation.isEditing && operation.previousLink) {
-        insertLinkRecord(snapshot.data, nextCategories, operation.previousLink.category, createRecordFromLink(operation.previousLink));
-      }
-
-      await persistSnapshotData(snapshot.data, Array.from(nextCategories), snapshot.dateInfo);
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
     } catch (rollbackError) {
       console.error('[LinkManager] 回滚本地保存失败:', rollbackError);
     }
@@ -862,113 +788,18 @@ const LinkManager = (function() {
    */
   async function rollbackOptimisticDelete(link) {
     try {
-      const snapshot = UIRenderer.getNavDataSnapshot();
-      if (findRecordById(snapshot.data, link.id)) {
+      const nextSnapshot = core.rollbackOptimisticDeleteInSnapshot(
+        UIRenderer.getNavDataSnapshot(),
+        link
+      );
+      if (!nextSnapshot.changed) {
         return;
       }
 
-      const nextCategories = new Set(snapshot.categories || []);
-      insertLinkRecord(snapshot.data, nextCategories, link.category, createRecordFromLink(link));
-      await persistSnapshotData(snapshot.data, Array.from(nextCategories), snapshot.dateInfo);
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
     } catch (rollbackError) {
       console.error('[LinkManager] 回滚本地删除失败:', rollbackError);
     }
-  }
-
-  /**
-   * 深拷贝导航快照，避免乐观更新污染原始回滚点。
-   *
-   * @param {Object} snapshot - UIRenderer 导航快照。
-   * @returns {Object} 深拷贝后的快照。
-   * @throws {Error} JSON 序列化异常会向上抛出。
-   * @sideeffects 无副作用。
-   */
-  function cloneSnapshot(snapshot) {
-    return {
-      data: JSON.parse(JSON.stringify(snapshot?.data || {})),
-      categories: Array.isArray(snapshot?.categories) ? [...snapshot.categories] : [],
-      dateInfo: snapshot?.dateInfo ? JSON.parse(JSON.stringify(snapshot.dateInfo)) : null
-    };
-  }
-
-  /**
-   * 根据链接快照创建可写入导航数据的记录。
-   *
-   * @param {Object} link - 链接快照。
-   * @returns {Object} 导航记录。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 无副作用。
-   */
-  function createRecordFromLink(link) {
-    return {
-      id: link.id,
-      name: link.name,
-      url: link.url,
-      icon: link.icon || link.customIcon || '',
-      customIcon: link.customIcon || '',
-      sort: Number.isFinite(Number(link.sort)) ? Number(link.sort) : 999
-    };
-  }
-
-  /**
-   * 插入记录并维护分类集合。
-   *
-   * @param {Object<string, Array<Object>>} data - 导航数据。
-   * @param {Set<string>} categories - 分类集合。
-   * @param {string} category - 目标分类。
-   * @param {Object} record - 待插入记录。
-   * @returns {void} 无返回值。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 修改 data 和 categories。
-   */
-  function insertLinkRecord(data, categories, category, record) {
-    const targetCategory = category || '未分类';
-    if (!Array.isArray(data[targetCategory])) {
-      data[targetCategory] = [];
-    }
-
-    data[targetCategory].push(record);
-    sortCategoryItems(data[targetCategory]);
-    categories.add(targetCategory);
-  }
-
-  /**
-   * 在所有分类中查找指定记录。
-   *
-   * @param {Object<string, Array<Object>>} data - 导航数据。
-   * @param {string} recordId - 记录 ID。
-   * @returns {{category: string, item: Object}|null} 命中记录和分类；未命中返回 null。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 无副作用。
-   */
-  function findRecordById(data, recordId) {
-    for (const [category, items] of Object.entries(data || {})) {
-      if (!Array.isArray(items)) continue;
-      const item = items.find(candidate => candidate?.id === recordId);
-      if (item) {
-        return { category, item };
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * 判断当前记录是否仍是本次乐观保存产生的状态。
-   *
-   * @param {Object} record - 当前记录。
-   * @param {Object} formData - 本次保存的表单数据。
-   * @param {string} category - 当前记录分类。
-   * @returns {boolean} 匹配时返回 true。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 无副作用。
-   */
-  function recordMatchesFormData(record, formData, category) {
-    return String(category || '') === String(formData.category || '未分类')
-      && String(record?.name || '') === String(formData.name || '')
-      && String(record?.url || '') === String(formData.url || '')
-      && String(record?.customIcon || '') === String(formData.icon || '')
-      && (Number(record?.sort) || 999) === (Number(formData.sort) || 999);
   }
 
   /**
@@ -994,44 +825,6 @@ const LinkManager = (function() {
   }
 
   /**
-   * 从指定分类移除记录。
-   *
-   * @param {Object<string, Array<Object>>} data - 导航数据。
-   * @param {string} category - 记录所在分类。
-   * @param {string} recordId - 记录 ID。
-   * @returns {boolean} 发生删除时返回 true。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 修改传入的 data 对象。
-   */
-  function removeRecordFromData(data, category, recordId) {
-    const items = data?.[category];
-    if (!Array.isArray(items)) {
-      return false;
-    }
-
-    const beforeLength = items.length;
-    data[category] = items.filter(item => item?.id !== recordId);
-    return data[category].length !== beforeLength;
-  }
-
-  /**
-   * 从所有分类中移除指定记录。
-   *
-   * @param {Object<string, Array<Object>>} data - 导航数据。
-   * @param {string} recordId - 记录 ID。
-   * @returns {boolean} 发生删除时返回 true。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 修改传入的 data 对象。
-   */
-  function removeRecordFromAllCategories(data, recordId) {
-    let removed = false;
-    Object.keys(data || {}).forEach(category => {
-      removed = removeRecordFromData(data, category, recordId) || removed;
-    });
-    return removed;
-  }
-
-  /**
    * 清理已经没有记录的分类。
    *
    * @param {Object<string, Array<Object>>} data - 导航数据。
@@ -1046,22 +839,6 @@ const LinkManager = (function() {
         delete data[category];
         categories.delete(category);
       }
-    });
-  }
-
-  /**
-   * 按排序字段稳定排序分类内记录。
-   *
-   * @param {Array<Object>} items - 分类内记录数组。
-   * @returns {void} 无返回值。
-   * @throws {Error} 不主动抛错。
-   * @sideeffects 原地排序 items。
-   */
-  function sortCategoryItems(items) {
-    items.sort((a, b) => {
-      const sortDiff = (Number(a?.sort) || 999) - (Number(b?.sort) || 999);
-      if (sortDiff !== 0) return sortDiff;
-      return String(a?.name || '').localeCompare(String(b?.name || ''), 'zh-Hans-CN');
     });
   }
 

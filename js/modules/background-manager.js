@@ -1,5 +1,5 @@
 /**
- * Applies configured background images to the new tab page.
+ * Applies the configured light/dark background profile to the new tab page.
  */
 const BackgroundManager = (function() {
   'use strict';
@@ -7,6 +7,9 @@ const BackgroundManager = (function() {
   let imageLayer = null;
   let overlayLayer = null;
   let activeObjectUrl = null;
+  let activeThemeMode = null;
+  let requestVersion = 0;
+  let eventsBound = false;
 
   async function init() {
     imageLayer = document.querySelector('.background-image-layer');
@@ -16,41 +19,117 @@ const BackgroundManager = (function() {
       return;
     }
 
-    await applyCurrentBackground();
+    bindEvents();
+    const themeMode = resolveThemeMode();
+    activeThemeMode = themeMode;
+    await applyCurrentBackground(themeMode);
   }
 
-  async function applyCurrentBackground() {
-    const settings = await Storage.loadBackgroundSettings();
+  function bindEvents() {
+    if (eventsBound) return;
+
+    document.addEventListener('chromeNav:themeChanged', (event) => {
+      const nextMode = normalizeThemeMode(event.detail?.mode);
+      if (nextMode === activeThemeMode) return;
+
+      activeThemeMode = nextMode;
+      void applyCurrentBackground(nextMode);
+    });
+    eventsBound = true;
+  }
+
+  function resolveThemeMode() {
+    if (window.ThemeManager && typeof ThemeManager.getCurrentMode === 'function') {
+      return normalizeThemeMode(ThemeManager.getCurrentMode());
+    }
+    return normalizeThemeMode(document.documentElement.dataset.theme);
+  }
+
+  function normalizeThemeMode(themeMode) {
+    return themeMode === 'dark' ? 'dark' : 'light';
+  }
+
+  async function applyCurrentBackground(themeMode = resolveThemeMode()) {
+    const safeThemeMode = normalizeThemeMode(themeMode);
+    const currentRequest = ++requestVersion;
+    const settings = await Storage.loadBackgroundSettings(safeThemeMode);
+    if (currentRequest !== requestVersion) return false;
+
     if (settings.mode === 'default') {
       resetVisualSettings();
       clearImage();
-      return;
+      return true;
     }
 
     if (settings.mode === 'url') {
       if (!settings.url) {
-        resetVisualSettings();
-        clearImage();
-        return;
+        await fallbackToDefault(safeThemeMode, settings, currentRequest);
+        return false;
       }
-      applyVisualSettings(settings);
-      void loadIntoLayer(settings.url, true);
-      return;
+      return loadAndCommit(settings.url, settings, safeThemeMode, currentRequest, false);
     }
 
     if (settings.mode === 'upload') {
-      const saved = await BackgroundStorage.getUploadedBackground();
-      if (!saved || !(saved.blob instanceof Blob)) {
-        resetVisualSettings();
-        clearImage();
-        return;
-      }
+      try {
+        const saved = await BackgroundStorage.getUploadedBackground(safeThemeMode);
+        if (currentRequest !== requestVersion) return false;
+        if (!saved || !(saved.blob instanceof Blob)) {
+          await fallbackToDefault(safeThemeMode, settings, currentRequest);
+          return false;
+        }
 
-      applyVisualSettings(settings);
-      revokeObjectUrl();
-      activeObjectUrl = URL.createObjectURL(saved.blob);
-      void loadIntoLayer(activeObjectUrl, false);
+        const objectUrl = URL.createObjectURL(saved.blob);
+        return loadAndCommit(objectUrl, settings, safeThemeMode, currentRequest, true);
+      } catch (error) {
+        console.warn('[BackgroundManager] Failed to load uploaded background:', error);
+        await fallbackToDefault(safeThemeMode, settings, currentRequest);
+        return false;
+      }
     }
+
+    await fallbackToDefault(safeThemeMode, settings, currentRequest);
+    return false;
+  }
+
+  function loadAndCommit(url, settings, themeMode, currentRequest, isObjectUrl) {
+    return new Promise((resolve) => {
+      const probe = new Image();
+
+      probe.onload = () => {
+        if (currentRequest !== requestVersion) {
+          if (isObjectUrl) URL.revokeObjectURL(url);
+          resolve(false);
+          return;
+        }
+
+        applyVisualSettings(settings);
+        imageLayer.classList.remove('is-visible');
+        imageLayer.style.backgroundImage = `url("${escapeUrl(url)}")`;
+
+        const previousObjectUrl = activeObjectUrl;
+        activeObjectUrl = isObjectUrl ? url : null;
+        if (previousObjectUrl && previousObjectUrl !== activeObjectUrl) {
+          URL.revokeObjectURL(previousObjectUrl);
+        }
+
+        requestAnimationFrame(() => {
+          if (currentRequest === requestVersion && imageLayer) {
+            imageLayer.classList.add('is-visible');
+          }
+        });
+        resolve(true);
+      };
+
+      probe.onerror = async () => {
+        if (isObjectUrl) URL.revokeObjectURL(url);
+        if (currentRequest === requestVersion) {
+          await fallbackToDefault(themeMode, settings, currentRequest);
+        }
+        resolve(false);
+      };
+
+      probe.src = url;
+    });
   }
 
   function applyVisualSettings(settings) {
@@ -60,7 +139,7 @@ const BackgroundManager = (function() {
     imageLayer.style.backgroundSize = settings.size;
     imageLayer.style.backgroundPosition = settings.position;
     imageLayer.style.filter = settings.blurPx > 0 ? `blur(${settings.blurPx}px)` : 'none';
-    document.body.classList.toggle('has-custom-background', settings.mode !== 'default');
+    document.body.classList.add('has-custom-background');
   }
 
   function resetVisualSettings() {
@@ -73,37 +152,29 @@ const BackgroundManager = (function() {
     document.body.classList.remove('has-custom-background');
   }
 
-  function loadIntoLayer(url, resetOnFailure) {
-    return new Promise((resolve) => {
-      const probe = new Image();
+  async function fallbackToDefault(themeMode, settings, currentRequest) {
+    if (currentRequest !== requestVersion) return;
 
-      probe.onload = () => {
-        if (imageLayer) {
-          imageLayer.style.backgroundImage = `url("${escapeUrl(url)}")`;
-          imageLayer.classList.add('is-visible');
-        }
-        resolve(true);
-      };
+    resetVisualSettings();
+    clearImage();
+    try {
+      await Storage.saveBackgroundSettings(themeMode, {
+        ...settings,
+        mode: 'default',
+        url: ''
+      });
+    } catch (error) {
+      console.warn('[BackgroundManager] Failed to persist default background fallback:', error);
+    }
 
-      probe.onerror = async () => {
-        clearImage();
-
-        if (resetOnFailure) {
-          await Storage.saveBackgroundSettings({
-            ...(await Storage.loadBackgroundSettings()),
-            mode: 'default',
-            url: ''
-          });
-        }
-
-        if (window.UIRenderer && typeof UIRenderer.showSyncStatus === 'function') {
-          UIRenderer.showSyncStatus('背景图片加载失败，已恢复默认背景', 'info');
-        }
-        resolve(false);
-      };
-
-      probe.src = url;
-    });
+    if (currentRequest === requestVersion
+      && window.UIRenderer
+      && typeof UIRenderer.showSyncStatus === 'function') {
+      UIRenderer.showSyncStatus(
+        `${themeMode === 'dark' ? '深色' : '浅色'}背景加载失败，已恢复默认背景`,
+        'info'
+      );
+    }
   }
 
   function clearImage() {

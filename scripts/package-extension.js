@@ -108,8 +108,23 @@ function main() {
   }
 
   const version = manifest.version;
+  const releaseNotesPath = path.join(root, 'docs', `chrome-web-store-release-${version}.md`);
   const stageDir = path.join(distDir, `chrome-store-package-${version}`);
   const zipPath = path.join(distDir, `shuiguo-nav-chrome-${version}.zip`);
+
+  if (!fs.existsSync(releaseNotesPath)) {
+    throw new Error(
+      `Chrome Web Store release notes are required: docs/chrome-web-store-release-${version}.md`
+    );
+  }
+
+  const releaseNotes = fs.readFileSync(releaseNotesPath, 'utf8');
+  if (!releaseNotes.includes(`版本号：\`${version}\``)
+    || !releaseNotes.includes(`shuiguo-nav-chrome-${version}.zip`)) {
+    throw new Error(
+      `Release notes do not match manifest version ${version}: ${releaseNotesPath}`
+    );
+  }
 
   if (!skipTests) {
     console.log('Running tests...');
@@ -138,6 +153,7 @@ function main() {
   console.log('');
   console.log(`Chrome Web Store package created`);
   console.log(`Version: ${version}`);
+  console.log(`Release notes: ${releaseNotesPath}`);
   console.log(`Zip: ${zipPath}`);
   console.log(`Zip size: ${zipStat.size} bytes`);
   console.log(`Packaged files: ${staged.count}`);

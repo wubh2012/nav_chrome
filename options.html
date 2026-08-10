@@ -148,6 +148,30 @@
             背景设置
           </div>
 
+          <p class="background-help">浅色与深色模式可分别保存背景；石墨、霓虹和奶油皮肤共用这两套设置。</p>
+
+          <div class="background-theme-tabs" role="tablist" aria-label="选择要编辑的明暗模式背景">
+            <button type="button" id="background-theme-light-tab" class="background-theme-tab active"
+              role="tab" aria-selected="true" aria-controls="background-profile-panel" data-theme-mode="light">
+              <i class="bi bi-sun-fill" aria-hidden="true"></i>
+              浅色背景
+            </button>
+            <button type="button" id="background-theme-dark-tab" class="background-theme-tab"
+              role="tab" aria-selected="false" aria-controls="background-profile-panel" data-theme-mode="dark" tabindex="-1">
+              <i class="bi bi-moon-stars-fill" aria-hidden="true"></i>
+              深色背景
+            </button>
+          </div>
+
+          <div id="background-profile-panel" role="tabpanel" aria-labelledby="background-theme-light-tab">
+            <div id="background-preview" class="background-preview is-default" role="img" aria-label="浅色背景预览">
+              <div class="background-preview-placeholder">
+                <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                <span>默认 Art Deco 背景</span>
+              </div>
+              <div class="background-preview-badge" id="background-preview-badge">浅色模式</div>
+            </div>
+
           <div class="form-group">
             <label>背景模式</label>
             <div class="mode-grid" id="background-mode-group">
@@ -215,6 +239,7 @@
             <button class="btn btn-primary" id="background-save-btn">
               <i class="bi bi-image"></i> 保存背景
             </button>
+          </div>
           </div>
 
           <div class="status-message" id="background-status-message"></div>

@@ -30,6 +30,10 @@
     testModeNotice: document.getElementById('test-mode-notice'),
     clearCacheBtn: document.getElementById('clear-cache-btn'),
     resetBtn: document.getElementById('reset-btn'),
+    backgroundThemeTabs: document.querySelectorAll('.background-theme-tab'),
+    backgroundProfilePanel: document.getElementById('background-profile-panel'),
+    backgroundPreview: document.getElementById('background-preview'),
+    backgroundPreviewBadge: document.getElementById('background-preview-badge'),
     backgroundModeInputs: document.querySelectorAll('input[name="background-mode"]'),
     backgroundModeOptions: document.querySelectorAll('.mode-option'),
     backgroundUploadSection: document.getElementById('background-upload-section'),
@@ -48,10 +52,15 @@
     backgroundStatusMessage: document.getElementById('background-status-message')
   };
 
-  let pendingBackgroundFile = null;
+  const BACKGROUND_THEME_MODES = ['light', 'dark'];
+  const backgroundDrafts = { light: null, dark: null };
+  const pendingBackgroundFiles = { light: null, dark: null };
+  const savedUploadStates = { light: false, dark: false };
+  let activeBackgroundThemeMode = 'light';
+  let backgroundPreviewObjectUrl = null;
+  let backgroundPreviewRequestVersion = 0;
   let currentWizardStep = 1;
   let lastConnectionPassed = false;
-  let hasSavedUploadedBackground = false;
 
   /**
    * 初始化设置页状态。
@@ -102,9 +111,24 @@
       elements.testModeToggle.checked = testMode;
       updateTestModeUI(testMode);
 
-      if (Storage.loadBackgroundSettings) {
-        const backgroundSettings = await Storage.loadBackgroundSettings();
-        await populateBackgroundSettings(backgroundSettings);
+      if (Storage.loadAllBackgroundSettings) {
+        const backgroundSettings = await Storage.loadAllBackgroundSettings();
+        for (const themeMode of BACKGROUND_THEME_MODES) {
+          backgroundDrafts[themeMode] = Storage.normalizeBackgroundSettings(
+            backgroundSettings.profiles?.[themeMode]
+          );
+          try {
+            const savedUpload = await BackgroundStorage.getUploadedBackground(themeMode);
+            savedUploadStates[themeMode] = Boolean(savedUpload && savedUpload.blob instanceof Blob);
+          } catch (error) {
+            savedUploadStates[themeMode] = false;
+            console.warn(`[Options] 读取${themeMode === 'dark' ? '深色' : '浅色'}上传背景失败:`, error);
+          }
+        }
+        activeBackgroundThemeMode = window.ThemeManager && typeof ThemeManager.getCurrentMode === 'function'
+          ? ThemeManager.getCurrentMode()
+          : 'light';
+        await populateBackgroundSettings(backgroundDrafts[activeBackgroundThemeMode]);
       }
     } catch (error) {
       console.error('[Options] 加载配置失败:', error);
@@ -157,7 +181,16 @@
     elements.backgroundModeInputs.forEach((input) => {
       input.addEventListener('change', () => {
         updateBackgroundModeUI(input.value);
+        captureBackgroundDraft();
+        void updateBackgroundPreview();
       });
+    });
+
+    elements.backgroundThemeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        void switchBackgroundThemeMode(tab.dataset.themeMode);
+      });
+      tab.addEventListener('keydown', handleBackgroundThemeTabKeydown);
     });
 
     if (elements.backgroundFileInput) {
@@ -167,18 +200,30 @@
     if (elements.backgroundUrl) {
       elements.backgroundUrl.addEventListener('input', () => {
         updateBackgroundModeUI(getSelectedBackgroundMode());
+        captureBackgroundDraft();
+        void updateBackgroundPreview();
+      });
+    }
+
+    if (elements.backgroundSize) {
+      elements.backgroundSize.addEventListener('change', () => {
+        captureBackgroundDraft();
+        void updateBackgroundPreview();
       });
     }
 
     if (elements.backgroundOverlay) {
       elements.backgroundOverlay.addEventListener('input', () => {
         updateRangeLabels();
+        captureBackgroundDraft();
+        void updateBackgroundPreview();
       });
     }
 
     if (elements.backgroundBlur) {
       elements.backgroundBlur.addEventListener('input', () => {
         updateRangeLabels();
+        captureBackgroundDraft();
       });
     }
 
@@ -341,13 +386,8 @@
   }
 
   async function populateBackgroundSettings(settings) {
-    const safeSettings = Storage.normalizeBackgroundSettings
-      ? Storage.normalizeBackgroundSettings(settings)
-      : settings;
-    const savedUpload = window.BackgroundStorage && typeof BackgroundStorage.getUploadedBackground === 'function'
-      ? await BackgroundStorage.getUploadedBackground()
-      : null;
-    hasSavedUploadedBackground = Boolean(savedUpload && savedUpload.blob instanceof Blob);
+    const safeSettings = Storage.normalizeBackgroundSettings(settings);
+    backgroundDrafts[activeBackgroundThemeMode] = safeSettings;
     const mode = safeSettings.mode || 'default';
     const modeInput = Array.from(elements.backgroundModeInputs).find((input) => input.value === mode);
 
@@ -371,6 +411,78 @@
     updateBackgroundModeUI(mode);
     updateRangeLabels();
     setBackgroundFileMeta(resolveBackgroundFileMeta(mode));
+    updateBackgroundThemeTabs();
+    await updateBackgroundPreview();
+  }
+
+  function captureBackgroundDraft() {
+    const previous = backgroundDrafts[activeBackgroundThemeMode] || {};
+    backgroundDrafts[activeBackgroundThemeMode] = Storage.normalizeBackgroundSettings({
+      ...previous,
+      mode: getSelectedBackgroundMode(),
+      url: elements.backgroundUrl?.value.trim() || '',
+      size: elements.backgroundSize?.value || 'cover',
+      overlayOpacity: Number(elements.backgroundOverlay?.value ?? 0.38),
+      blurPx: Number(elements.backgroundBlur?.value ?? 0)
+    });
+    return backgroundDrafts[activeBackgroundThemeMode];
+  }
+
+  async function switchBackgroundThemeMode(themeMode, focusTab = false) {
+    const safeThemeMode = themeMode === 'dark' ? 'dark' : 'light';
+    if (safeThemeMode === activeBackgroundThemeMode) return;
+
+    captureBackgroundDraft();
+    activeBackgroundThemeMode = safeThemeMode;
+    if (elements.backgroundFileInput) {
+      elements.backgroundFileInput.value = '';
+    }
+    await populateBackgroundSettings(backgroundDrafts[safeThemeMode] || Storage.DEFAULT_BACKGROUND_SETTINGS);
+
+    if (focusTab) {
+      document.querySelector(`.background-theme-tab[data-theme-mode="${safeThemeMode}"]`)?.focus();
+    }
+  }
+
+  function updateBackgroundThemeTabs() {
+    elements.backgroundThemeTabs.forEach((tab) => {
+      const isActive = tab.dataset.themeMode === activeBackgroundThemeMode;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', String(isActive));
+      tab.tabIndex = isActive ? 0 : -1;
+    });
+
+    const activeTabId = `background-theme-${activeBackgroundThemeMode}-tab`;
+    elements.backgroundProfilePanel?.setAttribute('aria-labelledby', activeTabId);
+    if (elements.backgroundPreview) {
+      elements.backgroundPreview.setAttribute(
+        'aria-label',
+        `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景预览`
+      );
+    }
+    if (elements.backgroundPreviewBadge) {
+      elements.backgroundPreviewBadge.textContent = `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}模式`;
+    }
+  }
+
+  function handleBackgroundThemeTabKeydown(event) {
+    const currentIndex = BACKGROUND_THEME_MODES.indexOf(activeBackgroundThemeMode);
+    let nextIndex = currentIndex;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % BACKGROUND_THEME_MODES.length;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + BACKGROUND_THEME_MODES.length) % BACKGROUND_THEME_MODES.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = BACKGROUND_THEME_MODES.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    void switchBackgroundThemeMode(BACKGROUND_THEME_MODES[nextIndex], true);
   }
 
   function updateBackgroundModeUI(mode) {
@@ -408,11 +520,12 @@
   }
 
   function resolveBackgroundFileMeta(mode) {
-    if (pendingBackgroundFile) {
-      return `${pendingBackgroundFile.name} (${Math.round(pendingBackgroundFile.size / 1024)} KB)`;
+    const pendingFile = pendingBackgroundFiles[activeBackgroundThemeMode];
+    if (pendingFile) {
+      return `${pendingFile.name} (${Math.round(pendingFile.size / 1024)} KB)`;
     }
 
-    if (mode === 'upload' && hasSavedUploadedBackground) {
+    if (mode === 'upload' && savedUploadStates[activeBackgroundThemeMode]) {
       return '已保存本地背景图，可重新上传替换';
     }
 
@@ -421,7 +534,10 @@
 
   function shouldShowBackgroundAdvanced(mode) {
     if (mode === 'upload') {
-      return Boolean(pendingBackgroundFile || hasSavedUploadedBackground);
+      return Boolean(
+        pendingBackgroundFiles[activeBackgroundThemeMode]
+        || savedUploadStates[activeBackgroundThemeMode]
+      );
     }
 
     if (mode === 'url') {
@@ -438,9 +554,62 @@
 
   function handleBackgroundFileChange(event) {
     const [file] = event.target.files || [];
-    pendingBackgroundFile = file || null;
+    pendingBackgroundFiles[activeBackgroundThemeMode] = file || null;
+    captureBackgroundDraft();
     setBackgroundFileMeta(resolveBackgroundFileMeta(getSelectedBackgroundMode()));
     updateBackgroundModeUI(getSelectedBackgroundMode());
+    void updateBackgroundPreview();
+  }
+
+  async function updateBackgroundPreview() {
+    if (!elements.backgroundPreview) return;
+
+    const currentRequest = ++backgroundPreviewRequestVersion;
+    const settings = backgroundDrafts[activeBackgroundThemeMode] || captureBackgroundDraft();
+    let previewUrl = '';
+    let nextObjectUrl = null;
+
+    if (settings.mode === 'upload') {
+      const pendingFile = pendingBackgroundFiles[activeBackgroundThemeMode];
+      if (pendingFile) {
+        nextObjectUrl = URL.createObjectURL(pendingFile);
+        previewUrl = nextObjectUrl;
+      } else if (savedUploadStates[activeBackgroundThemeMode]) {
+        let saved = null;
+        try {
+          saved = await BackgroundStorage.getUploadedBackground(activeBackgroundThemeMode);
+        } catch (error) {
+          console.warn('[Options] 读取背景预览失败:', error);
+        }
+        if (currentRequest !== backgroundPreviewRequestVersion) return;
+        if (saved?.blob instanceof Blob) {
+          nextObjectUrl = URL.createObjectURL(saved.blob);
+          previewUrl = nextObjectUrl;
+        }
+      }
+    } else if (settings.mode === 'url' && /^https?:\/\//i.test(settings.url)) {
+      previewUrl = settings.url;
+    }
+
+    if (currentRequest !== backgroundPreviewRequestVersion) {
+      if (nextObjectUrl) URL.revokeObjectURL(nextObjectUrl);
+      return;
+    }
+
+    if (backgroundPreviewObjectUrl) {
+      URL.revokeObjectURL(backgroundPreviewObjectUrl);
+    }
+    backgroundPreviewObjectUrl = nextObjectUrl;
+
+    elements.backgroundPreview.classList.toggle('is-default', !previewUrl);
+    elements.backgroundPreview.style.backgroundImage = previewUrl
+      ? `url("${String(previewUrl).replace(/"/g, '\\"')}")`
+      : 'none';
+    elements.backgroundPreview.style.backgroundSize = settings.size || 'cover';
+    elements.backgroundPreview.style.setProperty(
+      '--preview-overlay-opacity',
+      previewUrl ? String(settings.overlayOpacity ?? 0.38) : '0'
+    );
   }
 
   async function saveBackgroundSettings() {
@@ -451,7 +620,7 @@
 
     try {
       const mode = getSelectedBackgroundMode();
-      const currentSettings = await Storage.loadBackgroundSettings();
+      const currentSettings = captureBackgroundDraft();
       const nextSettings = {
         ...currentSettings,
         mode,
@@ -471,13 +640,14 @@
       }
 
       if (mode === 'upload') {
-        if (pendingBackgroundFile) {
-          const processedBlob = await prepareBackgroundImage(pendingBackgroundFile);
-          await BackgroundStorage.saveUploadedBackground(processedBlob);
-          hasSavedUploadedBackground = true;
-          pendingBackgroundFile = null;
+        const pendingFile = pendingBackgroundFiles[activeBackgroundThemeMode];
+        if (pendingFile) {
+          const processedBlob = await prepareBackgroundImage(pendingFile);
+          await BackgroundStorage.saveUploadedBackground(activeBackgroundThemeMode, processedBlob);
+          savedUploadStates[activeBackgroundThemeMode] = true;
+          pendingBackgroundFiles[activeBackgroundThemeMode] = null;
         } else {
-          const existing = await BackgroundStorage.getUploadedBackground();
+          const existing = await BackgroundStorage.getUploadedBackground(activeBackgroundThemeMode);
           if (!existing) {
             showStatus('请先选择一张本地图片', 'error', elements.backgroundStatusMessage);
             return;
@@ -486,15 +656,20 @@
       }
 
       if (mode !== 'upload') {
-        pendingBackgroundFile = null;
+        pendingBackgroundFiles[activeBackgroundThemeMode] = null;
         if (elements.backgroundFileInput) {
           elements.backgroundFileInput.value = '';
         }
       }
 
-      await Storage.saveBackgroundSettings(nextSettings);
-      showStatus('背景设置已保存', 'success', elements.backgroundStatusMessage);
-      await populateBackgroundSettings(nextSettings);
+      const savedSettings = await Storage.saveBackgroundSettings(activeBackgroundThemeMode, nextSettings);
+      backgroundDrafts[activeBackgroundThemeMode] = savedSettings;
+      showStatus(
+        `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景设置已保存`,
+        'success',
+        elements.backgroundStatusMessage
+      );
+      await populateBackgroundSettings(savedSettings);
     } catch (error) {
       console.error('[Options] 保存背景失败:', error);
       showStatus(error.message || '保存背景失败', 'error', elements.backgroundStatusMessage);
@@ -507,16 +682,21 @@
 
   async function resetBackgroundSettings() {
     try {
-      pendingBackgroundFile = null;
+      pendingBackgroundFiles[activeBackgroundThemeMode] = null;
       if (elements.backgroundFileInput) {
         elements.backgroundFileInput.value = '';
       }
 
-      await Storage.clearBackgroundSettings();
-      await BackgroundStorage.clearUploadedBackground();
-      hasSavedUploadedBackground = false;
+      await Storage.clearBackgroundSettings(activeBackgroundThemeMode);
+      await BackgroundStorage.clearUploadedBackground(activeBackgroundThemeMode);
+      savedUploadStates[activeBackgroundThemeMode] = false;
+      backgroundDrafts[activeBackgroundThemeMode] = Storage.normalizeBackgroundSettings({});
       await populateBackgroundSettings(Storage.DEFAULT_BACKGROUND_SETTINGS || {});
-      showStatus('已恢复默认背景', 'success', elements.backgroundStatusMessage);
+      showStatus(
+        `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景已恢复默认`,
+        'success',
+        elements.backgroundStatusMessage
+      );
     } catch (error) {
       console.error('[Options] 重置背景失败:', error);
       showStatus('重置背景失败', 'error', elements.backgroundStatusMessage);
@@ -754,7 +934,7 @@
     try {
       await Storage.clearAll();
       if (window.BackgroundStorage) {
-        await BackgroundStorage.clearUploadedBackground();
+        await BackgroundStorage.clearAllUploadedBackgrounds();
       }
       location.reload();
     } catch (error) {

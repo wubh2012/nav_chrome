@@ -344,6 +344,10 @@ const ThemeManager = (function() {
 
     updateThemeIcons();
     updateFavicon();
+
+    document.dispatchEvent(new CustomEvent('chromeNav:themeChanged', {
+      detail: { skin: currentSkin, mode: currentMode }
+    }));
   }
 
   function updateSkinSelectorUI() {
@@ -435,6 +439,14 @@ const ThemeManager = (function() {
     updateSkinSelectorUI();
   }
 
+  function getCurrentMode() {
+    return currentMode;
+  }
+
+  function getCurrentSkin() {
+    return currentSkin;
+  }
+
   function syncSkinSelectorState(isExpanded) {
     const skinSelector = document.getElementById('skin-selector');
     const sidebar = document.getElementById('sidebar');
@@ -480,7 +492,9 @@ const ThemeManager = (function() {
     init,
     setSkin,
     toggleMode,
-    bindEvents
+    bindEvents,
+    getCurrentMode,
+    getCurrentSkin
   };
 })();
 

@@ -494,11 +494,17 @@ body {
   background-position: center center;
   background-size: cover;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.25s ease;
 }
 
 .background-image-layer.is-visible {
   opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .background-image-layer {
+    transition: none;
+  }
 }
 
 .background-overlay-layer {
@@ -1923,6 +1929,8 @@ body.time-focus-mode {
     --add-link-offset: 18px;
     --top-control-size: 40px;
     --theme-toggle-offset: 16px;
+    --mobile-top-actions-gap: 10px;
+    --mobile-top-actions-offset: 6px;
   }
 
   .container {
@@ -1982,6 +1990,18 @@ body.time-focus-mode {
     gap: 12px;
   }
 
+  .top-actions {
+    position: absolute;
+    top: var(--mobile-top-actions-offset);
+    right: 0;
+    width: auto;
+    justify-content: flex-end;
+    align-self: auto;
+    margin: 0;
+    padding: 0;
+    z-index: 24;
+  }
+
   .top-info {
     width: 100%;
     align-self: stretch;
@@ -1989,10 +2009,12 @@ body.time-focus-mode {
     padding: var(--top-info-padding);
     align-items: center;
     flex-wrap: nowrap;
+    position: relative;
   }
 
   .time-info {
     width: 100%;
+    padding-top: 28px;
   }
 
   .current-time {
@@ -2001,13 +2023,6 @@ body.time-focus-mode {
 
   .date-info {
     padding: 0 10px;
-  }
-
-  .top-actions {
-    position: static;
-    width: 100%;
-    justify-content: flex-start;
-    margin-top: 4px;
   }
 
   .tools-grid {
@@ -2028,6 +2043,13 @@ body.time-focus-mode {
 
   .theme-toggle-anchor {
     gap: 8px;
+    padding: 5px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .theme-shortcut-hint {
@@ -2036,12 +2058,14 @@ body.time-focus-mode {
 
   .shortcut-help-button,
   .theme-toggle-button {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 
   .shortcut-help-panel {
     right: 0;
+    top: calc(100% + var(--mobile-top-actions-gap));
+    width: min(280px, calc(100vw - 28px));
   }
 
   .shortcut-toast {

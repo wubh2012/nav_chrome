@@ -12,7 +12,11 @@ function createTheme(preference) {
   } };
   const context = {
     window: {}, console,
-    document: { documentElement: root, querySelectorAll: () => [], querySelector: () => null },
+    CustomEvent: class {
+      constructor(type, options) { this.type = type; this.detail = options.detail; }
+    },
+    document: { documentElement: root, querySelectorAll: () => [], querySelector: () => null,
+      dispatchEvent() {} },
     Storage: {
       loadThemePreference: async () => preference,
       saveThemePreference: async (skin, mode) => saved.push({ skin, mode })

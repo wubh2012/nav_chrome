@@ -94,16 +94,15 @@ const UIRenderer = (function() {
 
     const sortedCategories = rendererCore.sortCategoriesByPriority(categories);
 
-    // 保留"全部"选项
-    let html = `<li class="active" data-category="all"><i class="bi bi-house-door"></i> 全部</li>`;
+    menu.textContent = '';
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(createCategoryMenuItem('all', '全部', 'bi-grid-3x3-gap', true));
 
-    // 添加分类选项
     sortedCategories.forEach(category => {
-      const icon = resolveCategoryIcon(category);
-      html += `<li data-category="${category}"><i class="bi ${icon}"></i> ${category}</li>`;
+      fragment.appendChild(createCategoryMenuItem(category, category, resolveCategoryIcon(category), false));
     });
 
-    menu.innerHTML = html;
+    menu.appendChild(fragment);
 
     // 绑定点击事件
     menu.querySelectorAll('li').forEach(li => {
@@ -112,6 +111,20 @@ const UIRenderer = (function() {
         switchCategory(category);
       });
     });
+  }
+
+  function createCategoryMenuItem(category, label, iconClass, active) {
+    const item = document.createElement('li');
+    item.dataset.category = String(category || '');
+    item.classList.toggle('active', Boolean(active));
+
+    const icon = document.createElement('i');
+    icon.classList.add('bi');
+    icon.classList.add(resolveSafeIconClass(iconClass));
+
+    item.appendChild(icon);
+    item.appendChild(document.createTextNode(` ${label || ''}`));
+    return item;
   }
 
   /**
@@ -170,12 +183,15 @@ const UIRenderer = (function() {
 
     // 先隐藏容器，避免中间状态
     grid.style.visibility = 'hidden';
-    grid.innerHTML = '';
+    grid.textContent = '';
 
     const tools = rendererCore.flattenToolsByCategoryPriority(data);
 
     if (tools.length === 0) {
-      grid.innerHTML = '<div class="empty-state">暂无数据，请添加链接</div>';
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+      emptyState.textContent = '暂无数据，请添加链接';
+      grid.appendChild(emptyState);
       grid.style.visibility = 'visible';
       document.dispatchEvent(new CustomEvent('chromeNav:toolsRendered', {
         detail: { category: currentCategory }
@@ -216,7 +232,7 @@ const UIRenderer = (function() {
    *   name 会作为显示文本和悬浮提示，url 会在卡片点击时打开。
    * @returns {HTMLDivElement} 可插入工具网格的卡片节点。
    * @throws {Error} 本函数不主动抛错；若传入字段类型异常，DOM API 或下游 openLink 可能失败。
-   * @sideeffects 创建 DOM、写入 innerHTML、绑定点击事件和删除按钮事件；不执行外部 I/O。
+   * @sideeffects 创建 DOM、绑定点击事件和删除按钮事件；不执行外部 I/O。
    */
   function createToolCard(tool) {
     const card = document.createElement('div');
@@ -225,39 +241,35 @@ const UIRenderer = (function() {
     card.setAttribute('data-category', tool.category || '');
     card.title = tool.name || '';
 
-    // 解析图标
-    let iconHtml = '';
-    if (tool.icon) {
+    const { element: iconElement, useImageIcon } = createToolIconElement(tool);
+    const nameElement = document.createElement('span');
+    nameElement.className = 'tool-name';
+    nameElement.textContent = tool.name || '';
 
-      if (tool.icon.startsWith('http') || tool.icon.startsWith('data:')) {
-        // 图片图标
-        iconHtml = `<img src="${tool.icon}" alt="${tool.name}" class="tool-icon" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'text-icon\\'>${getInitial(tool.name)}</span>'">`;
-      } else if (tool.icon.startsWith('bi-') || tool.icon.startsWith('fa-')) {
-        // Bootstrap Icons 或 Font Awesome
-        iconHtml = `<i class="bi ${tool.icon} tool-icon"></i>`;
-      } else if (/^[\u4e00-\u9fa5]$/.test(tool.icon)) {
-        // 中文单个字
-        iconHtml = createTextIcon(tool.icon);
-      } else {
-        // Emoji 或其他（使用透明背景的图标容器）
-        iconHtml = `<span class="emoji-icon">${tool.icon}</span>`;
-      }
-    } else {
-      // 默认使用首字母
-      iconHtml = createTextIcon(getInitial(tool.name));
-    }
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'tool-item-delete-btn';
+    deleteButton.title = '删除';
 
-    card.innerHTML = `
-      ${iconHtml}
-      <span class="tool-name">${escapeHtml(tool.name)}</span>
-      <button class="tool-item-delete-btn" title="删除">
-        <i class="bi bi-x"></i>
-      </button>
-    `;
+    const deleteIcon = document.createElement('i');
+    deleteIcon.classList.add('bi', 'bi-x');
+    deleteButton.appendChild(deleteIcon);
+
+    card.appendChild(iconElement);
+    card.appendChild(nameElement);
+    card.appendChild(deleteButton);
 
     const nameEl = card.querySelector('.tool-name');
     if (nameEl) {
       nameEl.title = tool.name || '';
+    }
+
+    if (useImageIcon) {
+      const imageIcon = card.querySelector('.tool-icon');
+      if (imageIcon) {
+        imageIcon.addEventListener('error', () => {
+          imageIcon.replaceWith(createTextIconElement(getInitial(tool.name)));
+        }, { once: true });
+      }
     }
 
     // 点击打开链接
@@ -281,11 +293,46 @@ const UIRenderer = (function() {
     return card;
   }
 
-  /**
-   * 创建文字图标
-   * @param {string} text - 文字
-   */
-  function createTextIcon(text) {
+  function createToolIconElement(tool) {
+    const icon = String(tool?.icon || '');
+
+    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
+      const image = document.createElement('img');
+      image.src = icon;
+      image.alt = tool?.name || '';
+      image.className = 'tool-icon';
+      return { element: image, useImageIcon: true };
+    }
+
+    if (isSafeIconClass(icon)) {
+      const iconElement = document.createElement('i');
+      iconElement.classList.add('bi', icon, 'tool-icon');
+      return { element: iconElement, useImageIcon: false };
+    }
+
+    if (/^[\u4e00-\u9fa5]$/.test(icon)) {
+      return { element: createTextIconElement(icon), useImageIcon: false };
+    }
+
+    if (icon) {
+      const emoji = document.createElement('span');
+      emoji.className = 'emoji-icon';
+      emoji.textContent = icon;
+      return { element: emoji, useImageIcon: false };
+    }
+
+    return { element: createTextIconElement(getInitial(tool?.name)), useImageIcon: false };
+  }
+
+  function isSafeIconClass(iconClass) {
+    return /^(bi|fa)-[A-Za-z0-9_-]+$/.test(String(iconClass || ''));
+  }
+
+  function resolveSafeIconClass(iconClass) {
+    return isSafeIconClass(iconClass) ? iconClass : 'bi-folder2';
+  }
+
+  function createTextIconElement(text) {
     const colors = [
       'linear-gradient(135deg, #ff6b6b, #ee5a24)',
       'linear-gradient(135deg, #feca57, #ff9f43)',
@@ -295,7 +342,11 @@ const UIRenderer = (function() {
       'linear-gradient(135deg, #fc5c65, #eb3b5a)'
     ];
     const color = colors[Math.abs(hashCode(text)) % colors.length];
-    return `<span class="text-icon" style="background: ${color}">${text}</span>`;
+    const element = document.createElement('span');
+    element.className = 'text-icon';
+    element.style.background = color;
+    element.textContent = text;
+    return element;
   }
 
   /**
@@ -322,16 +373,35 @@ const UIRenderer = (function() {
    */
   function renderDateTime(dateInfo) {
     const dateEl = document.getElementById('date-info');
-    if (dateEl && dateInfo) {
-      let dateText = dateInfo.date || '';
-      if (dateInfo.weekday) {
-        dateText += ` · ${dateInfo.weekday}`;
+    if (dateEl) {
+      const safeDateInfo = dateInfo || createLocalDateInfo();
+      const dateParts = [];
+
+      if (safeDateInfo.date) {
+        dateParts.push(safeDateInfo.date);
       }
-      if (dateInfo.lunarDate) {
-        dateText += ` · ${dateInfo.lunarDate}`;
+
+      if (safeDateInfo.weekday) {
+        dateParts.push(safeDateInfo.weekday);
       }
-      dateEl.textContent = dateText || new Date().toLocaleDateString('zh-CN');
+
+      if (safeDateInfo.lunarDate) {
+        dateParts.push(safeDateInfo.lunarDate);
+      }
+
+      dateEl.textContent = dateParts.join(' · ') || createLocalDateInfo().date;
     }
+  }
+
+  function createLocalDateInfo() {
+    const now = new Date();
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+    return {
+      date: `${now.getMonth() + 1}月${now.getDate()}日`,
+      weekday: weekdays[now.getDay()],
+      lunarDate: ''
+    };
   }
 
   /**
@@ -380,16 +450,6 @@ const UIRenderer = (function() {
     setTimeout(() => {
       statusEl.classList.remove('show');
     }, 3000);
-  }
-
-  /**
-   * HTML 转义
-   * @param {string} text - 原始文本
-   */
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   /**

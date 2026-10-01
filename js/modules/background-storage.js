@@ -1,5 +1,5 @@
 /**
- * IndexedDB-backed storage for uploaded background images.
+ * IndexedDB-backed storage for uploaded light/dark background images.
  */
 const BackgroundStorage = (function() {
   'use strict';
@@ -7,7 +7,15 @@ const BackgroundStorage = (function() {
   const DB_NAME = 'chromeNavBackgrounds';
   const STORE_NAME = 'assets';
   const DB_VERSION = 1;
-  const CURRENT_KEY = 'currentBackground';
+  const LEGACY_KEY = 'currentBackground';
+
+  function normalizeThemeMode(themeMode) {
+    return themeMode === 'dark' ? 'dark' : 'light';
+  }
+
+  function getModeKey(themeMode) {
+    return `${normalizeThemeMode(themeMode)}Background`;
+  }
 
   function openDb() {
     return new Promise((resolve, reject) => {
@@ -56,14 +64,14 @@ const BackgroundStorage = (function() {
     });
   }
 
-  async function saveUploadedBackground(blob) {
+  async function saveUploadedBackground(themeMode, blob) {
     if (!(blob instanceof Blob)) {
       throw new Error('Background file is invalid');
     }
 
     return withStore('readwrite', (store) => {
       store.put({
-        id: CURRENT_KEY,
+        id: getModeKey(themeMode),
         blob,
         mimeType: blob.type || 'image/jpeg',
         updatedAt: Date.now()
@@ -71,13 +79,13 @@ const BackgroundStorage = (function() {
     });
   }
 
-  async function getUploadedBackground() {
+  async function getUploadedBackground(themeMode) {
     const db = await openDb();
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_NAME, 'readonly');
       const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(CURRENT_KEY);
+      const request = store.get(getModeKey(themeMode));
 
       request.onsuccess = () => {
         db.close();
@@ -90,16 +98,67 @@ const BackgroundStorage = (function() {
     });
   }
 
-  async function clearUploadedBackground() {
+  async function clearUploadedBackground(themeMode) {
     return withStore('readwrite', (store) => {
-      store.delete(CURRENT_KEY);
+      store.delete(getModeKey(themeMode));
     });
+  }
+
+  async function clearAllUploadedBackgrounds() {
+    return withStore('readwrite', (store) => {
+      store.delete(getModeKey('light'));
+      store.delete(getModeKey('dark'));
+      store.delete(LEGACY_KEY);
+    });
+  }
+
+  async function migrateLegacyUploadedBackground(themeMode) {
+    const targetKey = getModeKey(themeMode);
+    const state = { migrated: false, alreadyPresent: false };
+
+    await withStore('readwrite', (store) => {
+      const legacyRequest = store.get(LEGACY_KEY);
+      const targetRequest = store.get(targetKey);
+      let legacyRecord;
+      let targetRecord;
+      let completed = 0;
+
+      const finish = () => {
+        completed += 1;
+        if (completed < 2 || !legacyRecord) return;
+
+        if (!targetRecord) {
+          store.put({
+            ...legacyRecord,
+            id: targetKey,
+            updatedAt: legacyRecord.updatedAt || Date.now()
+          });
+          state.migrated = true;
+        } else {
+          state.alreadyPresent = true;
+        }
+        store.delete(LEGACY_KEY);
+      };
+
+      legacyRequest.onsuccess = () => {
+        legacyRecord = legacyRequest.result || null;
+        finish();
+      };
+      targetRequest.onsuccess = () => {
+        targetRecord = targetRequest.result || null;
+        finish();
+      };
+    });
+
+    return state;
   }
 
   return {
     saveUploadedBackground,
     getUploadedBackground,
-    clearUploadedBackground
+    clearUploadedBackground,
+    clearAllUploadedBackgrounds,
+    migrateLegacyUploadedBackground
   };
 })();
 

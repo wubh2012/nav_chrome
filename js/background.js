@@ -3,7 +3,7 @@
  * Handles startup, alarms, and sync message routing.
  */
 
-importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js');
+importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js', 'modules/sync-service.js');
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[Background] Extension installed/updated:', details.reason);
@@ -35,7 +35,9 @@ chrome.runtime.onStartup.addListener(async () => {
     console.log(`[Background] Periodic sync configured, interval ${interval} minutes`);
 
     setTimeout(() => {
-      chrome.runtime.sendMessage({ type: 'SYNC_NOW' });
+      handleBackgroundSync('startup').catch((error) => {
+        console.warn('[Background] Startup sync failed:', error);
+      });
     }, 2000);
   }
 
@@ -53,21 +55,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'SYNC_NOW') {
-    chrome.runtime.sendMessage({ type: 'TRIGGER_SYNC' }, (response) => {
-      if (chrome.runtime.lastError) {
-        handleBackgroundSync().then(sendResponse).catch((error) => {
-          sendResponse({ success: false, error: error.message });
-        });
-      } else {
-        sendResponse(response);
-      }
+    handleBackgroundSync(message.reason || 'message').then(sendResponse).catch((error) => {
+      sendResponse({ success: false, error: error.message });
     });
     return true;
   }
 
-  if (message.type === 'GET_STATUS') {
-    chrome.runtime.sendMessage({ type: 'GET_SYNC_STATUS' }, (response) => {
-      sendResponse(response || { error: '无法获取状态' });
+  if (message.type === 'GET_STATUS' || message.type === 'GET_SYNC_STATUS') {
+    getBackgroundStatus().then(sendResponse).catch((error) => {
+      sendResponse({ error: error.message });
     });
     return true;
   }
@@ -75,27 +71,50 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-async function handleBackgroundSync() {
+async function handleBackgroundSync(reason = 'background-sync') {
   try {
-    const testMode = await Storage.getTestMode();
-    if (testMode) {
-      return { success: true, message: '测试模式，跳过同步' };
+    const result = await SyncService.syncNavigation({
+      reason,
+      flushPendingSortSync
+    });
+
+    if (result.success && !result.skipped) {
+      notifyFrontendSyncComplete();
     }
 
-    const feishuConfig = await Storage.loadFeishuConfig();
-    if (!feishuConfig || !feishuConfig.appId) {
-      return { success: false, error: '未配置飞书' };
-    }
-
-    const flushResult = await flushPendingSortSync('background-sync');
-    return {
-      success: true,
-      message: flushResult.cleared ? '待同步排序已补发' : '同步请求已发起',
-      pending: flushResult.pending || null
-    };
+    return result;
   } catch (error) {
     console.error('[Background] Sync failed:', error);
     return { success: false, error: error.message };
+  }
+}
+
+async function getBackgroundStatus() {
+  const status = await Storage.getSyncStatus();
+  const syncTime = await Storage.getSyncTime();
+
+  return {
+    isSyncing: status?.status === 'syncing',
+    isPeriodicEnabled: true,
+    syncInterval: null,
+    retryCount: 0,
+    lastSyncTime: syncTime,
+    status: status?.status || 'idle',
+    message: status?.message || ''
+  };
+}
+
+function notifyFrontendSyncComplete() {
+  try {
+    chrome.runtime.sendMessage({
+      type: 'SYNC_COMPLETE',
+      timestamp: Date.now()
+    }, () => {
+      // Ignore when no extension page is listening.
+      void chrome.runtime.lastError;
+    });
+  } catch (_error) {
+    // Ignore when no page is listening.
   }
 }
 
@@ -170,14 +189,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'chromeNav_sync_alarm') {
     console.log('[Background] Periodic sync alarm triggered');
 
-    flushPendingSortSync('alarm').catch((error) => {
-      console.warn('[Background] Alarm pending sort flush failed:', error);
-    });
-
-    chrome.runtime.sendMessage({ type: 'SYNC_NOW' }, () => {
-      if (chrome.runtime.lastError) {
-        console.log('[Background] No active frontend context, service worker remains responsible');
-      }
+    handleBackgroundSync('alarm').catch((error) => {
+      console.warn('[Background] Alarm sync failed:', error);
     });
   }
 });

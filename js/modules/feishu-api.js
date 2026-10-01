@@ -131,6 +131,19 @@ const FeishuAPI = (function() {
     });
   }
 
+  async function clearCachedTenantToken() {
+    await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+  }
+
+  function isTokenExpiredResult(result) {
+    return result?.code === 99991663;
+  }
+
+  async function fetchFeishuJson(url, options = {}) {
+    const response = await fetch(url, options);
+    return await response.json();
+  }
+
   /**
    * 获取 tenant_access_token。
    *
@@ -190,11 +203,12 @@ const FeishuAPI = (function() {
 
   /**
    * 获取所有记录
-   * @param {string} appToken - 多维表格 Token（已废弃，从 Storage 获取）
-   * @param {string} tableId - 表格 ID（已废弃，从 Storage 获取）
+   * @param {string} appToken - 兼容旧调用，实际从 Storage 获取。
+   * @param {string} tableId - 兼容旧调用，实际从 Storage 获取。
+   * @param {boolean} canRetry - token 失效时是否允许刷新 token 后重试一次。
    * @returns {Promise<Object>} { success, data, categories, dateInfo }
    */
-  async function getRecords(appToken, tableId) {
+  async function getRecords(appToken, tableId, canRetry = true) {
     // 测试模式
     if (await isTestMode()) {
       console.log('[FeishuAPI] 使用测试模式数据');
@@ -214,7 +228,7 @@ const FeishuAPI = (function() {
     try {
       console.log('[FeishuAPI] 正在获取数据...');
 
-      const response = await fetch(
+      const result = await fetchFeishuJson(
         `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records?page_size=100`,
         {
           method: 'GET',
@@ -225,14 +239,12 @@ const FeishuAPI = (function() {
         }
       );
 
-      const result = await response.json();
-
       if (result.code !== 0) {
         // 错误码 99991663 通常是 Token 过期
-        if (result.code === 99991663) {
+        if (isTokenExpiredResult(result) && canRetry) {
           console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
-          return await getRecords(); // 递归重试
+          await clearCachedTenantToken();
+          return await getRecords(null, null, false);
         }
         console.error('[FeishuAPI] 获取数据失败:', result.msg);
         throw new Error(`获取数据失败: ${result.msg}`);
@@ -262,7 +274,7 @@ const FeishuAPI = (function() {
     /** @type {string} */
     let lunarDate = '';
     /** @type {Object|null} */
-    const Lunar = window.Lunar;
+    const Lunar = typeof globalThis !== 'undefined' ? globalThis.Lunar : null;
     if (Lunar) {
       /** @type {Object} */
       const lunar = Lunar.fromDate(now);
@@ -410,7 +422,7 @@ const FeishuAPI = (function() {
     }
 
     const token = tokenOverride || await getTenantAccessToken(configOverride);
-    const response = await fetch(
+    const result = await fetchFeishuJson(
       `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/fields?page_size=100`,
       {
         method: 'GET',
@@ -420,7 +432,6 @@ const FeishuAPI = (function() {
         }
       }
     );
-    const result = await response.json();
 
     if (result.code !== 0) {
       const classified = classifyConnectionError(result);
@@ -440,7 +451,7 @@ const FeishuAPI = (function() {
    * @sideeffects 发起飞书记录读取网络请求，不读写本地导航缓存。
    */
   async function fetchRecordsForConfig(config, token) {
-    const response = await fetch(
+    const result = await fetchFeishuJson(
       `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records?page_size=100`,
       {
         method: 'GET',
@@ -450,7 +461,6 @@ const FeishuAPI = (function() {
         }
       }
     );
-    const result = await response.json();
 
     if (result.code !== 0) {
       const classified = classifyConnectionError(result);
@@ -487,7 +497,7 @@ const FeishuAPI = (function() {
     try {
       console.log('[FeishuAPI] 正在更新记录...', recordId);
 
-      const response = await fetch(
+      const result = await fetchFeishuJson(
         `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`,
         {
           method: 'PUT',
@@ -499,12 +509,10 @@ const FeishuAPI = (function() {
         }
       );
 
-      const result = await response.json();
-
       if (result.code !== 0) {
-        if (result.code === 99991663 && canRetry) {
+        if (isTokenExpiredResult(result) && canRetry) {
           console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+          await clearCachedTenantToken();
           return await updateRecord(recordId, linkData, false);
         }
         if (isRecordNotFoundError(result)) {
@@ -529,7 +537,7 @@ const FeishuAPI = (function() {
     }
   }
 
-  async function addRecord(linkData) {
+  async function addRecord(linkData, canRetry = true) {
     // 测试模式
     if (await isTestMode()) {
       console.log('[FeishuAPI] 测试模式：添加记录', linkData);
@@ -547,28 +555,12 @@ const FeishuAPI = (function() {
 
     const token = await getTenantAccessToken();
 
-    const fields = {};
-    fields[FIELD_MAPPING.name] = linkData.name;
-    fields[FIELD_MAPPING.category] = linkData.category;
-    fields[FIELD_MAPPING.sort] = linkData.sort || 999;
-
-    // 处理网址字段格式
-    if (linkData.url) {
-      fields[FIELD_MAPPING.url] = {
-        link: linkData.url,
-        text: linkData.name
-      };
-    }
-
-    // 处理图标
-    if (linkData.icon) {
-      fields[FIELD_MAPPING.icon] = { link: linkData.icon };
-    }
+    const fields = buildRecordFields(linkData);
 
     try {
       console.log('[FeishuAPI] 正在添加记录...');
 
-      const response = await fetch(
+      const result = await fetchFeishuJson(
         `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records`,
         {
           method: 'POST',
@@ -580,13 +572,11 @@ const FeishuAPI = (function() {
         }
       );
 
-      const result = await response.json();
-
       if (result.code !== 0) {
-        if (result.code === 99991663) {
+        if (isTokenExpiredResult(result) && canRetry) {
           console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
-          return await addRecord(linkData); // 递归重试
+          await clearCachedTenantToken();
+          return await addRecord(linkData, false);
         }
         console.error('[FeishuAPI] 添加记录失败:', result.msg);
         throw new Error(`添加记录失败: ${result.msg}`);
@@ -610,7 +600,7 @@ const FeishuAPI = (function() {
    * @param {string} recordId - 记录 ID
    * @returns {Promise<Object>} 删除结果
    */
-  async function deleteRecord(recordId) {
+  async function deleteRecord(recordId, canRetry = true) {
     // 测试模式
     if (await isTestMode()) {
       console.log('[FeishuAPI] 测试模式：删除记录', recordId);
@@ -630,7 +620,7 @@ const FeishuAPI = (function() {
     try {
       console.log('[FeishuAPI] 正在删除记录...');
 
-      const response = await fetch(
+      const result = await fetchFeishuJson(
         `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`,
         {
           method: 'DELETE',
@@ -641,13 +631,11 @@ const FeishuAPI = (function() {
         }
       );
 
-      const result = await response.json();
-
       if (result.code !== 0) {
-        if (result.code === 99991663) {
+        if (isTokenExpiredResult(result) && canRetry) {
           console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
-          return await deleteRecord(recordId); // 递归重试
+          await clearCachedTenantToken();
+          return await deleteRecord(recordId, false);
         }
         if (isRecordNotFoundError(result)) {
           console.warn('[FeishuAPI] 删除时记录不存在，跳过并继续同步:', recordId);
@@ -720,7 +708,7 @@ const FeishuAPI = (function() {
     try {
       console.log('[FeishuAPI] 正在更新排序...', recordId, sort);
 
-      const response = await fetch(
+      const result = await fetchFeishuJson(
         `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`,
         {
           method: 'PUT',
@@ -732,12 +720,10 @@ const FeishuAPI = (function() {
         }
       );
 
-      const result = await response.json();
-
       if (result.code !== 0) {
-        if (result.code === 99991663 && canRetry) {
+        if (isTokenExpiredResult(result) && canRetry) {
           console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-          await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+          await clearCachedTenantToken();
           return await updateRecordSort(recordId, sort, false);
         }
         if (isRecordNotFoundError(result)) {
@@ -818,7 +804,7 @@ const FeishuAPI = (function() {
     try {
       for (let i = 0; i < payloadUpdates.length; i += BATCH_UPDATE_SIZE) {
         const chunk = payloadUpdates.slice(i, i + BATCH_UPDATE_SIZE);
-        const response = await fetch(
+        const result = await fetchFeishuJson(
           `${API_BASE}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/batch_update`,
           {
             method: 'POST',
@@ -830,12 +816,10 @@ const FeishuAPI = (function() {
           }
         );
 
-        const result = await response.json();
-
         if (result.code !== 0) {
-          if (result.code === 99991663 && canRetry) {
+          if (isTokenExpiredResult(result) && canRetry) {
             console.log('[FeishuAPI] Token 过期，尝试重新获取...');
-            await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+            await clearCachedTenantToken();
             return await batchUpdateRecordSorts(safeUpdates, false);
           }
           if (isRecordNotFoundError(result)) {
@@ -1042,7 +1026,7 @@ const FeishuAPI = (function() {
    * 清除 Token 缓存
    */
   async function clearTokenCache() {
-    await Storage.remove([TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+    await clearCachedTenantToken();
     console.log('[FeishuAPI] Token 缓存已清除');
   }
 

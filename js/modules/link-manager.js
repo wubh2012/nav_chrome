@@ -12,11 +12,15 @@ const LinkManager = (function() {
   'use strict';
 
   const core = window.LinkManagerCore || {};
+  const REMOTE_DELETE_RETRY_MS = 60 * 1000;
 
   let currentDeleteLink = null;
   let currentEditingLink = null;
   let cachedCategories = [];
   let lastSuggestedIconUrl = '';
+  let deletedLocalRecordIds = new Set();
+  let pendingRemoteDeleteIds = new Set();
+  let remoteDeleteRetryTimer = null;
 
   /**
    * 初始化链接管理器并绑定弹窗、表单和卡片编辑入口。
@@ -439,6 +443,8 @@ const LinkManager = (function() {
       return;
     }
 
+    const deleteLink = { ...currentDeleteLink };
+    const beforeSnapshot = UIRenderer.getNavDataSnapshot();
     const saveBtn = document.getElementById('confirm-delete-btn');
     if (saveBtn) {
       saveBtn.disabled = true;
@@ -446,16 +452,25 @@ const LinkManager = (function() {
     }
 
     try {
-      const result = await FeishuAPI.deleteRecord(currentDeleteLink.id);
+      await applyOptimisticDelete(beforeSnapshot, deleteLink);
+      closeDeleteModal();
+
+      if (isLocalRecordId(deleteLink.id)) {
+        deletedLocalRecordIds.add(deleteLink.id);
+        UIRenderer.showSyncStatus('已从本地删除', 'info');
+        return;
+      }
+
+      UIRenderer.showSyncStatus('已删除，正在同步到飞书', 'info');
+      const result = await FeishuAPI.deleteRecord(deleteLink.id);
       if (!result.success) {
         throw new Error(result.message || '删除失败');
       }
 
-      closeDeleteModal();
-      UIRenderer.showSyncStatus(result.skipped ? '记录不存在，已刷新本地数据' : '删除成功', result.skipped ? 'info' : 'success');
-      await refreshData();
+      UIRenderer.showSyncStatus(result.skipped ? '记录不存在，已从本地移除' : '删除已同步到飞书', result.skipped ? 'info' : 'success');
     } catch (error) {
       console.error('[LinkManager] 删除失败:', error);
+      await rollbackOptimisticDelete(deleteLink);
       UIRenderer.showSyncStatus(error.message || '删除失败', 'error');
     } finally {
       if (saveBtn) {
@@ -484,25 +499,59 @@ const LinkManager = (function() {
 
     const saveBtn = document.getElementById('save-link-btn');
     const isEditing = Boolean(currentEditingLink?.id);
+    const editingLink = currentEditingLink ? { ...currentEditingLink } : null;
+    const beforeSnapshot = UIRenderer.getNavDataSnapshot();
+    const optimisticRecordId = isEditing ? editingLink.id : createLocalRecordId();
     if (saveBtn) {
       saveBtn.disabled = true;
       saveBtn.textContent = isEditing ? '更新中...' : '保存中...';
     }
 
     try {
+      await applyOptimisticLinkChange(beforeSnapshot, formData, {
+        isEditing,
+        recordId: optimisticRecordId,
+        previousLink: editingLink
+      });
+      closeAddModal();
+      UIRenderer.showSyncStatus(isEditing ? '已本地更新，正在同步到飞书' : '已添加，正在同步到飞书', 'info');
+
       const result = isEditing
-        ? await FeishuAPI.updateRecord(currentEditingLink.id, formData)
+        ? await FeishuAPI.updateRecord(editingLink.id, formData)
         : await FeishuAPI.addRecord(formData);
 
       if (!result.success) {
         throw new Error(result.message || (isEditing ? '更新失败' : '添加失败'));
       }
 
-      closeAddModal();
-      UIRenderer.showSyncStatus(isEditing ? '修改成功' : '添加成功', 'success');
-      await refreshData();
+      if (!isEditing) {
+        if (deletedLocalRecordIds.has(optimisticRecordId)) {
+          deletedLocalRecordIds.delete(optimisticRecordId);
+          if (result.recordId) {
+            await queueRemoteDelete(result.recordId, { immediate: true });
+          }
+          return;
+        }
+
+        if (result.recordId) {
+          await replaceOptimisticRecordId(optimisticRecordId, result.recordId);
+        } else {
+          await refreshData();
+        }
+      }
+
+      UIRenderer.showSyncStatus(isEditing ? '修改已同步到飞书' : '添加已同步到飞书', 'success');
     } catch (error) {
       console.error('[LinkManager] 保存失败:', error);
+      if (!isEditing) {
+        deletedLocalRecordIds.delete(optimisticRecordId);
+      }
+      await rollbackOptimisticSave({
+        isEditing,
+        recordId: optimisticRecordId,
+        formData,
+        previousLink: editingLink
+      });
       UIRenderer.showSyncStatus(error.message || (isEditing ? '更新失败' : '添加失败'), 'error');
       if (saveBtn) {
         saveBtn.disabled = false;
@@ -538,6 +587,259 @@ const LinkManager = (function() {
       category,
       sort: parseInt(sortValue, 10) || 999
     };
+  }
+
+  /**
+   * 创建临时本地记录 ID，等待飞书新增成功后替换为真实记录 ID。
+   *
+   * @returns {string} 本地临时记录 ID。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 无副作用。
+   */
+  function createLocalRecordId() {
+    const randomPart = Math.random().toString(36).slice(2, 8);
+    return `local-${Date.now()}-${randomPart}`;
+  }
+
+  /**
+   * 判断记录是否为尚未同步到飞书的本地临时记录。
+   *
+   * @param {string} recordId - 记录 ID。
+   * @returns {boolean} 本地临时记录返回 true。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 无副作用。
+   */
+  function isLocalRecordId(recordId) {
+    return String(recordId || '').startsWith('local-');
+  }
+
+  /**
+   * 乐观应用新增或编辑结果到本地缓存和界面。
+   *
+   * @param {Object} snapshot - 保存前的导航快照。
+   * @param {Object} formData - 待保存的表单数据。
+   * @param {Object} options - 乐观更新选项。
+   * @param {boolean} options.isEditing - 是否为编辑模式。
+   * @param {string} options.recordId - 本地记录 ID 或飞书记录 ID。
+   * @param {Object|null} options.previousLink - 编辑前的链接数据。
+   * @returns {Promise<void>} 本地缓存保存完成后解析。
+   * @throws {Error} Storage 或 UI 更新异常会向上抛出。
+   * @sideeffects 更新 UIRenderer 缓存、重渲染当前页面并写入 chrome.storage.local。
+   */
+  async function applyOptimisticLinkChange(snapshot, formData, options) {
+    const nextSnapshot = core.applyOptimisticLinkChangeToSnapshot(snapshot, formData, options);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+  }
+
+  /**
+   * 乐观删除链接并立即刷新本地缓存和界面。
+   *
+   * @param {Object} snapshot - 删除前的导航快照。
+   * @param {Object} link - 待删除链接，需包含 id 和 category。
+   * @returns {Promise<void>} 本地缓存保存完成后解析。
+   * @throws {Error} Storage 或 UI 更新异常会向上抛出。
+   * @sideeffects 更新 UIRenderer 缓存、重渲染当前页面并写入 chrome.storage.local。
+   */
+  async function applyOptimisticDelete(snapshot, link) {
+    const nextSnapshot = core.applyOptimisticDeleteToSnapshot(snapshot, link);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+  }
+
+  /**
+   * 将新增时的临时 ID 替换为飞书返回的真实记录 ID。
+   *
+   * @param {string} localRecordId - 本地临时 ID。
+   * @param {string} remoteRecordId - 飞书真实记录 ID。
+   * @returns {Promise<void>} 替换并保存完成后解析。
+   * @throws {Error} Storage 或 UI 更新异常会向上抛出。
+   * @sideeffects 更新 UIRenderer 缓存和 chrome.storage.local。
+   */
+  async function replaceOptimisticRecordId(localRecordId, remoteRecordId) {
+    if (!localRecordId || !remoteRecordId || localRecordId === remoteRecordId) {
+      return;
+    }
+
+    const nextSnapshot = core.replaceRecordIdInSnapshot(
+      UIRenderer.getNavDataSnapshot(),
+      localRecordId,
+      remoteRecordId
+    );
+
+    if (!nextSnapshot.changed) {
+      return;
+    }
+
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+  }
+
+  /**
+   * 将待删除的远端记录加入重试队列。
+   *
+   * @param {string} recordId - 飞书记录 ID。
+   * @param {Object} options - 队列选项。
+   * @param {boolean} options.immediate - 是否立即尝试删除。
+   * @returns {Promise<void>} 入队和本次尝试完成后解析。
+   * @throws {Error} 内部捕获远端删除异常，不向调用方抛业务错误。
+   * @sideeffects 调用 FeishuAPI.deleteRecord，并可能安排失败重试。
+   */
+  async function queueRemoteDelete(recordId, options = {}) {
+    if (!recordId) {
+      return;
+    }
+
+    pendingRemoteDeleteIds.add(recordId);
+
+    if (options.immediate) {
+      await flushPendingRemoteDeletes('immediate');
+      return;
+    }
+
+    scheduleRemoteDeleteRetry();
+  }
+
+  /**
+   * 重试清理新增后已本地删除的远端记录。
+   *
+   * @param {string} reason - 触发原因。
+   * @returns {Promise<void>} 本轮远端删除完成后解析。
+   * @throws {Error} 内部捕获远端删除异常，不向调用方抛业务错误。
+   * @sideeffects 调用 FeishuAPI.deleteRecord，更新重试队列和状态提示。
+   */
+  async function flushPendingRemoteDeletes(reason = 'retry') {
+    clearTimeout(remoteDeleteRetryTimer);
+    remoteDeleteRetryTimer = null;
+
+    const recordIds = Array.from(pendingRemoteDeleteIds);
+    if (recordIds.length === 0) {
+      return;
+    }
+
+    for (const recordId of recordIds) {
+      try {
+        const result = await FeishuAPI.deleteRecord(recordId);
+        if (!result.success) {
+          throw new Error(result.message || '远端删除失败');
+        }
+        pendingRemoteDeleteIds.delete(recordId);
+      } catch (error) {
+        console.error('[LinkManager] 远端补删失败:', error);
+      }
+    }
+
+    if (pendingRemoteDeleteIds.size > 0) {
+      scheduleRemoteDeleteRetry();
+      UIRenderer.showSyncStatus('本地已删除，远端清理失败，将重试', 'error');
+    } else if (reason === 'immediate') {
+      UIRenderer.showSyncStatus('已清理刚删除的新增记录', 'info');
+    }
+  }
+
+  /**
+   * 安排远端补删重试。
+   *
+   * @returns {void} 无返回值。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 创建定时器。
+   */
+  function scheduleRemoteDeleteRetry() {
+    clearTimeout(remoteDeleteRetryTimer);
+    remoteDeleteRetryTimer = setTimeout(() => {
+      flushPendingRemoteDeletes('retry').catch((error) => {
+        console.warn('[LinkManager] 远端补删重试异常:', error);
+      });
+    }, REMOTE_DELETE_RETRY_MS);
+  }
+
+  /**
+   * 保存失败时只回滚当前乐观保存影响的记录。
+   *
+   * @param {Object} operation - 保存操作信息。
+   * @param {boolean} operation.isEditing - 是否为编辑操作。
+   * @param {string} operation.recordId - 乐观记录 ID。
+   * @param {Object} operation.formData - 本次保存表单数据。
+   * @param {Object|null} operation.previousLink - 编辑前的链接数据。
+   * @returns {Promise<void>} 回滚保存完成后解析。
+   * @throws {Error} 内部捕获本地回滚异常，不向调用方抛业务错误。
+   * @sideeffects 更新 UIRenderer 缓存和 chrome.storage.local。
+   */
+  async function rollbackOptimisticSave(operation) {
+    try {
+      const nextSnapshot = core.rollbackOptimisticSaveInSnapshot(
+        UIRenderer.getNavDataSnapshot(),
+        operation
+      );
+      if (!nextSnapshot.changed) {
+        return;
+      }
+
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+    } catch (rollbackError) {
+      console.error('[LinkManager] 回滚本地保存失败:', rollbackError);
+    }
+  }
+
+  /**
+   * 删除失败时只恢复当前删除的记录。
+   *
+   * @param {Object} link - 删除前的链接数据。
+   * @returns {Promise<void>} 回滚保存完成后解析。
+   * @throws {Error} 内部捕获本地回滚异常，不向调用方抛业务错误。
+   * @sideeffects 更新 UIRenderer 缓存和 chrome.storage.local。
+   */
+  async function rollbackOptimisticDelete(link) {
+    try {
+      const nextSnapshot = core.rollbackOptimisticDeleteInSnapshot(
+        UIRenderer.getNavDataSnapshot(),
+        link
+      );
+      if (!nextSnapshot.changed) {
+        return;
+      }
+
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+    } catch (rollbackError) {
+      console.error('[LinkManager] 回滚本地删除失败:', rollbackError);
+    }
+  }
+
+  /**
+   * 保存并刷新当前导航快照数据。
+   *
+   * @param {Object<string, Array<Object>>} data - 导航数据。
+   * @param {Array<string>} categories - 分类列表。
+   * @param {Object|null} dateInfo - 日期信息。
+   * @returns {Promise<void>} 本地缓存保存完成后解析。
+   * @throws {Error} Storage 或 UI 更新异常会向上抛出。
+   * @sideeffects 更新 UIRenderer 缓存和 chrome.storage.local。
+   */
+  async function persistSnapshotData(data, categories, dateInfo) {
+    const nextCategories = new Set(categories || []);
+    pruneEmptyCategories(data, nextCategories);
+    const categoryList = Array.from(nextCategories);
+
+    UIRenderer.setNavDataAndRefresh(data, categoryList, dateInfo);
+    cachedCategories = categoryList;
+    await Storage.saveNavData(data, categoryList, dateInfo, {
+      preserveSyncTime: true
+    });
+  }
+
+  /**
+   * 清理已经没有记录的分类。
+   *
+   * @param {Object<string, Array<Object>>} data - 导航数据。
+   * @param {Set<string>} categories - 分类集合。
+   * @returns {void} 无返回值。
+   * @throws {Error} 不主动抛错。
+   * @sideeffects 修改 data 和 categories。
+   */
+  function pruneEmptyCategories(data, categories) {
+    Array.from(categories).forEach(category => {
+      if (!Array.isArray(data[category]) || data[category].length === 0) {
+        delete data[category];
+        categories.delete(category);
+      }
+    });
   }
 
   /**

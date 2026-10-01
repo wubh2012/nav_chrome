@@ -10,9 +10,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  applyOptimisticDeleteToSnapshot,
+  applyOptimisticLinkChangeToSnapshot,
   findDuplicateUrl,
   normalizeLinkUrl,
+  replaceRecordIdInSnapshot,
   resolveFaviconUrl,
+  rollbackOptimisticDeleteInSnapshot,
+  rollbackOptimisticSaveInSnapshot,
   validateLinkForm
 } = require('../js/modules/link-manager-core.js');
 
@@ -91,4 +96,132 @@ test('表单校验接受合法的新链接数据', () => {
     icon: '',
     category: ''
   });
+});
+
+test('乐观新增会插入目标分类并按排序稳定排列', () => {
+  const snapshot = {
+    data: { 工具: [{ id: '1', name: 'B', url: 'https://b.test', sort: 20 }] },
+    categories: ['工具'],
+    dateInfo: { date: '6月30日' }
+  };
+
+  const next = applyOptimisticLinkChangeToSnapshot(snapshot, {
+    url: 'https://a.test',
+    name: 'A',
+    icon: '',
+    category: '工具',
+    sort: 10
+  }, {
+    isEditing: false,
+    recordId: 'local-1'
+  });
+
+  assert.equal(next.changed, true);
+  assert.deepEqual(next.data.工具.map(item => item.id), ['local-1', '1']);
+  assert.equal(next.data.工具[0].icon, 'https://www.google.com/s2/favicons?domain=a.test&sz=64');
+});
+
+test('乐观编辑会从旧分类移除并清理空分类', () => {
+  const snapshot = {
+    data: { 工具: [{ id: '1', name: 'Docs', url: 'https://docs.test', sort: 20 }] },
+    categories: ['工具'],
+    dateInfo: null
+  };
+
+  const next = applyOptimisticLinkChangeToSnapshot(snapshot, {
+    url: 'https://docs.test',
+    name: 'Docs',
+    icon: 'https://docs.test/icon.png',
+    category: 'Code',
+    sort: 5
+  }, {
+    isEditing: true,
+    recordId: '1',
+    previousLink: { id: '1', category: '工具' }
+  });
+
+  assert.deepEqual(next.categories, ['Code']);
+  assert.equal(next.data.工具, undefined);
+  assert.deepEqual(next.data.Code[0], {
+    id: '1',
+    name: 'Docs',
+    url: 'https://docs.test',
+    icon: 'https://docs.test/icon.png',
+    customIcon: 'https://docs.test/icon.png',
+    sort: 5
+  });
+});
+
+test('乐观删除会移除记录并清理空分类', () => {
+  const snapshot = {
+    data: { 工具: [{ id: '1', name: 'Docs', url: 'https://docs.test', sort: 20 }] },
+    categories: ['工具'],
+    dateInfo: null
+  };
+
+  const next = applyOptimisticDeleteToSnapshot(snapshot, { id: '1', category: '工具' });
+
+  assert.equal(next.changed, true);
+  assert.deepEqual(next.categories, []);
+  assert.deepEqual(next.data, {});
+});
+
+test('远端 ID 替换只修改匹配的本地临时记录', () => {
+  const snapshot = {
+    data: { 工具: [{ id: 'local-1', name: 'Docs' }, { id: '2', name: 'Other' }] },
+    categories: ['工具'],
+    dateInfo: null
+  };
+
+  const next = replaceRecordIdInSnapshot(snapshot, 'local-1', 'rec_abc');
+
+  assert.equal(next.changed, true);
+  assert.deepEqual(next.data.工具.map(item => item.id), ['rec_abc', '2']);
+  assert.equal(snapshot.data.工具[0].id, 'local-1');
+});
+
+test('保存失败回滚会移除本次乐观新增', () => {
+  const snapshot = {
+    data: { 工具: [{ id: 'local-1', name: 'Docs', url: 'https://docs.test', customIcon: '', sort: 10 }] },
+    categories: ['工具'],
+    dateInfo: null
+  };
+
+  const next = rollbackOptimisticSaveInSnapshot(snapshot, {
+    isEditing: false,
+    recordId: 'local-1',
+    formData: {
+      name: 'Docs',
+      url: 'https://docs.test',
+      icon: '',
+      category: '工具',
+      sort: 10
+    }
+  });
+
+  assert.equal(next.changed, true);
+  assert.deepEqual(next.data, {});
+  assert.deepEqual(next.categories, []);
+});
+
+test('删除失败回滚会恢复被删记录', () => {
+  const snapshot = {
+    data: {},
+    categories: [],
+    dateInfo: null
+  };
+
+  const next = rollbackOptimisticDeleteInSnapshot(snapshot, {
+    id: '1',
+    name: 'Docs',
+    url: 'https://docs.test',
+    icon: '',
+    customIcon: '',
+    category: '工具',
+    sort: 10
+  });
+
+  assert.equal(next.changed, true);
+  assert.deepEqual(next.categories, ['工具']);
+  assert.equal(next.data.工具[0].id, '1');
 });

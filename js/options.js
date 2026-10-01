@@ -27,12 +27,16 @@
     connectionChecks: document.querySelectorAll('[data-check]'),
     testModeToggle: document.getElementById('test-mode-toggle'),
     statusMessage: document.getElementById('status-message'),
+    testModeStatus: document.getElementById('test-mode-status'),
+    dataStatusMessage: document.getElementById('data-status-message'),
     testModeNotice: document.getElementById('test-mode-notice'),
     clearCacheBtn: document.getElementById('clear-cache-btn'),
     resetBtn: document.getElementById('reset-btn'),
     backgroundThemeTabs: document.querySelectorAll('.background-theme-tab'),
     backgroundProfilePanel: document.getElementById('background-profile-panel'),
     backgroundPreview: document.getElementById('background-preview'),
+    backgroundPreviewImage: document.getElementById('background-preview-image'),
+    backgroundDraftStatus: document.getElementById('background-draft-status'),
     backgroundPreviewBadge: document.getElementById('background-preview-badge'),
     backgroundModeInputs: document.querySelectorAll('input[name="background-mode"]'),
     backgroundModeOptions: document.querySelectorAll('.mode-option'),
@@ -54,6 +58,8 @@
 
   const BACKGROUND_THEME_MODES = ['light', 'dark'];
   const backgroundDrafts = { light: null, dark: null };
+  const savedBackgroundSettings = { light: null, dark: null };
+  const statusTimers = new WeakMap();
   const pendingBackgroundFiles = { light: null, dark: null };
   const savedUploadStates = { light: false, dark: false };
   let activeBackgroundThemeMode = 'light';
@@ -61,6 +67,8 @@
   let backgroundPreviewRequestVersion = 0;
   let currentWizardStep = 1;
   let lastConnectionPassed = false;
+  let feishuBusy = false;
+  let backgroundBusy = false;
 
   /**
    * 初始化设置页状态。
@@ -117,6 +125,7 @@
           backgroundDrafts[themeMode] = Storage.normalizeBackgroundSettings(
             backgroundSettings.profiles?.[themeMode]
           );
+          savedBackgroundSettings[themeMode] = { ...backgroundDrafts[themeMode] };
           try {
             const savedUpload = await BackgroundStorage.getUploadedBackground(themeMode);
             savedUploadStates[themeMode] = Boolean(savedUpload && savedUpload.blob instanceof Blob);
@@ -174,8 +183,38 @@
       });
     });
 
+    elements.wizardIndicators.forEach((button) => {
+      button.addEventListener('click', () => updateWizardStep(button.dataset.stepIndicator));
+      button.addEventListener('keydown', event => {
+        const index = Number(button.dataset.stepIndicator);
+        const step = event.key === 'ArrowRight' ? (index % 3) + 1
+          : event.key === 'ArrowLeft' ? ((index + 1) % 3) + 1
+          : event.key === 'Home' ? 1 : event.key === 'End' ? 3 : null;
+        if (!step) return;
+        event.preventDefault();
+        updateWizardStep(step);
+        elements.wizardIndicators[step - 1].focus();
+      });
+    });
+
+    document.getElementById('toggle-app-secret')?.addEventListener('click', event => {
+      const visible = elements.appSecret.type === 'password';
+      elements.appSecret.type = visible ? 'text' : 'password';
+      event.currentTarget.setAttribute('aria-pressed', String(visible));
+      event.currentTarget.setAttribute('aria-label', visible ? '隐藏应用密钥' : '显示应用密钥');
+      event.currentTarget.querySelector('i').className = visible ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+
     [elements.appId, elements.appSecret, elements.appToken, elements.tableId].forEach((input) => {
-      input?.addEventListener('input', resetConnectionChecks);
+      input?.addEventListener('input', () => {
+        resetConnectionChecks();
+        input.removeAttribute('aria-invalid');
+        const error = document.getElementById(`${input.id}-error`);
+        if (error) error.hidden = true;
+        if ([elements.appId, elements.appSecret, elements.appToken, elements.tableId].every(field => field.value.trim())) {
+          elements.statusMessage.classList.remove('show');
+        }
+      });
     });
 
     elements.backgroundModeInputs.forEach((input) => {
@@ -199,6 +238,7 @@
 
     if (elements.backgroundUrl) {
       elements.backgroundUrl.addEventListener('input', () => {
+        elements.backgroundUrl.removeAttribute('aria-invalid');
         updateBackgroundModeUI(getSelectedBackgroundMode());
         captureBackgroundDraft();
         void updateBackgroundPreview();
@@ -224,6 +264,7 @@
       elements.backgroundBlur.addEventListener('input', () => {
         updateRangeLabels();
         captureBackgroundDraft();
+        void updateBackgroundPreview();
       });
     }
 
@@ -244,17 +285,18 @@
    * @param {HTMLElement|null} target - 消息容器；默认使用飞书配置状态容器。
    * @returns {void}
    * @throws {Error} 不主动抛错；目标元素缺失时直接返回。
-   * @sideeffects 修改目标 DOM 的文本和样式类，并在 5 秒后隐藏。
+   * @sideeffects 修改目标 DOM；成功提示自动隐藏，错误与操作中提示保持可见。
    */
   function showStatus(message, type = 'info', target = elements.statusMessage) {
     if (!target) return;
+    clearTimeout(statusTimers.get(target));
 
     target.textContent = message;
     target.className = `status-message show ${type}`;
 
-    setTimeout(() => {
-      target.classList.remove('show');
-    }, 5000);
+    if (type === 'success') {
+      statusTimers.set(target, setTimeout(() => target.classList.remove('show'), 8000));
+    }
   }
 
   /**
@@ -269,13 +311,16 @@
     currentWizardStep = Math.min(3, Math.max(1, Number(step) || 1));
 
     elements.wizardPanels.forEach((panel) => {
-      panel.classList.toggle('active', Number(panel.getAttribute('data-wizard-panel')) === currentWizardStep);
+      const active = Number(panel.getAttribute('data-wizard-panel')) === currentWizardStep;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
     });
 
     elements.wizardIndicators.forEach((indicator) => {
       const indicatorStep = Number(indicator.getAttribute('data-step-indicator'));
       indicator.classList.toggle('active', indicatorStep === currentWizardStep);
-      indicator.classList.toggle('complete', indicatorStep < currentWizardStep);
+      indicator.setAttribute('aria-selected', String(indicatorStep === currentWizardStep));
+      indicator.tabIndex = indicatorStep === currentWizardStep ? 0 : -1;
     });
   }
 
@@ -309,7 +354,19 @@
       : { success: Boolean(config.appId && config.appSecret && config.appToken && config.tableId), message: '请填写所有必填字段' };
 
     if (!result.success) {
+      updateWizardStep(2);
+      const inputs = [elements.appId, elements.appSecret, elements.appToken, elements.tableId];
+      inputs.forEach(input => {
+        const missing = !input.value.trim();
+        input.setAttribute('aria-invalid', String(missing));
+        const error = document.getElementById(`${input.id}-error`);
+        if (error) {
+          error.textContent = '请填写此项';
+          error.hidden = !missing;
+        }
+      });
       showStatus(result.message, 'error');
+      inputs.find(input => !input.value.trim())?.focus();
       return false;
     }
 
@@ -336,6 +393,41 @@
     Object.keys(defaults).forEach((key) => {
       renderConnectionCheck(key, { status: 'pending', message: defaults[key] });
     });
+  }
+
+  function setFeishuBusy(busy) {
+    feishuBusy = busy;
+    const disabled = busy || elements.testModeToggle.checked;
+    [elements.appId, elements.appSecret, elements.appToken, elements.tableId,
+      elements.testBtn, elements.saveBtn].forEach(control => { control.disabled = disabled; });
+    elements.testModeToggle.disabled = busy;
+    document.getElementById('toggle-app-secret').disabled = disabled;
+    document.querySelector('.setup-wizard').setAttribute('aria-busy', String(busy));
+  }
+
+  function setBackgroundBusy(busy) {
+    backgroundBusy = busy;
+    elements.backgroundThemeTabs.forEach(tab => { tab.disabled = busy; });
+    elements.backgroundProfilePanel.querySelectorAll('input, select, button').forEach(control => {
+      control.disabled = busy;
+    });
+    elements.backgroundProfilePanel.setAttribute('aria-busy', String(busy));
+  }
+
+  function updateBackgroundDraftStatus() {
+    for (const mode of BACKGROUND_THEME_MODES) {
+      const dirty = Boolean(pendingBackgroundFiles[mode])
+        || JSON.stringify(backgroundDrafts[mode]) !== JSON.stringify(savedBackgroundSettings[mode]);
+      const tab = document.querySelector(`.background-theme-tab[data-theme-mode="${mode}"]`);
+      tab?.classList.toggle('is-dirty', dirty);
+      if (mode === activeBackgroundThemeMode && elements.backgroundDraftStatus) {
+        elements.backgroundDraftStatus.textContent = dirty
+          ? '有未保存的修改，点击保存后应用到新标签页。' : '当前背景设置已保存。';
+      }
+    }
+    if (elements.backgroundSaveBtn) {
+      elements.backgroundSaveBtn.textContent = `保存${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景`;
+    }
   }
 
   /**
@@ -412,6 +504,7 @@
     updateRangeLabels();
     setBackgroundFileMeta(resolveBackgroundFileMeta(mode));
     updateBackgroundThemeTabs();
+    updateBackgroundDraftStatus();
     await updateBackgroundPreview();
   }
 
@@ -425,15 +518,19 @@
       overlayOpacity: Number(elements.backgroundOverlay?.value ?? 0.38),
       blurPx: Number(elements.backgroundBlur?.value ?? 0)
     });
+    updateBackgroundDraftStatus();
     return backgroundDrafts[activeBackgroundThemeMode];
   }
 
   async function switchBackgroundThemeMode(themeMode, focusTab = false) {
+    if (backgroundBusy) return;
     const safeThemeMode = themeMode === 'dark' ? 'dark' : 'light';
     if (safeThemeMode === activeBackgroundThemeMode) return;
 
     captureBackgroundDraft();
     activeBackgroundThemeMode = safeThemeMode;
+    clearTimeout(statusTimers.get(elements.backgroundStatusMessage));
+    elements.backgroundStatusMessage.classList.remove('show');
     if (elements.backgroundFileInput) {
       elements.backgroundFileInput.value = '';
     }
@@ -455,6 +552,7 @@
     const activeTabId = `background-theme-${activeBackgroundThemeMode}-tab`;
     elements.backgroundProfilePanel?.setAttribute('aria-labelledby', activeTabId);
     if (elements.backgroundPreview) {
+      elements.backgroundPreview.dataset.previewTheme = activeBackgroundThemeMode;
       elements.backgroundPreview.setAttribute(
         'aria-label',
         `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景预览`
@@ -602,10 +700,12 @@
     backgroundPreviewObjectUrl = nextObjectUrl;
 
     elements.backgroundPreview.classList.toggle('is-default', !previewUrl);
-    elements.backgroundPreview.style.backgroundImage = previewUrl
+    const imageLayer = elements.backgroundPreviewImage || elements.backgroundPreview;
+    imageLayer.style.backgroundImage = previewUrl
       ? `url("${String(previewUrl).replace(/"/g, '\\"')}")`
       : 'none';
-    elements.backgroundPreview.style.backgroundSize = settings.size || 'cover';
+    imageLayer.style.backgroundSize = settings.size || 'cover';
+    imageLayer.style.filter = previewUrl ? `blur(${settings.blurPx || 0}px)` : 'none';
     elements.backgroundPreview.style.setProperty(
       '--preview-overlay-opacity',
       previewUrl ? String(settings.overlayOpacity ?? 0.38) : '0'
@@ -613,9 +713,11 @@
   }
 
   async function saveBackgroundSettings() {
+    if (backgroundBusy) return;
     const button = elements.backgroundSaveBtn;
     if (button) {
-      button.disabled = true;
+      setBackgroundBusy(true);
+      button.textContent = '保存中…';
     }
 
     try {
@@ -634,6 +736,9 @@
         const url = elements.backgroundUrl.value.trim();
         if (!/^https?:\/\//i.test(url)) {
           showStatus('请输入有效的图片 URL', 'error', elements.backgroundStatusMessage);
+          elements.backgroundUrl.setAttribute('aria-invalid', 'true');
+          setBackgroundBusy(false);
+          elements.backgroundUrl.focus();
           return;
         }
         nextSettings.url = url;
@@ -663,6 +768,7 @@
       }
 
       const savedSettings = await Storage.saveBackgroundSettings(activeBackgroundThemeMode, nextSettings);
+      savedBackgroundSettings[activeBackgroundThemeMode] = { ...savedSettings };
       backgroundDrafts[activeBackgroundThemeMode] = savedSettings;
       showStatus(
         `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景设置已保存`,
@@ -675,12 +781,15 @@
       showStatus(error.message || '保存背景失败', 'error', elements.backgroundStatusMessage);
     } finally {
       if (button) {
-        button.disabled = false;
+        setBackgroundBusy(false);
+        updateBackgroundDraftStatus();
       }
     }
   }
 
   async function resetBackgroundSettings() {
+    if (backgroundBusy) return;
+    setBackgroundBusy(true);
     try {
       pendingBackgroundFiles[activeBackgroundThemeMode] = null;
       if (elements.backgroundFileInput) {
@@ -691,6 +800,7 @@
       await BackgroundStorage.clearUploadedBackground(activeBackgroundThemeMode);
       savedUploadStates[activeBackgroundThemeMode] = false;
       backgroundDrafts[activeBackgroundThemeMode] = Storage.normalizeBackgroundSettings({});
+      savedBackgroundSettings[activeBackgroundThemeMode] = { ...backgroundDrafts[activeBackgroundThemeMode] };
       await populateBackgroundSettings(Storage.DEFAULT_BACKGROUND_SETTINGS || {});
       showStatus(
         `${activeBackgroundThemeMode === 'dark' ? '深色' : '浅色'}背景已恢复默认`,
@@ -700,6 +810,8 @@
     } catch (error) {
       console.error('[Options] 重置背景失败:', error);
       showStatus('重置背景失败', 'error', elements.backgroundStatusMessage);
+    } finally {
+      setBackgroundBusy(false);
     }
   }
 
@@ -768,6 +880,7 @@
    * @sideeffects 可能发起飞书连接检测，写入 chrome.storage.local，清理 token 和导航缓存，并更新 DOM 状态。
    */
   async function saveConfig() {
+    if (feishuBusy) return;
     const config = collectFeishuConfig();
 
     if (elements.testModeToggle.checked) {
@@ -780,7 +893,7 @@
     }
 
     // Disable the button while saving.
-    elements.saveBtn.disabled = true;
+    setFeishuBusy(true);
     elements.saveBtn.textContent = '检测中...';
 
     try {
@@ -805,7 +918,7 @@
       console.error('[Options] 保存配置失败:', error);
       showStatus('保存失败: ' + error.message, 'error');
     } finally {
-      elements.saveBtn.disabled = false;
+      setFeishuBusy(false);
       elements.saveBtn.textContent = '保存配置';
     }
   }
@@ -818,6 +931,7 @@
    * @sideeffects 可能发起飞书网络请求，更新分项检测 DOM 和状态消息。
    */
   async function testConnection() {
+    if (feishuBusy) return;
     // Skip network tests while mock mode is enabled.
     if (elements.testModeToggle.checked) {
       showStatus('测试模式已启用，无法测试飞书连接', 'info');
@@ -830,7 +944,7 @@
     }
 
     // Disable the button while testing.
-    elements.testBtn.disabled = true;
+    setFeishuBusy(true);
     elements.testBtn.textContent = '测试中...';
 
     try {
@@ -848,7 +962,7 @@
       console.error('[Options] 测试连接失败:', error);
       showStatus('测试失败: ' + error.message, 'error');
     } finally {
-      elements.testBtn.disabled = false;
+      setFeishuBusy(false);
       elements.testBtn.textContent = '测试连接';
     }
   }
@@ -858,21 +972,31 @@
    */
   async function toggleTestMode() {
     const enabled = elements.testModeToggle.checked;
+    elements.testModeToggle.disabled = true;
+    let preferenceSaved = false;
 
     try {
       await Storage.saveTestMode(enabled);
+      preferenceSaved = true;
       updateTestModeUI(enabled);
 
       // Force nav data refresh on next load.
       await Storage.clearNavCache();
 
       if (enabled) {
-        showStatus('测试模式已启用', 'info');
+        showStatus('测试模式已启用', 'success', elements.testModeStatus);
       } else {
-        showStatus('测试模式已关闭', 'info');
+        showStatus('测试模式已关闭', 'success', elements.testModeStatus);
       }
     } catch (error) {
       console.error('[Options] 切换测试模式失败:', error);
+      if (!preferenceSaved) {
+        elements.testModeToggle.checked = !enabled;
+        updateTestModeUI(!enabled);
+      }
+      showStatus(preferenceSaved ? '模式已切换，但缓存清除失败，请重试清除缓存' : '切换失败，请重试', 'error', elements.testModeStatus);
+    } finally {
+      elements.testModeToggle.disabled = false;
     }
   }
 
@@ -903,6 +1027,7 @@
       elements.testBtn.disabled = false;
       elements.saveBtn.disabled = false;
     }
+    document.getElementById('toggle-app-secret').disabled = enabled;
     resetConnectionChecks();
   }
 
@@ -916,10 +1041,10 @@
 
     try {
       await Storage.clearNavCache();
-      showStatus('缓存已清除', 'success');
+      showStatus('缓存已清除，下次打开新标签页将重新加载导航数据', 'success', elements.dataStatusMessage);
     } catch (error) {
       console.error('[Options] 清除缓存失败:', error);
-      showStatus('清除缓存失败', 'error');
+      showStatus('清除缓存失败，请重试', 'error', elements.dataStatusMessage);
     }
   }
 
@@ -927,7 +1052,7 @@
    * Reset all stored settings.
    */
   async function resetAll() {
-    if (!confirm('确定要重置所有设置吗？此操作不可撤销。')) {
+    if (!confirm('重置将删除飞书凭证、主题偏好、背景图片和导航缓存。确定继续吗？此操作不可撤销。')) {
       return;
     }
 
@@ -939,7 +1064,7 @@
       location.reload();
     } catch (error) {
       console.error('[Options] 重置失败:', error);
-      showStatus('重置失败', 'error');
+      showStatus('重置失败，请重试', 'error', elements.dataStatusMessage);
     }
   }
 

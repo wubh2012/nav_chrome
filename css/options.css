@@ -277,7 +277,7 @@
   }
 
   .toggle-switch input:checked + .toggle-slider {
-    background-color: rgba(107, 142, 36, 0.24);
+    background-color: var(--selected-bg);
     border-color: var(--selected-border);
   }
 
@@ -432,6 +432,11 @@
   }
 
   .wizard-step-indicator {
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    min-height: 52px;
+    transition: background-color 160ms ease, border-color 160ms ease;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -445,6 +450,7 @@
   }
 
   .wizard-step-indicator span {
+    flex-shrink: 0;
     display: grid;
     place-items: center;
     width: 26px;
@@ -459,6 +465,11 @@
     border-color: var(--selected-border);
     background: color-mix(in srgb, var(--selected-bg) 58%, var(--surface-raised));
     color: var(--selected-text);
+  }
+
+  .wizard-step-indicator:hover {
+    background: color-mix(in srgb, var(--selected-bg) 55%, var(--surface-raised));
+    border-color: var(--selected-border);
   }
 
   .wizard-step-indicator.active span,
@@ -810,4 +821,58 @@
   :where(button, a, input, select, [tabindex]):focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 3px;
+  }
+
+  [hidden] { display: none !important; }
+
+  .secret-input-row { position: relative; }
+  .secret-input-row input { padding-right: 52px !important; }
+  .secret-toggle {
+    position: absolute; right: 4px; top: 4px; width: 40px; height: 40px;
+    border: none; border-radius: 10px; color: var(--text-secondary);
+    background: transparent; cursor: pointer;
+  }
+  .secret-toggle:hover { background: var(--selected-bg); color: var(--selected-text); }
+  .field-error { color: var(--error-text); font-size: 12px; margin-top: 6px; }
+  .form-group input[aria-invalid="true"] { border-color: var(--error-text); }
+  .draft-status { color: var(--text-secondary); font-size: 12px; margin-top: 12px; }
+  .background-theme-tab.is-dirty::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+  .background-preview-image {
+    position: absolute; inset: 0; background-position: center; background-repeat: no-repeat;
+  }
+  .background-preview[data-preview-theme="light"] {
+    --preview-bg: #f7f2e8; --preview-text: #40362f; --preview-accent: #c9962a;
+  }
+  .background-preview[data-preview-theme="dark"] {
+    --preview-bg: #1c1b18; --preview-text: #f2eee5; --preview-accent: #dbc38d;
+  }
+  [data-skin="graphite"] .background-preview[data-preview-theme="light"] {
+    --preview-bg: #ececef; --preview-text: #15161a; --preview-accent: #17181b;
+  }
+  [data-skin="graphite"] .background-preview[data-preview-theme="dark"] {
+    --preview-bg: #14171c; --preview-text: #edf1f7; --preview-accent: #aac4e8;
+  }
+  .background-preview.is-default .background-preview-placeholder {
+    background: var(--preview-bg); color: var(--preview-text);
+  }
+  .background-preview.is-default .background-preview-placeholder i { color: var(--preview-accent); }
+  .toggle-label label { cursor: pointer; color: var(--text-primary); font-weight: 500; }
+  .toggle-group { border-bottom: none; }
+  .toggle-switch input:focus-visible + .toggle-slider {
+    outline: 2px solid var(--accent-primary); outline-offset: 3px;
+  }
+  .btn-danger { background: var(--error-soft); border-color: var(--error-soft); color: var(--error-text); }
+  .btn-danger:hover { border-color: var(--error-text); }
+  button:disabled { cursor: not-allowed; opacity: 0.55; }
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select { box-shadow: none; border-color: var(--border-strong-color); }
+  [data-theme="dark"] .form-group input[aria-invalid="true"] { border-color: var(--error-text); }
+  [data-theme="dark"] .form-group input:focus { border-color: var(--accent-primary); }
+  @media (max-width: 680px) {
+    .wizard-progress { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .wizard-step-indicator { flex-direction: column; padding: 10px 6px; gap: 6px; font-size: 12px; text-align: center; }
+    .wizard-actions { flex-wrap: wrap; }
+    .wizard-actions .btn { padding: 12px; min-width: 100px; }
   }

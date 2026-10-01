@@ -45,13 +45,13 @@
           </div>
 
           <div class="setup-wizard">
-            <div class="wizard-progress" aria-label="飞书配置步骤">
-              <div class="wizard-step-indicator active" data-step-indicator="1"><span>1</span>准备资源</div>
-              <div class="wizard-step-indicator" data-step-indicator="2"><span>2</span>填写凭证</div>
-              <div class="wizard-step-indicator" data-step-indicator="3"><span>3</span>检测保存</div>
+            <div class="wizard-progress" role="tablist" aria-label="飞书配置步骤">
+              <button type="button" class="wizard-step-indicator active" id="wizard-step-1" role="tab" aria-selected="true" aria-controls="wizard-panel-1" tabindex="0" data-step-indicator="1"><span aria-hidden="true">1</span>准备资源</button>
+              <button type="button" class="wizard-step-indicator" id="wizard-step-2" role="tab" aria-selected="false" aria-controls="wizard-panel-2" tabindex="-1" data-step-indicator="2"><span aria-hidden="true">2</span>填写凭证</button>
+              <button type="button" class="wizard-step-indicator" id="wizard-step-3" role="tab" aria-selected="false" aria-controls="wizard-panel-3" tabindex="-1" data-step-indicator="3"><span aria-hidden="true">3</span>检测保存</button>
             </div>
 
-            <section class="wizard-panel active" data-wizard-panel="1" aria-label="准备飞书资源">
+            <section class="wizard-panel active" id="wizard-panel-1" role="tabpanel" aria-labelledby="wizard-step-1" data-wizard-panel="1" aria-label="准备飞书资源">
               <p class="wizard-intro">以下内容需要在飞书侧完成，本插件不会自动创建应用、多维表格或字段。建议一次性创建完整，避免后续编辑网站卡片时因为字段缺失而保存失败。</p>
               <div class="setup-checklist">
                 <div class="checklist-item"><i class="bi bi-check2-square"></i><div>创建飞书自建应用，并复制应用凭证。</div></div>
@@ -80,29 +80,33 @@
               </div>
             </section>
 
-            <section class="wizard-panel" data-wizard-panel="2" aria-label="填写飞书凭证">
+            <section hidden class="wizard-panel" id="wizard-panel-2" role="tabpanel" aria-labelledby="wizard-step-2" data-wizard-panel="2" aria-label="填写飞书凭证">
               <div class="form-group">
                 <label for="app-id">APP_ID *</label>
-                <input type="text" id="app-id" placeholder="请输入飞书应用 ID">
-                <div class="hint">登录飞书开放平台，在应用凭证中获取</div>
+                <input type="text" id="app-id" required autocomplete="off" spellcheck="false" aria-describedby="app-id-hint app-id-error" placeholder="请输入飞书应用 ID">
+                <div class="hint" id="app-id-hint">登录飞书开放平台，在应用凭证中获取</div>
+                <div class="field-error" id="app-id-error" hidden></div>
               </div>
 
               <div class="form-group">
                 <label for="app-secret">APP_SECRET *</label>
-                <input type="password" id="app-secret" placeholder="请输入飞书应用密钥">
-                <div class="hint">请妥善保管，不要泄露给他人</div>
+                <div class="secret-input-row"><input type="password" id="app-secret" required autocomplete="off" spellcheck="false" aria-describedby="app-secret-hint app-secret-error" placeholder="请输入飞书应用密钥"><button type="button" id="toggle-app-secret" class="secret-toggle" aria-label="显示应用密钥" aria-pressed="false" aria-controls="app-secret"><i class="bi bi-eye" aria-hidden="true"></i></button></div>
+                <div class="hint" id="app-secret-hint">请妥善保管，不要泄露给他人</div>
+                <div class="field-error" id="app-secret-error" hidden></div>
               </div>
 
               <div class="form-group">
                 <label for="app-token">APP_TOKEN (多维表格 Token) *</label>
-                <input type="text" id="app-token" placeholder="请输入多维表格 Token">
-                <div class="hint">多维表格 URL 中的 app_token 参数</div>
+                <input type="text" id="app-token" required autocomplete="off" spellcheck="false" aria-describedby="app-token-hint app-token-error" placeholder="请输入多维表格 Token">
+                <div class="hint" id="app-token-hint">多维表格 URL 中的 app_token 参数</div>
+                <div class="field-error" id="app-token-error" hidden></div>
               </div>
 
               <div class="form-group">
                 <label for="table-id">TABLE_ID (表格 ID) *</label>
-                <input type="text" id="table-id" placeholder="请输入表格 ID">
-                <div class="hint">多维表格 URL 中的表格 ID</div>
+                <input type="text" id="table-id" required autocomplete="off" spellcheck="false" aria-describedby="table-id-hint table-id-error" placeholder="请输入表格 ID">
+                <div class="hint" id="table-id-hint">多维表格 URL 中的表格 ID</div>
+                <div class="field-error" id="table-id-error" hidden></div>
               </div>
 
               <div class="wizard-actions">
@@ -115,7 +119,7 @@
               </div>
             </section>
 
-            <section class="wizard-panel" data-wizard-panel="3" aria-label="检测并保存飞书配置">
+            <section hidden class="wizard-panel" id="wizard-panel-3" role="tabpanel" aria-labelledby="wizard-step-3" data-wizard-panel="3" aria-label="检测并保存飞书配置">
               <p class="wizard-intro">检测会验证凭证、表格访问权限、字段完整性和记录读取能力。全部通过后再保存配置。</p>
               <div class="connection-checks" id="connection-checks">
                 <div class="connection-check pending" data-check="credentials"><i class="bi bi-circle"></i><div>等待检查连接凭证</div></div>
@@ -139,7 +143,7 @@
             </section>
           </div>
 
-          <div class="status-message" id="status-message"></div>
+          <div class="status-message" id="status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <div class="card">
@@ -148,7 +152,7 @@
             背景设置
           </div>
 
-          <p class="background-help">浅色与深色模式可分别保存背景；石墨、霓虹和奶油皮肤共用这两套设置。</p>
+          <p class="background-help">浅色与深色模式可分别保存背景；石墨和奶油皮肤共用这两套设置。切换标签会保留未保存的修改。</p>
 
           <div class="background-theme-tabs" role="tablist" aria-label="选择要编辑的明暗模式背景">
             <button type="button" id="background-theme-light-tab" class="background-theme-tab active"
@@ -165,9 +169,10 @@
 
           <div id="background-profile-panel" role="tabpanel" aria-labelledby="background-theme-light-tab">
             <div id="background-preview" class="background-preview is-default" role="img" aria-label="浅色背景预览">
+              <div class="background-preview-image" id="background-preview-image" aria-hidden="true"></div>
               <div class="background-preview-placeholder">
                 <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
-                <span>默认 Art Deco 背景</span>
+                <span>默认主题背景</span>
               </div>
               <div class="background-preview-badge" id="background-preview-badge">浅色模式</div>
             </div>
@@ -178,7 +183,7 @@
               <label class="mode-option" data-mode="default">
                 <input type="radio" name="background-mode" value="default" checked>
                 <div class="mode-option-title">默认背景</div>
-                <div class="mode-option-desc">保留当前 Art Deco 背景</div>
+                <div class="mode-option-desc">使用当前主题的默认背景</div>
               </label>
               <label class="mode-option" data-mode="upload">
                 <input type="radio" name="background-mode" value="upload">
@@ -188,7 +193,7 @@
               <label class="mode-option" data-mode="url">
                 <input type="radio" name="background-mode" value="url">
                 <div class="mode-option-title">图片 URL</div>
-                <div class="mode-option-desc">适合高级用户使用外部图片链接</div>
+                <div class="mode-option-desc">粘贴可直接打开的图片链接</div>
               </label>
             </div>
           </div>
@@ -210,8 +215,8 @@
             <div class="form-group">
               <label for="background-size">图片适配</label>
               <select id="background-size">
-                <option value="cover">Cover</option>
-                <option value="contain">Contain</option>
+                <option value="cover">铺满区域（可能裁切）</option>
+                <option value="contain">完整显示（可能留白）</option>
               </select>
             </div>
 
@@ -242,7 +247,8 @@
           </div>
           </div>
 
-          <div class="status-message" id="background-status-message"></div>
+          <p class="draft-status" id="background-draft-status" role="status" aria-live="polite"></p>
+          <div class="status-message" id="background-status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
       </div>
@@ -256,14 +262,15 @@
 
           <div class="toggle-group">
             <div class="toggle-label">
-              <div>启用测试模式</div>
-              <div class="hint">使用模拟数据，无需配置飞书</div>
+              <label for="test-mode-toggle">启用测试模式</label>
+              <div class="hint" id="test-mode-hint">使用模拟数据，无需配置飞书</div>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="test-mode-toggle">
+              <input type="checkbox" id="test-mode-toggle" aria-describedby="test-mode-hint">
               <span class="toggle-slider"></span>
             </label>
           </div>
+          <div class="status-message" id="test-mode-status" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <div class="card">
@@ -290,14 +297,16 @@
             数据管理
           </div>
 
+          <p class="subtle-note">清除缓存会重新拉取导航数据；重置所有会删除配置、主题偏好和本地背景。</p>
           <div class="btn-group">
             <button class="btn btn-secondary" id="clear-cache-btn">
               <i class="bi bi-trash3"></i> 清除缓存
             </button>
-            <button class="btn btn-secondary" id="reset-btn">
+            <button class="btn btn-danger" id="reset-btn">
               <i class="bi bi-arrow-counterclockwise"></i> 重置所有
             </button>
           </div>
+          <div class="status-message" id="data-status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
       </div>
     </div>

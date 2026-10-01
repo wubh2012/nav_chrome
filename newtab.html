@@ -132,19 +132,19 @@
 
         <!-- 皮肤选择器 -->
         <div class="skin-selector" id="skin-selector">
-          <div class="current-skin">
+          <div class="current-skin" role="button" tabindex="0" aria-expanded="false" aria-controls="skin-options" aria-label="选择主题风格">
             <div class="current-skin-preview">
               <i class="bi bi-flower1 current-skin-icon"></i>
             </div>
             <span class="current-skin-name">奶油复古</span>
-            <button class="skin-expand-btn">
+            <button class="skin-expand-btn" tabindex="-1" aria-hidden="true">
               <i class="bi bi-chevron-down"></i>
             </button>
           </div>
 
-          <div class="skin-options">
+          <div class="skin-options" id="skin-options">
             <div class="skin-grid">
-              <div class="skin-option" data-skin="graphite">
+              <div class="skin-option" data-skin="graphite" role="button" tabindex="0" aria-pressed="false">
                 <div class="skin-colors">
                   <div class="color-dot primary"></div>
                   <div class="color-dot secondary"></div>
@@ -153,16 +153,7 @@
                 <span class="skin-label">石墨中性</span>
               </div>
 
-              <div class="skin-option" data-skin="neon">
-                <div class="skin-colors">
-                  <div class="color-dot primary"></div>
-                  <div class="color-dot secondary"></div>
-                  <div class="color-dot accent"></div>
-                </div>
-                <span class="skin-label">霓虹风格</span>
-              </div>
-
-              <div class="skin-option active" data-skin="cream">
+              <div class="skin-option active" data-skin="cream" role="button" tabindex="0" aria-pressed="true">
                 <div class="skin-colors">
                   <div class="color-dot primary"></div>
                   <div class="color-dot secondary"></div>

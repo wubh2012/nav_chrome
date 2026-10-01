@@ -16,6 +16,10 @@ const ThemeManager = (function() {
       '--bg-primary': vars['--page-bg'],
       '--bg-secondary': vars['--surface-1'],
       '--bg-card': vars['--surface-2'],
+      '--card-hover-bg': vars['--hover-surface'],
+      '--card-hover-border': vars['--hover-border'],
+      '--card-hover-shadow': vars['--hover-shadow'],
+      '--on-accent': vars['--on-accent'] || '#ffffff',
       '--border-gold': `1px solid ${vars['--border-strong-color']}`,
       '--border-thin': `1px solid ${vars['--border-soft-color']}`,
       '--border-dim': `1px solid ${vars['--border-faint-color']}`,
@@ -32,45 +36,46 @@ const ThemeManager = (function() {
       icon: 'bi-circle-square',
       artDecoVars: {
         dark: withLegacy({
-          '--page-bg': '#0b0b0c',
-          '--surface-1': 'rgba(18, 18, 20, 0.9)',
-          '--surface-2': 'rgba(26, 26, 29, 0.74)',
-          '--surface-3': 'rgba(38, 38, 42, 0.88)',
-          '--surface-raised': 'rgba(48, 48, 52, 0.92)',
-          '--surface-input': 'rgba(0, 0, 0, 0.24)',
-          '--text-primary': '#f4f4f5',
-          '--text-secondary': '#b4b4bc',
-          '--text-muted': '#72727c',
-          '--accent-primary': '#f2f2f3',
-          '--accent-soft': '#ffffff',
-          '--accent-strong': '#b3b3ba',
-          '--accent-dim': 'rgba(255, 255, 255, 0.14)',
-          '--accent-glow': 'rgba(255, 255, 255, 0.22)',
-          '--selected-bg': 'rgba(242, 242, 243, 0.1)',
-          '--selected-text': '#f4f4f5',
-          '--selected-border': 'rgba(255, 255, 255, 0.24)',
-          '--border-soft-color': 'rgba(255, 255, 255, 0.08)',
-          '--border-strong-color': 'rgba(255, 255, 255, 0.14)',
-          '--border-faint-color': 'rgba(255, 255, 255, 0.05)',
-          '--shadow-soft': '0 18px 50px rgba(0, 0, 0, 0.44)',
-          '--shadow-float': '0 24px 70px rgba(0, 0, 0, 0.48)',
-          '--shadow-accent': '0 0 28px rgba(255, 255, 255, 0.08)',
-          '--hover-surface': 'rgba(40, 40, 40, 0.85)',
-          '--hover-border': 'rgba(255, 255, 255, 0.24)',
-          '--hover-shadow': '0 24px 70px rgba(0, 0, 0, 0.48)',
-          '--tooltip-bg': 'rgba(12, 12, 12, 0.72)',
-          '--tooltip-shadow': '0 8px 24px rgba(0, 0, 0, 0.28)',
-          '--icon-surface-bg': 'rgba(255, 255, 255, 0.04)',
-          '--artdeco-rotate-primary': 'rgba(255, 255, 255, 0.14)',
-          '--artdeco-rotate-secondary': 'rgba(255, 255, 255, 0.08)',
-          '--overlay-opacity': '0.46',
-          '--grid-line-color': 'rgba(255, 255, 255, 0.06)',
-          '--success-soft': 'rgba(82, 196, 26, 0.18)',
-          '--success-text': '#d9ffe8',
-          '--error-soft': 'rgba(255, 107, 107, 0.16)',
-          '--error-text': '#ffe1e1',
-          '--info-soft': 'rgba(242, 242, 243, 0.14)',
-          '--info-text': '#f4f4f5'
+          '--page-bg': '#14171c',
+          '--surface-1': 'rgba(27, 32, 39, 0.96)',
+          '--surface-2': 'rgba(34, 40, 49, 0.94)',
+          '--surface-3': '#2b333e',
+          '--surface-raised': '#303a47',
+          '--surface-input': '#171c23',
+          '--text-primary': '#edf1f7',
+          '--text-secondary': '#b7c1cf',
+          '--text-muted': '#a2adba',
+          '--on-accent': '#182333',
+          '--accent-primary': '#aac4e8',
+          '--accent-soft': '#c4d7f0',
+          '--accent-strong': '#96b2d6',
+          '--accent-dim': 'rgba(170, 196, 232, 0.12)',
+          '--accent-glow': 'rgba(170, 196, 232, 0.16)',
+          '--selected-bg': 'rgba(170, 196, 232, 0.12)',
+          '--selected-text': '#d7e5f8',
+          '--selected-border': 'rgba(170, 196, 232, 0.32)',
+          '--border-soft-color': 'rgba(196, 211, 232, 0.12)',
+          '--border-strong-color': 'rgba(196, 211, 232, 0.22)',
+          '--border-faint-color': 'rgba(196, 211, 232, 0.07)',
+          '--shadow-soft': '0 2px 8px rgba(0, 0, 0, 0.16)',
+          '--shadow-float': '0 18px 48px rgba(0, 0, 0, 0.36)',
+          '--shadow-accent': '0 2px 8px rgba(0, 0, 0, 0.16)',
+          '--hover-surface': '#2b333e',
+          '--hover-border': 'rgba(170, 196, 232, 0.32)',
+          '--hover-shadow': '0 6px 18px rgba(0, 0, 0, 0.24)',
+          '--tooltip-bg': '#303a47',
+          '--tooltip-shadow': '0 8px 24px rgba(0, 0, 0, 0.32)',
+          '--icon-surface-bg': 'rgba(170, 196, 232, 0.08)',
+          '--artdeco-rotate-primary': 'rgba(170, 196, 232, 0.05)',
+          '--artdeco-rotate-secondary': 'rgba(170, 196, 232, 0.03)',
+          '--overlay-opacity': '0.48',
+          '--grid-line-color': 'rgba(196, 211, 232, 0.025)',
+          '--success-soft': 'rgba(124, 204, 163, 0.12)',
+          '--success-text': '#9cddb9',
+          '--error-soft': 'rgba(232, 153, 153, 0.12)',
+          '--error-text': '#efb0b0',
+          '--info-soft': 'rgba(170, 196, 232, 0.12)',
+          '--info-text': '#c4d7f0'
         }),
         light: withLegacy({
           '--page-bg': '#ececef',
@@ -115,138 +120,51 @@ const ThemeManager = (function() {
         })
       }
     },
-    neon: {
-      name: '霓虹风格',
-      icon: 'bi-stars',
-      artDecoVars: {
-        dark: withLegacy({
-          '--page-bg': '#0a0a0f',
-          '--surface-1': 'rgba(13, 1, 34, 0.98)',
-          '--surface-2': 'rgba(28, 12, 34, 0.78)',
-          '--surface-3': 'rgba(42, 12, 32, 0.9)',
-          '--surface-raised': 'rgba(56, 14, 44, 0.96)',
-          '--surface-input': 'rgba(0, 0, 0, 0.26)',
-          '--text-primary': '#ffffff',
-          '--text-secondary': '#ff6b9d',
-          '--text-muted': '#8b86bd',
-          '--accent-primary': '#ff2d9a',
-          '--accent-soft': '#ff8fd1',
-          '--accent-strong': '#d41472',
-          '--accent-dim': 'rgba(255, 45, 154, 0.24)',
-          '--accent-glow': 'rgba(255, 79, 182, 0.3)',
-          '--selected-bg': 'rgba(255, 45, 154, 0.16)',
-          '--selected-text': '#ffffff',
-          '--selected-border': 'rgba(255, 143, 209, 0.3)',
-          '--border-soft-color': 'rgba(255, 45, 154, 0.14)',
-          '--border-strong-color': 'rgba(255, 143, 209, 0.2)',
-          '--border-faint-color': 'rgba(255, 45, 154, 0.08)',
-          '--shadow-soft': '0 8px 40px rgba(0, 0, 0, 0.6)',
-          '--shadow-float': '0 12px 50px rgba(255, 45, 154, 0.2)',
-          '--shadow-accent': '0 0 24px rgba(255, 45, 154, 0.18)',
-          '--hover-surface': 'rgba(60, 12, 44, 0.88)',
-          '--hover-border': 'rgba(255, 143, 209, 0.34)',
-          '--hover-shadow': '0 16px 48px rgba(255, 45, 154, 0.22)',
-          '--tooltip-bg': 'rgba(25, 7, 31, 0.88)',
-          '--tooltip-shadow': '0 10px 28px rgba(0, 0, 0, 0.3)',
-          '--icon-surface-bg': 'rgba(255, 255, 255, 0.06)',
-          '--artdeco-rotate-primary': 'rgba(255, 0, 128, 0.24)',
-          '--artdeco-rotate-secondary': 'rgba(255, 102, 196, 0.18)',
-          '--overlay-opacity': '0.42',
-          '--grid-line-color': 'rgba(255, 45, 154, 0.08)',
-          '--success-soft': 'rgba(82, 196, 26, 0.18)',
-          '--success-text': '#d9ffe8',
-          '--error-soft': 'rgba(255, 107, 107, 0.18)',
-          '--error-text': '#ffe1e1',
-          '--info-soft': 'rgba(255, 45, 154, 0.14)',
-          '--info-text': '#ffd1e9'
-        }),
-        light: withLegacy({
-          '--page-bg': '#fff7fb',
-          '--surface-1': 'rgba(255, 255, 255, 0.96)',
-          '--surface-2': 'rgba(255, 244, 250, 0.9)',
-          '--surface-3': 'rgba(255, 236, 246, 0.98)',
-          '--surface-raised': '#ffffff',
-          '--surface-input': 'rgba(255, 255, 255, 0.94)',
-          '--text-primary': '#2a1830',
-          '--text-secondary': '#9d3a72',
-          '--text-muted': '#a8889a',
-          '--accent-primary': '#ff2d9a',
-          '--accent-soft': '#ff8fd1',
-          '--accent-strong': '#d41472',
-          '--accent-dim': 'rgba(255, 45, 154, 0.16)',
-          '--accent-glow': 'rgba(255, 79, 182, 0.2)',
-          '--selected-bg': 'rgba(255, 45, 154, 0.12)',
-          '--selected-text': '#8f1254',
-          '--selected-border': 'rgba(212, 20, 114, 0.2)',
-          '--border-soft-color': 'rgba(212, 20, 114, 0.1)',
-          '--border-strong-color': 'rgba(212, 20, 114, 0.14)',
-          '--border-faint-color': 'rgba(212, 20, 114, 0.06)',
-          '--shadow-soft': '0 10px 34px rgba(81, 21, 56, 0.1)',
-          '--shadow-float': '0 16px 36px rgba(212, 20, 114, 0.16)',
-          '--shadow-accent': '0 0 20px rgba(255, 45, 154, 0.12)',
-          '--hover-surface': 'rgba(255, 248, 252, 0.98)',
-          '--hover-border': 'rgba(212, 20, 114, 0.18)',
-          '--hover-shadow': '0 14px 30px rgba(212, 20, 114, 0.12)',
-          '--tooltip-bg': 'rgba(255, 248, 252, 0.96)',
-          '--tooltip-shadow': '0 10px 28px rgba(81, 21, 56, 0.12)',
-          '--icon-surface-bg': 'rgba(255, 45, 154, 0.06)',
-          '--artdeco-rotate-primary': 'rgba(255, 45, 154, 0.1)',
-          '--artdeco-rotate-secondary': 'rgba(255, 143, 209, 0.1)',
-          '--overlay-opacity': '0.12',
-          '--grid-line-color': 'rgba(212, 20, 114, 0.05)',
-          '--success-soft': 'rgba(82, 196, 26, 0.12)',
-          '--success-text': '#22753a',
-          '--error-soft': 'rgba(255, 107, 107, 0.12)',
-          '--error-text': '#b24848',
-          '--info-soft': 'rgba(255, 45, 154, 0.1)',
-          '--info-text': '#9d3a72'
-        })
-      }
-    },
     cream: {
       name: '奶油复古',
       icon: 'bi-flower1',
       artDecoVars: {
         dark: withLegacy({
-          '--page-bg': '#2a211b',
-          '--surface-1': 'rgba(52, 40, 32, 0.9)',
-          '--surface-2': 'rgba(67, 52, 43, 0.82)',
-          '--surface-3': 'rgba(84, 65, 54, 0.92)',
-          '--surface-raised': 'rgba(98, 76, 62, 0.96)',
-          '--surface-input': 'rgba(42, 31, 25, 0.82)',
-          '--text-primary': '#f4ebdc',
-          '--text-secondary': '#d4c0a8',
-          '--text-muted': '#b39b84',
-          '--accent-primary': '#c9962a',
-          '--accent-soft': '#dfbe74',
-          '--accent-strong': '#a87820',
-          '--accent-dim': 'rgba(201, 150, 42, 0.18)',
-          '--accent-glow': 'rgba(201, 150, 42, 0.22)',
-          '--selected-bg': 'rgba(107, 142, 36, 0.22)',
-          '--selected-text': '#f7f2e8',
-          '--selected-border': 'rgba(107, 142, 36, 0.34)',
-          '--border-soft-color': 'rgba(244, 235, 220, 0.1)',
-          '--border-strong-color': 'rgba(210, 184, 145, 0.22)',
-          '--border-faint-color': 'rgba(244, 235, 220, 0.06)',
-          '--shadow-soft': '0 18px 42px rgba(19, 13, 9, 0.34)',
-          '--shadow-float': '0 22px 48px rgba(19, 13, 9, 0.4)',
-          '--shadow-accent': '0 0 24px rgba(201, 150, 42, 0.12)',
-          '--hover-surface': 'rgba(82, 63, 51, 0.96)',
-          '--hover-border': 'rgba(210, 184, 145, 0.28)',
-          '--hover-shadow': '0 20px 44px rgba(19, 13, 9, 0.34)',
-          '--tooltip-bg': 'rgba(61, 47, 37, 0.94)',
-          '--tooltip-shadow': '0 12px 28px rgba(19, 13, 9, 0.26)',
-          '--icon-surface-bg': 'rgba(251, 247, 239, 0.08)',
-          '--artdeco-rotate-primary': 'rgba(201, 150, 42, 0.1)',
-          '--artdeco-rotate-secondary': 'rgba(107, 142, 36, 0.08)',
-          '--overlay-opacity': '0.24',
-          '--grid-line-color': 'rgba(255, 244, 230, 0.05)',
-          '--success-soft': 'rgba(107, 142, 36, 0.2)',
-          '--success-text': '#edf7d9',
-          '--error-soft': 'rgba(186, 94, 71, 0.2)',
-          '--error-text': '#ffe8e1',
-          '--info-soft': 'rgba(201, 150, 42, 0.18)',
-          '--info-text': '#faeccf'
+          '--page-bg': '#1c1b18',
+          '--surface-1': 'rgba(36, 35, 31, 0.96)',
+          '--surface-2': 'rgba(45, 43, 37, 0.94)',
+          '--surface-3': '#37342c',
+          '--surface-raised': '#3e3a31',
+          '--surface-input': '#201f1b',
+          '--text-primary': '#f2eee5',
+          '--text-secondary': '#c4beaf',
+          '--text-muted': '#b5ac9a',
+          '--on-accent': '#282419',
+          '--accent-primary': '#dbc38d',
+          '--accent-soft': '#ead8b1',
+          '--accent-strong': '#c7b07d',
+          '--accent-dim': 'rgba(219, 195, 141, 0.12)',
+          '--accent-glow': 'rgba(219, 195, 141, 0.16)',
+          '--selected-bg': 'rgba(219, 195, 141, 0.12)',
+          '--selected-text': '#f0dfb9',
+          '--selected-border': 'rgba(219, 195, 141, 0.32)',
+          '--border-soft-color': 'rgba(225, 214, 190, 0.12)',
+          '--border-strong-color': 'rgba(225, 214, 190, 0.22)',
+          '--border-faint-color': 'rgba(225, 214, 190, 0.07)',
+          '--shadow-soft': '0 2px 8px rgba(0, 0, 0, 0.16)',
+          '--shadow-float': '0 18px 48px rgba(0, 0, 0, 0.36)',
+          '--shadow-accent': '0 2px 8px rgba(0, 0, 0, 0.16)',
+          '--hover-surface': '#37342c',
+          '--hover-border': 'rgba(219, 195, 141, 0.32)',
+          '--hover-shadow': '0 6px 18px rgba(0, 0, 0, 0.24)',
+          '--tooltip-bg': '#3e3a31',
+          '--tooltip-shadow': '0 8px 24px rgba(0, 0, 0, 0.32)',
+          '--icon-surface-bg': 'rgba(219, 195, 141, 0.08)',
+          '--artdeco-rotate-primary': 'rgba(219, 195, 141, 0.05)',
+          '--artdeco-rotate-secondary': 'rgba(219, 195, 141, 0.03)',
+          '--overlay-opacity': '0.48',
+          '--grid-line-color': 'rgba(225, 214, 190, 0.025)',
+          '--success-soft': 'rgba(124, 204, 163, 0.12)',
+          '--success-text': '#9cddb9',
+          '--error-soft': 'rgba(232, 153, 153, 0.12)',
+          '--error-text': '#efb0b0',
+          '--info-soft': 'rgba(219, 195, 141, 0.12)',
+          '--info-text': '#ead8b1'
         }),
         light: withLegacy({
           '--page-bg': '#f7f2e8',
@@ -258,6 +176,7 @@ const ThemeManager = (function() {
           '--text-primary': '#40362f',
           '--text-secondary': '#6e6258',
           '--text-muted': '#a79a8d',
+          '--on-accent': '#30230b',
           '--accent-primary': '#c9962a',
           '--accent-soft': '#e0bf7a',
           '--accent-strong': '#a9751b',
@@ -302,7 +221,8 @@ const ThemeManager = (function() {
   async function init() {
     try {
       const preference = await Storage.loadThemePreference();
-      currentSkin = preference.skin || DEFAULT_SKIN;
+      // Retired neon preferences move to graphite without changing light/dark mode.
+      currentSkin = preference.skin === 'neon' ? 'graphite' : (preference.skin || DEFAULT_SKIN);
       currentMode = preference.mode || DEFAULT_MODE;
 
       if (!SKIN_THEMES[currentSkin]) {
@@ -315,6 +235,9 @@ const ThemeManager = (function() {
 
       applyTheme(false);
       updateSkinSelectorUI();
+      if (preference.skin === 'neon') {
+        await Storage.saveThemePreference(currentSkin, currentMode);
+      }
     } catch (error) {
       console.error('[ThemeManager] init failed', error);
       currentSkin = DEFAULT_SKIN;
@@ -333,6 +256,7 @@ const ThemeManager = (function() {
     const root = document.documentElement;
     root.dataset.skin = currentSkin;
     root.dataset.theme = currentMode;
+    root.style.colorScheme = currentMode;
 
     for (const [prop, value] of Object.entries(colors)) {
       root.style.setProperty(prop, value);
@@ -350,6 +274,7 @@ const ThemeManager = (function() {
     document.querySelectorAll('.skin-option').forEach(option => {
       const skin = option.getAttribute('data-skin');
       option.classList.toggle('active', skin === currentSkin);
+      option.setAttribute('aria-pressed', String(skin === currentSkin));
     });
 
     const skinNameEl = document.querySelector('.current-skin-name');
@@ -414,6 +339,9 @@ const ThemeManager = (function() {
       if (icon) {
         icon.className = isDark ? 'bi-sun-fill' : 'bi-moon-fill';
       }
+      const label = isDark ? '切换到浅色模式' : '切换到深色模式';
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
     });
   }
 
@@ -442,9 +370,23 @@ const ThemeManager = (function() {
 
     skinSelector.classList.toggle('expanded', isExpanded);
     sidebar.classList.toggle('skin-selector-open', isExpanded);
+    skinSelector.querySelector('.current-skin')?.setAttribute('aria-expanded', String(isExpanded));
   }
 
   function bindEvents() {
+    document.querySelectorAll('.current-skin, .skin-option').forEach(control => {
+      control.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          control.click();
+        }
+        if (event.key === 'Escape') {
+          syncSkinSelectorState(false);
+          document.querySelector('.current-skin')?.focus();
+        }
+      });
+    });
+
     const skinSelector = document.getElementById('skin-selector');
     if (skinSelector) {
       const currentSkinTrigger = skinSelector.querySelector('.current-skin');

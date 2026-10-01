@@ -112,18 +112,18 @@ body {
 }
 
 .status-dot.success {
-  background: #5b8f2a;
-  box-shadow: 0 0 0 5px rgba(91, 143, 42, 0.14);
+  background: var(--success-text);
+  box-shadow: 0 0 0 5px var(--success-soft);
 }
 
 .status-dot.error {
-  background: #ba5e47;
-  box-shadow: 0 0 0 5px rgba(186, 94, 71, 0.14);
+  background: var(--error-text);
+  box-shadow: 0 0 0 5px var(--error-soft);
 }
 
 .status-dot.warning {
-  background: #c9962a;
-  box-shadow: 0 0 0 5px rgba(201, 150, 42, 0.14);
+  background: var(--accent-primary);
+  box-shadow: 0 0 0 5px var(--accent-dim);
 }
 
 .status-dot.info {
@@ -175,15 +175,15 @@ body {
 }
 
 .sync-message.error {
-  color: #9f4938;
-  background: rgba(186, 94, 71, 0.12);
-  border-color: rgba(186, 94, 71, 0.22);
+  color: var(--error-text);
+  background: var(--error-soft);
+  border-color: color-mix(in srgb, var(--error-text) 28%, transparent);
 }
 
 .sync-message.success {
-  color: #4c7028;
-  background: rgba(91, 143, 42, 0.12);
-  border-color: rgba(91, 143, 42, 0.22);
+  color: var(--success-text);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success-text) 28%, transparent);
 }
 
 .action-row {
@@ -246,5 +246,26 @@ body {
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+[data-theme="dark"] .artdeco-bg {
+  background: var(--page-bg);
+}
+
+[data-theme="dark"] .artdeco-bg::before {
+  display: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

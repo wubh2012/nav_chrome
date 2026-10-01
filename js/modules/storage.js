@@ -217,7 +217,7 @@ const Storage = (function() {
 
   /**
    * 保存主题偏好
-   * @param {string} skin - 皮肤主题 (graphite/neon/cream)
+   * @param {string} skin - 皮肤主题 (graphite/cream)
    * @param {string} mode - 模式 (dark/light)
    * @returns {Promise<void>}
    */

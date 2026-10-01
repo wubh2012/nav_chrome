@@ -333,14 +333,14 @@
   .btn-primary {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
-    color: var(--btn-primary-text, #fffaf1);
+    color: var(--on-accent, #30230b);
     box-shadow: var(--shadow-soft);
   }
 
   .btn-primary:hover {
     background: var(--accent-soft);
     border-color: var(--accent-soft);
-    color: var(--btn-primary-hover-text, var(--text-primary));
+    color: var(--on-accent, #30230b);
     transform: translateY(-2px);
     box-shadow: var(--shadow-float);
   }
@@ -486,7 +486,7 @@
   .wizard-step-indicator.active span,
   .wizard-step-indicator.complete span {
     background: var(--accent-primary);
-    color: #fffaf1;
+    color: var(--on-accent, #30230b);
   }
 
   .wizard-panel {
@@ -596,15 +596,25 @@
     display: none;
   }
 
-  [data-skin="graphite"][data-theme="dark"] {
-    --btn-primary-text: #141519;
-    --btn-primary-hover-text: #141519;
-  }
 
   .form-group input[type="range"],
   .form-group input[type="file"] {
     width: 100%;
     font-size: 14px;
+  }
+
+  [data-theme="dark"] .artdeco-bg {
+    background: var(--page-bg);
+  }
+
+  [data-theme="dark"] .artdeco-bg::before,
+  [data-theme="dark"] .artdeco-grid {
+    display: none;
+  }
+
+  :where(button, a, input, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 3px;
   }
 
   .form-group input[type="file"] {

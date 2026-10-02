@@ -1,0 +1,4 @@
+/* 全部字体随扩展离线提供；许可证及来源见 fonts/README.md。 */
+@font-face { font-family: NavWenKai; src: url('fonts/wenkai-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: NavKuaiLe; src: url('fonts/zcool-kuaile.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: NavPixel; src: url('fonts/fusion-pixel.woff2') format('woff2'); font-weight: 400; font-display: swap; }

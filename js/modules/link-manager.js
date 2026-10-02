@@ -154,6 +154,7 @@ const LinkManager = (function() {
       const editBtn = document.createElement('button');
       editBtn.className = 'tool-item-edit-btn';
       editBtn.title = '编辑';
+      editBtn.setAttribute('aria-label', `编辑 ${card.title || '网站'}`);
       editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
       editBtn.addEventListener('click', event => {
         event.stopPropagation();

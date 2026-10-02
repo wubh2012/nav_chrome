@@ -14,21 +14,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水果导航 - 设置</title>
   <link rel="icon" href="img/favicon.ico">
-  <!-- Google Fonts - Art Deco -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Poiret+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/typography.css">
   <link rel="stylesheet" href="css/options.css">
+  <link rel="stylesheet" href="css/options-garden.css">
 </head>
 
-<body>
+<body class="options-home">
   <!-- Background -->
-  <div class="artdeco-bg"></div>
-  <div class="artdeco-grid"></div>
+
 
   <div class="container">
-    <h1>导航插件设置</h1>
+    <header class="settings-header"><div><a class="settings-brand" href="newtab.html"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><path d="M7 18C7 29 15 38 25 38C36 38 41 29 38 20L7 18Z" fill="currentColor"/><path d="M11 21C12 30 18 34 25 34C32 34 36 29 35 23L11 21Z" fill="#f2af83"/><path d="M22 15C22 8 31 5 35 8C32 14 26 17 22 15Z" fill="currentColor"/><path d="M20 26V28M27 28V30M31 25V27" stroke="currentColor" stroke-width="2"/></svg>水果导航</a><h1>让果园更像你</h1><p>挑一款字体，换一张背景，安放常去的网站。</p></div><a class="btn btn-secondary" href="newtab.html"><i class="bi bi-arrow-up-right"></i> 返回首页</a></header>
+    <nav class="settings-nav" aria-label="设置分区"><a href="#appearance">字体外观</a><a href="#background-settings">背景设置</a><a href="#feishu-settings">飞书同步</a><a href="#data-settings">数据管理</a></nav>
 
     <div class="test-mode-notice" id="test-mode-notice">
       <i class="bi bi-info-circle"></i>
@@ -37,8 +35,124 @@
 
     <div class="settings-grid">
       <div class="primary-cards">
+        <section class="card appearance-card" id="appearance" aria-labelledby="appearance-title">
+          <div class="card-title" id="appearance-title"><i class="bi bi-fonts"></i> 字体外观</div>
+          <p class="section-note">全页统一使用一款字体，包含时间、标题、网站名称和弹窗。字号可单独调整。</p>
+          <div class="font-controls">
+            <div class="form-group"><label for="font-body">页面字体</label><select id="font-body"><option value="wenkai">A · 霞鹜文楷 TC — 温和手写</option><option value="kuaile">B · 站酷快乐体 — 圆润活泼</option><option value="pixel">C · 缝合像素 — 复古像素</option><option value="system">系统黑体 — 清晰简洁</option></select></div>
+            <div class="form-group"><label for="font-size">网站与正文大小</label><select id="font-size"><option value="14">14 px · 紧凑</option><option value="15">15 px</option><option value="16">16 px · 推荐</option><option value="17">17 px</option><option value="18">18 px · 更大</option><option value="19">19 px</option><option value="20">20 px · 大字</option></select></div>
+          </div>
+          <div class="font-preview" id="font-preview" aria-label="首页字体预览"><div class="preview-top"><strong>水果导航</strong><span id="font-draft">当前首页字体</span></div><div class="preview-time">21:05</div><div class="preview-date">10月2日 · 星期五 · 八月廿二</div><div class="preview-search"><i class="bi bi-search"></i> 找一条熟悉的小路…</div><div class="preview-categories">全部　主页　AI　Code　影视</div><div class="preview-sites"><div><i class="bi bi-play-btn"></i><span>哔哩哔哩</span></div><div><i class="bi bi-chat-dots"></i><span>微信公众平台</span></div><div><i class="bi bi-book"></i><span>中国大学慕课</span></div><div><i class="bi bi-github"></i><span>GitHub</span></div></div></div>
+          <p class="subtle-note">三款字体已内置，无需联网；生僻字由系统字库补齐。长网站名称最多显示两行，完整名称可悬停查看。</p>
+          <div class="btn-group"><button type="button" class="btn btn-secondary" id="font-reset"><i class="bi bi-arrow-counterclockwise"></i> 恢复推荐</button><button type="button" class="btn btn-primary" id="font-save"><i class="bi bi-check-lg"></i> 保存字体</button></div>
+          <p id="font-status" class="draft-status" role="status" aria-live="polite"></p>
+        </section>
+        <div class="card" id="background-settings">
+          <div class="card-title">
+            <i class="bi bi-image"></i>
+            背景设置
+          </div>
+
+          <p class="background-help">浅色与深色模式可分别保存背景；石墨和奶油皮肤共用这两套设置。切换标签会保留未保存的修改。</p>
+
+          <div class="background-theme-tabs" role="tablist" aria-label="选择要编辑的明暗模式背景">
+            <button type="button" id="background-theme-light-tab" class="background-theme-tab active"
+              role="tab" aria-selected="true" aria-controls="background-profile-panel" data-theme-mode="light">
+              <i class="bi bi-sun-fill" aria-hidden="true"></i>
+              浅色背景
+            </button>
+            <button type="button" id="background-theme-dark-tab" class="background-theme-tab"
+              role="tab" aria-selected="false" aria-controls="background-profile-panel" data-theme-mode="dark" tabindex="-1">
+              <i class="bi bi-moon-stars-fill" aria-hidden="true"></i>
+              深色背景
+            </button>
+          </div>
+
+          <div id="background-profile-panel" role="tabpanel" aria-labelledby="background-theme-light-tab">
+            <div id="background-preview" class="background-preview is-default" role="img" aria-label="浅色背景预览">
+              <div class="background-preview-image" id="background-preview-image" aria-hidden="true"></div>
+              <div class="background-preview-placeholder">
+                <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                <span>默认主题背景</span>
+              </div>
+              <div class="background-preview-badge" id="background-preview-badge">浅色模式</div>
+            </div>
+
+          <div class="form-group">
+            <label>背景模式</label>
+            <div class="mode-grid" id="background-mode-group">
+              <label class="mode-option" data-mode="default">
+                <input type="radio" name="background-mode" value="default" checked>
+                <div class="mode-option-title">默认背景</div>
+                <div class="mode-option-desc">使用当前主题的默认背景</div>
+              </label>
+              <label class="mode-option" data-mode="upload">
+                <input type="radio" name="background-mode" value="upload">
+                <div class="mode-option-title">本地上传</div>
+                <div class="mode-option-desc">最稳定，图片保存在浏览器本地</div>
+              </label>
+              <label class="mode-option" data-mode="url">
+                <input type="radio" name="background-mode" value="url">
+                <div class="mode-option-title">图片 URL</div>
+                <div class="mode-option-desc">粘贴可直接打开的图片链接</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group background-section hidden" id="background-upload-section">
+            <label for="background-file">上传图片</label>
+            <input type="file" id="background-file" accept="image/*">
+            <div class="subtle-note">上传时会自动压缩，默认只保留当前这一张背景图。</div>
+            <div class="file-meta" id="background-file-meta">未选择文件</div>
+          </div>
+
+          <div class="form-group background-section hidden" id="background-url-section">
+            <label for="background-url">图片 URL</label>
+            <input type="url" id="background-url" placeholder="https://example.com/background.jpg">
+            <div class="subtle-note">请使用可直接访问的图片地址；加载失败会自动回退默认背景。</div>
+          </div>
+
+          <div id="background-advanced-section" class="background-advanced hidden">
+            <div class="form-group">
+              <label for="background-size">图片适配</label>
+              <select id="background-size">
+                <option value="cover">铺满区域（可能裁切）</option>
+                <option value="contain">完整显示（可能留白）</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="background-overlay">遮罩强度</label>
+              <div class="range-row">
+                <input type="range" id="background-overlay" min="0" max="0.85" step="0.01" value="0.38">
+                <div class="range-value" id="background-overlay-value">38%</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="background-blur">模糊强度</label>
+              <div class="range-row">
+                <input type="range" id="background-blur" min="0" max="24" step="1" value="0">
+                <div class="range-value" id="background-blur-value">0px</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="background-reset-btn">
+              <i class="bi bi-arrow-counterclockwise"></i> 恢复默认
+            </button>
+            <button class="btn btn-primary" id="background-save-btn">
+              <i class="bi bi-image"></i> 保存背景
+            </button>
+          </div>
+          </div>
+
+          <p class="draft-status" id="background-draft-status" role="status" aria-live="polite"></p>
+          <div class="status-message" id="background-status-message" role="status" aria-live="polite" aria-atomic="true"></div>
+        </div>
         <!-- Feishu config -->
-        <div class="card">
+        <div class="card" id="feishu-settings">
           <div class="card-title">
             <i class="bi bi-table"></i>
             飞书配置向导
@@ -146,110 +260,6 @@
           <div class="status-message" id="status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <i class="bi bi-image"></i>
-            背景设置
-          </div>
-
-          <p class="background-help">浅色与深色模式可分别保存背景；石墨和奶油皮肤共用这两套设置。切换标签会保留未保存的修改。</p>
-
-          <div class="background-theme-tabs" role="tablist" aria-label="选择要编辑的明暗模式背景">
-            <button type="button" id="background-theme-light-tab" class="background-theme-tab active"
-              role="tab" aria-selected="true" aria-controls="background-profile-panel" data-theme-mode="light">
-              <i class="bi bi-sun-fill" aria-hidden="true"></i>
-              浅色背景
-            </button>
-            <button type="button" id="background-theme-dark-tab" class="background-theme-tab"
-              role="tab" aria-selected="false" aria-controls="background-profile-panel" data-theme-mode="dark" tabindex="-1">
-              <i class="bi bi-moon-stars-fill" aria-hidden="true"></i>
-              深色背景
-            </button>
-          </div>
-
-          <div id="background-profile-panel" role="tabpanel" aria-labelledby="background-theme-light-tab">
-            <div id="background-preview" class="background-preview is-default" role="img" aria-label="浅色背景预览">
-              <div class="background-preview-image" id="background-preview-image" aria-hidden="true"></div>
-              <div class="background-preview-placeholder">
-                <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
-                <span>默认主题背景</span>
-              </div>
-              <div class="background-preview-badge" id="background-preview-badge">浅色模式</div>
-            </div>
-
-          <div class="form-group">
-            <label>背景模式</label>
-            <div class="mode-grid" id="background-mode-group">
-              <label class="mode-option" data-mode="default">
-                <input type="radio" name="background-mode" value="default" checked>
-                <div class="mode-option-title">默认背景</div>
-                <div class="mode-option-desc">使用当前主题的默认背景</div>
-              </label>
-              <label class="mode-option" data-mode="upload">
-                <input type="radio" name="background-mode" value="upload">
-                <div class="mode-option-title">本地上传</div>
-                <div class="mode-option-desc">最稳定，图片保存在浏览器本地</div>
-              </label>
-              <label class="mode-option" data-mode="url">
-                <input type="radio" name="background-mode" value="url">
-                <div class="mode-option-title">图片 URL</div>
-                <div class="mode-option-desc">粘贴可直接打开的图片链接</div>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group background-section hidden" id="background-upload-section">
-            <label for="background-file">上传图片</label>
-            <input type="file" id="background-file" accept="image/*">
-            <div class="subtle-note">上传时会自动压缩，默认只保留当前这一张背景图。</div>
-            <div class="file-meta" id="background-file-meta">未选择文件</div>
-          </div>
-
-          <div class="form-group background-section hidden" id="background-url-section">
-            <label for="background-url">图片 URL</label>
-            <input type="url" id="background-url" placeholder="https://example.com/background.jpg">
-            <div class="subtle-note">请使用可直接访问的图片地址；加载失败会自动回退默认背景。</div>
-          </div>
-
-          <div id="background-advanced-section" class="background-advanced hidden">
-            <div class="form-group">
-              <label for="background-size">图片适配</label>
-              <select id="background-size">
-                <option value="cover">铺满区域（可能裁切）</option>
-                <option value="contain">完整显示（可能留白）</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="background-overlay">遮罩强度</label>
-              <div class="range-row">
-                <input type="range" id="background-overlay" min="0" max="0.85" step="0.01" value="0.38">
-                <div class="range-value" id="background-overlay-value">38%</div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="background-blur">模糊强度</label>
-              <div class="range-row">
-                <input type="range" id="background-blur" min="0" max="24" step="1" value="0">
-                <div class="range-value" id="background-blur-value">0px</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="btn-group">
-            <button class="btn btn-secondary" id="background-reset-btn">
-              <i class="bi bi-arrow-counterclockwise"></i> 恢复默认
-            </button>
-            <button class="btn btn-primary" id="background-save-btn">
-              <i class="bi bi-image"></i> 保存背景
-            </button>
-          </div>
-          </div>
-
-          <p class="draft-status" id="background-draft-status" role="status" aria-live="polite"></p>
-          <div class="status-message" id="background-status-message" role="status" aria-live="polite" aria-atomic="true"></div>
-        </div>
 
       </div>
 
@@ -291,13 +301,13 @@
         </div>
 
         <!-- Data management -->
-        <div class="card">
+        <div class="card" id="data-settings">
           <div class="card-title">
             <i class="bi bi-trash"></i>
             数据管理
           </div>
 
-          <p class="subtle-note">清除缓存会重新拉取导航数据；重置所有会删除配置、主题偏好和本地背景。</p>
+          <p class="subtle-note">清除缓存会重新拉取导航数据；重置所有会删除配置、主题、字体偏好和本地背景。</p>
           <div class="btn-group">
             <button class="btn btn-secondary" id="clear-cache-btn">
               <i class="bi bi-trash3"></i> 清除缓存
@@ -313,12 +323,14 @@
   </div>
 
   <script src="js/modules/storage.js"></script>
+  <script src="js/modules/font-manager.js"></script>
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/background-config.js"></script>
   <script src="js/modules/background-storage.js"></script>
   <script src="js/modules/feishu-config-check-core.js"></script>
   <script src="js/modules/feishu-api.js"></script>
   <script src="js/options.js"></script>
+  <script src="js/options-appearance.js"></script>
 </body>
 
 </html>

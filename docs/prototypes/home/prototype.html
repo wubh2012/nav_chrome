@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- 设计问题：同一组收藏网站，以目录、便签和场景三种结构呈现，哪一种适合日常使用？ -->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>水果导航 · 首页设计原型</title>
+  <link rel="stylesheet" href="css/bootstrap-icons.css">
+  <link rel="stylesheet" href="docs/prototypes/home/prototype.css">
+  <link rel="stylesheet" href="css/pixel-garden.css">
+  <link rel="stylesheet" href="docs/prototypes/home/switcher.css">
+</head>
+<body>
+  <main id="prototype-app"></main>
+  <dialog id="prototype-add">
+    <form id="prototype-add-form">
+      <div class="dialog-heading"><h2>添加网站</h2><button type="button" id="prototype-close" aria-label="关闭">×</button></div>
+      <p>仅添加到当前原型，刷新后恢复演示数据。</p>
+      <label>网站名称<input name="name" required maxlength="50" placeholder="例如：我的博客"></label>
+      <label>网址<input name="url" type="url" required value="https://" placeholder="https://example.com"></label>
+      <label>分类<select name="category"><option>Code</option><option>工具</option><option>设计</option><option>学习</option></select></label>
+      <button class="dialog-save" type="submit">添加到原型</button>
+    </form>
+  </dialog>
+  <script src="js/modules/feishu-api.js"></script>
+  <script src="js/modules/pixel-garden-state.js"></script>
+  <script src="js/modules/pixel-garden.js"></script>
+  <script src="docs/prototypes/home/prototype.js"></script>
+  <script src="docs/prototypes/home/switcher.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+/* 临时字体对比专用；不由正式首页加载，不进入扩展打包。 */
+@font-face { font-family: TypeWenKai; src: url('/css/fonts/wenkai-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: TypeKuaiLe; src: url('/css/fonts/zcool-kuaile.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: TypePixel; src: url('/css/fonts/fusion-pixel.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+[data-font-variant="A"] { --home-font: TypeWenKai, "Microsoft YaHei", sans-serif; }
+[data-font-variant="B"] { --home-font: TypeKuaiLe, "Microsoft YaHei", sans-serif; }
+[data-font-variant="C"] { --home-font: TypePixel, "Microsoft YaHei", sans-serif; }
+.pixel-home .current-time, .pixel-home .date-info { font-family:var(--home-font); }
+.pixel-home .tool-name { font-size: 16px; line-height: 1.5; }
+.pixel-home #category-menu li, .pixel-home .add-link-btn span, .pixel-home .home-search, .pixel-home .garden-message, .pixel-home .garden-pocket { font-size: 16px; }
+.pixel-home .tools-container { padding-bottom: 145px; }
+.pixel-home .collection-header h1 { font-size: 18px; }
+.pixel-home .quick-search-input { font-size: 18px; }
+.pixel-home .quick-search-item-name { font-size: 17px; }
+.pixel-home .quick-search-hint { font-size: 14px; }
+.pixel-home .quick-search-item-meta { font-size: 15px; }
+.pixel-home .tool-item { min-height: 84px; }
+.type-switcher, .type-comparison { font-family: "Microsoft YaHei", sans-serif; color: #305265; }
+.type-switcher { position: fixed; z-index: 3001; bottom: 16px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); padding: 12px 18px; border: 1px solid #799799; border-radius: 12px; background: #f7fcfff5; box-shadow: 0 6px 26px #17322e26; }
+.type-choices { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.type-choices button, .type-specimen > button { padding: 7px 12px; border: 1px solid #b9d4dc; border-radius: 5px; background: #fff; color: #305265; font: 14px "Microsoft YaHei", sans-serif; cursor: pointer; }
+.type-choices button[aria-pressed="true"] { background: #386e57; color: #fff; border-color: #386e57; }
+.type-tag { font-size: 12px; color: #58716b; margin-right: 8px; }
+.type-meta { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 9px; font-size: 11px; color: #52716e; }
+.type-meta strong { font-weight: 500; }
+.type-comparison { margin: auto; width: min(1200px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 28px; border: 1px solid #b9d4dc; border-radius: 14px; background: #edf7fa; box-shadow: 0 16px 80px #17322e40; }
+.type-comparison::backdrop { background: #213d4659; backdrop-filter: blur(5px); }
+.type-comparison-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.type-comparison-heading span { font-size: 12px; color: #58716b; }
+.type-comparison-heading h2 { margin-top: 6px; font-size: 23px; font-weight: 600; }
+#type-close { border: 0; background: transparent; color: #44616b; font-size: 30px; cursor: pointer; width: 36px; height: 36px; }
+.type-comparison-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.type-specimen { min-width: 0; padding: 24px; border: 1px solid #b9d4dc; border-radius: 8px; background: linear-gradient(#def0fa 0 150px, #ccdfa5 150px); }
+.type-specimen[data-specimen="A"] { --specimen-font: TypeWenKai; }
+.type-specimen[data-specimen="B"] { --specimen-font: TypeKuaiLe; }
+.type-specimen[data-specimen="C"] { --specimen-font: TypePixel; }
+.type-specimen-meta { display: flex; flex-direction: column; gap: 4px; margin-bottom: 22px; font-size: 14px; }
+.type-specimen-meta span { font-size: 12px; color: #52716e; }
+.type-sample-brand { font: 22px/1.5 var(--specimen-font), sans-serif; color: #386e57; margin-bottom: 15px; }
+.type-sample-search { display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 10px; border: 1px solid #b9d4dc; border-radius: 4px; background: #f7fcff; font: 16px var(--specimen-font), sans-serif; }
+.type-sample-search i { font-size: 16px; }
+.type-sample-categories { margin: 22px 0; font: 16px/1.5 var(--specimen-font), sans-serif; }
+.type-sample-heading { margin-bottom: 13px; font: 18px/1.5 var(--specimen-font), sans-serif; }
+.type-sample-sites { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 6px; font: 16px/1.5 var(--specimen-font), sans-serif; }
+.type-sample-sites span { white-space: nowrap; }
+.type-sample-caption { margin: 23px 0 16px; font: 15px/1.8 var(--specimen-font), sans-serif; }
+.type-sample-search-result { display: flex; flex-direction: column; padding: 13px 12px; background: #f7fcff; border: 1px solid #b9d4dc; border-radius: 7px; font: 16px/1.6 var(--specimen-font), sans-serif; }
+.type-sample-search-result strong { font-weight: 400; }
+.type-sample-search-result span { font-size: 14px; color: #52716e; }
+.type-specimen > p { margin: 16px 0; min-height: 40px; font-size: 12px; line-height: 1.7; color: #52716e; }
+.type-specimen > button { width: 100%; }
+.type-comparison-footnote { margin-top: 20px; font-size: 12px; line-height: 1.8; color: #52716e; }
+@media (max-width: 850px) { .type-comparison-grid { grid-template-columns: 1fr; } .type-switcher { width: calc(100% - 24px); } .type-choices { flex-wrap: wrap; } .type-meta { flex-wrap: wrap; gap: 4px 12px; } .type-meta > span:last-child { display: none; } .type-tag { display: none; } }

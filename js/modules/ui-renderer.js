@@ -68,6 +68,9 @@ const UIRenderer = (function() {
     cachedNavData = data;
     cachedCategories = categories;
     cachedDateInfo = dateInfo;
+    if (currentCategory !== 'all' && !cachedCategories.includes(currentCategory)) {
+      currentCategory = 'all';
+    }
 
     // 渲染分类菜单
     renderCategoryMenu(categories);
@@ -96,10 +99,10 @@ const UIRenderer = (function() {
 
     menu.textContent = '';
     const fragment = document.createDocumentFragment();
-    fragment.appendChild(createCategoryMenuItem('all', '全部', 'bi-grid-3x3-gap', true));
+    fragment.appendChild(createCategoryMenuItem('all', '全部', 'bi-grid-3x3-gap', currentCategory === 'all'));
 
     sortedCategories.forEach(category => {
-      fragment.appendChild(createCategoryMenuItem(category, category, resolveCategoryIcon(category), false));
+      fragment.appendChild(createCategoryMenuItem(category, category, resolveCategoryIcon(category), currentCategory === category));
     });
 
     menu.appendChild(fragment);
@@ -110,6 +113,12 @@ const UIRenderer = (function() {
         const category = li.getAttribute('data-category');
         switchCategory(category);
       });
+      li.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          li.click();
+        }
+      });
     });
   }
 
@@ -117,13 +126,28 @@ const UIRenderer = (function() {
     const item = document.createElement('li');
     item.dataset.category = String(category || '');
     item.classList.toggle('active', Boolean(active));
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-pressed', String(Boolean(active)));
+    item.title = label || '';
 
     const icon = document.createElement('i');
     icon.classList.add('bi');
     icon.classList.add(resolveSafeIconClass(iconClass));
 
     item.appendChild(icon);
-    item.appendChild(document.createTextNode(` ${label || ''}`));
+    const labelElement = document.createElement('span');
+    labelElement.className = 'category-label';
+    labelElement.textContent = label || '';
+    item.appendChild(labelElement);
+    const countElement = document.createElement('span');
+    countElement.className = 'category-count';
+    const items = category === 'all'
+      ? rendererCore.flattenToolsByCategoryPriority(cachedNavData)
+      : cachedNavData?.[category];
+    countElement.textContent = String(Array.isArray(items) ? items.length : 0);
+    countElement.setAttribute('aria-hidden', 'true');
+    item.appendChild(countElement);
     return item;
   }
 
@@ -155,8 +179,10 @@ const UIRenderer = (function() {
     document.querySelectorAll('#category-menu li').forEach(li => {
       if (li.getAttribute('data-category') === category) {
         li.classList.add('active');
+        li.setAttribute('aria-pressed', 'true');
       } else {
         li.classList.remove('active');
+        li.setAttribute('aria-pressed', 'false');
       }
     });
 
@@ -186,11 +212,15 @@ const UIRenderer = (function() {
     grid.textContent = '';
 
     const tools = rendererCore.flattenToolsByCategoryPriority(data);
+    const title = document.getElementById('collection-title');
+    const count = document.getElementById('collection-count');
+    if (title) title.textContent = currentCategory === 'all' ? '我的网站果园' : currentCategory;
+    if (count) count.textContent = `${tools.length} 个网站`;
 
     if (tools.length === 0) {
       const emptyState = document.createElement('div');
       emptyState.className = 'empty-state';
-      emptyState.textContent = '暂无数据，请添加链接';
+      emptyState.textContent = '这里还没有网站，点击「添加网站」收藏第一个。';
       grid.appendChild(emptyState);
       grid.style.visibility = 'visible';
       document.dispatchEvent(new CustomEvent('chromeNav:toolsRendered', {
@@ -240,22 +270,40 @@ const UIRenderer = (function() {
     card.setAttribute('data-id', tool.id || '');
     card.setAttribute('data-category', tool.category || '');
     card.title = tool.name || '';
+    card.setAttribute('role', 'link');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', tool.name || '打开网站');
 
     const { element: iconElement, useImageIcon } = createToolIconElement(tool);
     const nameElement = document.createElement('span');
     nameElement.className = 'tool-name';
     nameElement.textContent = tool.name || '';
+    const copyElement = document.createElement('div');
+    copyElement.className = 'tool-copy';
+    const domainElement = document.createElement('span');
+    domainElement.className = 'tool-domain';
+    try {
+      domainElement.textContent = new URL(tool.url).hostname.replace(/^www\./, '') || tool.category || '';
+    } catch (_error) {
+      domainElement.textContent = tool.category || '';
+    }
+    copyElement.appendChild(nameElement);
+    copyElement.appendChild(domainElement);
 
     const deleteButton = document.createElement('button');
     deleteButton.className = 'tool-item-delete-btn';
     deleteButton.title = '删除';
+    deleteButton.setAttribute('aria-label', `删除 ${tool.name || '网站'}`);
 
     const deleteIcon = document.createElement('i');
     deleteIcon.classList.add('bi', 'bi-x');
     deleteButton.appendChild(deleteIcon);
 
-    card.appendChild(iconElement);
-    card.appendChild(nameElement);
+    const iconTile = document.createElement('span');
+    iconTile.className = 'tool-icon-tile';
+    iconTile.appendChild(iconElement);
+    card.appendChild(iconTile);
+    card.appendChild(copyElement);
     card.appendChild(deleteButton);
 
     const nameEl = card.querySelector('.tool-name');
@@ -275,6 +323,12 @@ const UIRenderer = (function() {
     // 点击打开链接
     card.addEventListener('click', (e) => {
       if (!e.target.closest('.tool-item-delete-btn')) {
+        openLink(tool.url);
+      }
+    });
+    card.addEventListener('keydown', event => {
+      if (event.target === card && event.key === 'Enter') {
+        event.preventDefault();
         openLink(tool.url);
       }
     });
@@ -531,6 +585,7 @@ const UIRenderer = (function() {
     cachedNavData = data || {};
     cachedCategories = categories || [];
     cachedDateInfo = dateInfo || null;
+    if (!cachedCategories.includes(currentCategory)) currentCategory = 'all';
 
     renderCategoryMenu(cachedCategories);
 

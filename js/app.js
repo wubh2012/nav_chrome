@@ -8,8 +8,6 @@
 
   const WHEEL_SWITCH_THRESHOLD = 60;
   const WHEEL_SWITCH_COOLDOWN = 420;
-  const SIDEBAR_COLLAPSED_KEY = 'chromeNav_sidebarCollapsed';
-  const SIDEBAR_HINT_SHOWN_KEY = 'chromeNav_sidebarHintShown';
   const SHORTCUT_HINT_SHOWN_KEY = 'chromeNav_shortcutHintShown';
   const DATE_REFRESH_INTERVAL = 60 * 1000;
   const TIME_FOCUS_MODE_CLASS = 'time-focus-mode';
@@ -22,7 +20,12 @@
   async function initApp() {
     try {
       await ThemeManager.init();
+      if (typeof FontManager !== 'undefined') await FontManager.init();
       ThemeManager.bindEvents();
+
+      if (window.PixelGarden) {
+        await PixelGarden.init(document.querySelector('.main-content'));
+      }
 
       UIRenderer.startTimeUpdate();
       startDateRefresh();
@@ -49,14 +52,12 @@
       }
 
       bindPageActions();
-      bindSidebarToggle();
       bindCategoryWheelSwitch();
       bindTimeFocusToggle();
       bindShortcutHelp();
       listenSyncMessages();
 
       document.body.classList.add('loaded');
-      showSidebarToggleHintIfNeeded();
       showShortcutToastIfNeeded();
 
       console.log('[ChromeNav] 初始化完成');
@@ -209,7 +210,7 @@
 
           if (state.isFirstInstall) {
             setTimeout(() => {
-              UIRenderer.showSyncStatus('请点击右上角“设置”配置飞书数据', 'info');
+              UIRenderer.showSyncStatus('请在“设置”中配置飞书数据', 'info');
             }, 2000);
           }
         }
@@ -289,10 +290,24 @@
    * 绑定页面操作
    */
   function bindPageActions() {
+    const manageBtn = document.getElementById('manage-sites-btn');
+    manageBtn?.addEventListener('click', () => {
+      const managing = document.body.classList.toggle('site-manage-mode');
+      manageBtn.setAttribute('aria-pressed',String(managing));
+      const label = managing ? '完成整理' : '整理网站';
+      manageBtn.setAttribute('aria-label',label); manageBtn.title = label;
+      manageBtn.querySelector('i').className = managing ? 'bi bi-check-lg' : 'bi bi-pencil';
+    });
     const settingsBtn = document.getElementById('open-settings-btn');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
+      });
+      settingsBtn.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          settingsBtn.click();
+        }
       });
     }
   }
@@ -314,32 +329,6 @@
     if (mainContent) {
       mainContent.addEventListener('wheel', handleMainContentWheelSwitch, { passive: false });
     }
-  }
-
-  /**
-   * 绑定侧栏折叠切换
-   */
-  function bindSidebarToggle() {
-    const toggleTrigger = document.querySelector('.user-avatar');
-    if (!toggleTrigger) {
-      return;
-    }
-
-    applySidebarCollapsedState(getInitialSidebarCollapsedState(), false);
-
-    toggleTrigger.addEventListener('click', () => {
-      const nextCollapsed = !document.body.classList.contains('sidebar-collapsed');
-      applySidebarCollapsedState(nextCollapsed, true);
-    });
-
-    toggleTrigger.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') {
-        return;
-      }
-      event.preventDefault();
-      const nextCollapsed = !document.body.classList.contains('sidebar-collapsed');
-      applySidebarCollapsedState(nextCollapsed, true);
-    });
   }
 
   function bindShortcutHelp() {
@@ -429,79 +418,6 @@
       event.preventDefault();
       toggleTimeFocusMode();
     });
-  }
-
-  function loadSidebarCollapsedState() {
-    try {
-      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  function getInitialSidebarCollapsedState() {
-    const root = document.documentElement;
-    const preloadedState = root.dataset.sidebarCollapsed;
-    if (preloadedState === '1' || preloadedState === '0') {
-      return preloadedState === '1';
-    }
-
-    const collapsed = loadSidebarCollapsedState();
-    root.dataset.sidebarCollapsed = collapsed ? '1' : '0';
-    return collapsed;
-  }
-
-  function saveSidebarCollapsedState(collapsed) {
-    try {
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
-    } catch (_error) {
-      // ignore storage failures
-    }
-  }
-
-  function applySidebarCollapsedState(collapsed, persist) {
-    if (window.innerWidth <= 768) {
-      collapsed = false;
-    }
-
-    document.documentElement.dataset.sidebarCollapsed = collapsed ? '1' : '0';
-    document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
-    document.body.classList.toggle('sidebar-collapsed', collapsed);
-
-    const toggleTrigger = document.querySelector('.user-avatar');
-    if (toggleTrigger) {
-      toggleTrigger.title = collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏';
-      toggleTrigger.setAttribute('aria-label', collapsed ? '点击 Logo 展开侧栏' : '点击 Logo 折叠侧栏');
-      toggleTrigger.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    }
-
-    if (persist) {
-      saveSidebarCollapsedState(collapsed);
-    }
-  }
-
-  function showSidebarToggleHintIfNeeded() {
-    if (window.innerWidth <= 768) {
-      return;
-    }
-
-    try {
-      if (window.localStorage.getItem(SIDEBAR_HINT_SHOWN_KEY) === '1') {
-        return;
-      }
-
-      document.body.classList.add('sidebar-hint-visible');
-      window.localStorage.setItem(SIDEBAR_HINT_SHOWN_KEY, '1');
-
-      window.setTimeout(() => {
-        document.body.classList.remove('sidebar-hint-visible');
-      }, 3400);
-    } catch (_error) {
-      document.body.classList.add('sidebar-hint-visible');
-      window.setTimeout(() => {
-        document.body.classList.remove('sidebar-hint-visible');
-      }, 3400);
-    }
   }
 
   function showShortcutToastIfNeeded() {
@@ -608,7 +524,7 @@
     const target = event.target;
     if (!target) return false;
 
-    if (target.closest('input, textarea, select, button, .modal-content, .quick-search-panel')) {
+    if (target.closest('input, textarea, select, button, dialog, #garden-panel, .modal-content, .quick-search-panel')) {
       return true;
     }
 

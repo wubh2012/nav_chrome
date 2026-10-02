@@ -1052,7 +1052,7 @@
    * Reset all stored settings.
    */
   async function resetAll() {
-    if (!confirm('重置将删除飞书凭证、主题偏好、背景图片和导航缓存。确定继续吗？此操作不可撤销。')) {
+    if (!confirm('重置将删除飞书凭证、主题和字体偏好、背景图片和导航缓存。确定继续吗？此操作不可撤销。')) {
       return;
     }
 

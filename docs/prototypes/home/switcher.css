@@ -1,0 +1,15 @@
+.prototype-switcher { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5000; display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 13px; border: 1px solid #424955; background: #202730; color: #f5f7fb; box-shadow: 0 6px 24px #0003; font: 12px/1.4 "Segoe UI", "Microsoft YaHei", sans-serif; }
+.prototype-switcher button, .prototype-switcher a { color: inherit; background: transparent; border: 0; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; min-height: 34px; min-width: 34px; padding: 7px 10px; font: inherit; white-space: nowrap; }
+.prototype-switcher button:hover, .prototype-switcher a:hover { background: #39434f; }
+.prototype-switcher button[aria-pressed="true"] { background: #eaf1ed; color: #253b31; }
+.prototype-switcher :focus-visible { outline: 2px solid #c9dcff; outline-offset: 2px; }
+.prototype-switcher .prototype-note { color: #c0c7d1; padding: 0 8px; border-right: 1px solid #48515d; white-space: nowrap; }
+.prototype-switcher .prototype-current { min-width: 112px; text-align: center; }
+.prototype-switcher .compare-link { margin-left: 4px; border-left: 1px solid #48515d; border-radius: 0 7px 7px 0; }
+html[data-overview="true"] .prototype-switcher { display: none; }
+html[data-overview="true"] .shortcut-toast, html[data-overview="true"] .user-avatar::before, html[data-overview="true"] .sync-status { display: none !important; }
+@media (max-width: 600px) {
+  .prototype-switcher { width: calc(100% - 20px); bottom: 10px; justify-content: center; padding: 6px; gap: 3px; }
+  .prototype-switcher .prototype-note, .prototype-switcher .prototype-current, .prototype-switcher .cycle-button { display: none; }
+  .prototype-switcher button, .prototype-switcher a { min-width: 38px; padding-inline: 9px; }
+}

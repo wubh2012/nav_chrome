@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "prototype:home": "node scripts/preview-home-prototypes.cjs",
     "test": "node --test",
     "package": "node scripts/package-extension.js",
     "package:skip-tests": "node scripts/package-extension.js --skip-tests"

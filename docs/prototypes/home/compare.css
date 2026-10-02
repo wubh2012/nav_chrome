@@ -1,0 +1,27 @@
+* { box-sizing: border-box; }
+body { margin:0; background:#f1f3f6; color:#253343; font-family:"Segoe UI","Microsoft YaHei",sans-serif; padding:40px clamp(20px,4vw,64px); }
+h1,h2,p { margin:0; }
+.review-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:32px; }
+.review-label { color:#647588; font-size:12px; }
+.review-header h1 { font-size:30px; letter-spacing:-.02em; font-weight:600; margin:10px 0; }
+.review-header p { font-size:13px; color:#687789; }
+.review-controls { display:flex; align-items:center; gap:16px; font-size:12px; color:#647588; white-space:nowrap; }
+.review-controls button { cursor:pointer; background:#fff; color:#344758; border:1px solid #ced7df; padding:10px 15px; border-radius:8px; font:inherit; }
+.comparison-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; }
+.candidate { min-width:0; background:#fff; border:1px solid #dde3e9; border-radius:12px; overflow:hidden; }
+.candidate-heading { display:flex; align-items:center; gap:12px; padding:18px 20px; }
+.candidate-key { font-size:14px; font-weight:600; width:31px; height:31px; border:1px solid #d4dde5; border-radius:8px; display:grid; place-items:center; flex-shrink:0; }
+.candidate-heading h2 { font-size:17px; font-weight:600; }
+.candidate-heading p { font-size:10px; color:#778698; margin-top:5px; }
+.candidate-heading a { margin-left:auto; font-size:11px; color:#3b667c; text-decoration:none; flex-shrink:0; padding:8px 0 8px 8px; }
+.candidate-heading a:hover { text-decoration:underline; }
+.preview-window { position:relative; width:100%; aspect-ratio:1440/960; overflow:hidden; border-block:1px solid #e1e6ec; background:#eef2f4; }
+.preview-window iframe { width:1440px; height:960px; border:0; position:absolute; left:0; top:0; transform-origin:top left; pointer-events:none; }
+.candidate-notes { padding:15px 20px 19px; }
+.candidate-notes > span { font-size:10px; color:#556c7e; background:#eef3f6; padding:4px 7px; border-radius:4px; }
+.candidate-notes p { color:#647487; font-size:11px; margin-top:10px; line-height:1.7; }
+.review-footer { font-size:12px; line-height:1.8; color:#6c7b8d; margin-top:28px; }
+.review-footer > span { display:block; font-size:11px; margin-top:3px; }
+a:focus-visible,button:focus-visible { outline:2px solid #3562ba; outline-offset:4px; }
+@media(max-width:900px) { .review-header { align-items:flex-start; flex-direction:column; gap:16px; } .candidate-heading { padding:15px; } .candidate-heading p { display:none; } .candidate-heading h2 { font-size:15px; } .candidate-heading a { font-size:10px; } }
+@media(max-width:620px) { body { padding:26px 16px; } .review-header h1 { font-size:25px; } .review-header p { font-size:12px; line-height:1.8; } .comparison-grid { grid-template-columns:1fr; gap:22px; } .candidate-heading p { display:block; } }

@@ -24,6 +24,7 @@ const QuickSearchManager = (function() {
   let selectedIndex = -1;
   let lastShiftKeyDownAt = 0;
   let isInitialized = false;
+  let previousFocus = null;
 
   /**
    * 初始化快速搜索弹层并绑定一次性事件。
@@ -59,6 +60,7 @@ const QuickSearchManager = (function() {
    * @sideeffects 绑定 document、overlay、input、list 的事件监听器。
    */
   function bindEvents() {
+    document.getElementById('home-search-btn')?.addEventListener('click', () => open());
     document.addEventListener('keydown', handleGlobalKeyDown, true);
 
     overlayEl.addEventListener('click', close);
@@ -107,6 +109,9 @@ const QuickSearchManager = (function() {
    */
   function handleGlobalKeyDown(event) {
     if (!isInitialized) return;
+
+    // 原生果园商店打开时，让 Escape / Tab 等按键由该弹层管理。
+    if (document.querySelector('dialog[open]')) return;
 
     if (isOpen() && handleOpenStateKey(event)) {
       return;
@@ -160,6 +165,10 @@ const QuickSearchManager = (function() {
         event.preventDefault();
         close();
         return true;
+      case 'Tab':
+        event.preventDefault();
+        inputEl.focus();
+        return true;
       default:
         return false;
     }
@@ -174,6 +183,7 @@ const QuickSearchManager = (function() {
    */
   function open() {
     if (!isInitialized) return;
+    if (!isOpen()) previousFocus = document.activeElement;
 
     modalEl.classList.add('active');
     modalEl.setAttribute('aria-hidden', 'false');
@@ -197,6 +207,7 @@ const QuickSearchManager = (function() {
     modalEl.classList.remove('active');
     modalEl.setAttribute('aria-hidden', 'true');
     inputEl.blur();
+    if (previousFocus?.isConnected) previousFocus.focus();
   }
 
   /**

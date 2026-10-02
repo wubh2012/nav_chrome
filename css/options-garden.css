@@ -1,0 +1,66 @@
+/* 与像素果园首页保持相同的色彩、字体和轻量边框。 */
+.options-home {
+  --page-bg:#def0fa; --surface-1:#f7fcff; --surface-2:#edf6f3; --surface-3:#d7e9d1;
+  --surface-raised:#f7fcff; --surface-input:#fff; --text-primary:#305265;
+  --text-secondary:#44616b; --text-muted:#5a737b; --accent-primary:#386e57;
+  --accent-strong:#28553f; --accent-soft:#7aaf83; --accent-dim:#386e5714;
+  --selected-bg:#d7e9d1; --selected-text:#386e57; --selected-border:#a7c5a0;
+  --border-soft-color:#bfd5d9; --border-strong-color:#92b2b7;
+  --info-soft:#eaf4f8; --info-text:#305265; --shadow-soft:0 3px 0 #3052650b;
+  padding:32px 28px 60px; font:15px/1.65 var(--navigation-font,"Microsoft YaHei",sans-serif);
+  background:var(--page-bg);
+}
+[data-theme="dark"] .options-home {
+  --page-bg:#192940; --surface-1:#283e53; --surface-2:#263d47; --surface-3:#334c39;
+  --surface-raised:#283e53; --surface-input:#213548; --text-primary:#e1f0ef;
+  --text-secondary:#b7cdd7; --text-muted:#a3bbcf; --accent-primary:#c5dfad;
+  --accent-strong:#dceecd; --accent-dim:#c5dfad14; --selected-bg:#334c39;
+  --selected-text:#c5dfad; --selected-border:#567088; --border-soft-color:#476276;
+  --border-strong-color:#668397; --info-soft:#263d47; --info-text:#b7cdd7;
+}
+.options-home :where(h1,h2,h3,p,a,span,strong,small,div,label,li,button,input,select,textarea) { font-family:inherit; }
+.options-home .container { max-width:1200px; }
+.settings-header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:26px; }
+.settings-header > .btn { flex:none; width:auto; }
+.settings-brand { display:flex; align-items:center; gap:9px; font-size:16px; font-weight:600; color:var(--accent-primary); text-decoration:none; }
+.settings-brand svg { width:28px; height:28px; }
+.options-home h1 { text-align:left; font-family:inherit; font-size:30px; letter-spacing:0; margin:14px 0 4px; }
+.options-home h1::after,.options-home .card::before { display:none; }
+.settings-header p { color:var(--text-secondary); }
+.settings-nav { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+.settings-nav a { padding:8px 16px; border:1px solid var(--border-soft-color); background:var(--surface-1); border-radius:5px; color:var(--text-secondary); text-decoration:none; }
+.settings-nav a:hover { border-color:var(--accent-primary); color:var(--accent-primary); }
+.options-home .settings-grid { gap:20px; grid-template-columns:minmax(0,1fr) 300px; }
+.options-home .primary-cards,.options-home .side-cards { gap:20px; }
+.options-home .card { border-radius:8px; padding:26px; backdrop-filter:none; scroll-margin-top:20px; }
+.options-home .card-title { font-family:inherit; font-size:20px; letter-spacing:0; margin-bottom:14px; }
+.section-note { color:var(--text-secondary); margin-bottom:20px; }
+.font-controls { display:grid; grid-template-columns:1.7fr 1fr; gap:18px; }
+.options-home .form-group label { font-size:14px; letter-spacing:0; text-transform:none; margin-bottom:7px; }
+.options-home .form-group input,.options-home .form-group select { border-radius:5px; font-size:15px; box-shadow:none; }
+.options-home .btn { border-radius:5px; font-family:inherit; font-size:14px; letter-spacing:0; box-shadow:none; padding:10px 16px; }
+.options-home .btn-primary { background:var(--accent-primary); color:var(--surface-input); border-color:var(--accent-primary); }
+[data-theme="dark"] .options-home .btn-primary { color:#243929; }
+.options-home .btn:hover { transform:none; }
+.options-home .hint,.options-home .subtle-note,.options-home .draft-status { font-size:13px; }
+.options-home .test-mode-notice { border-radius:5px; margin-bottom:20px; }
+.options-home .background-preview[data-preview-theme="light"] { --preview-bg:#def0fa; --preview-text:#305265; --preview-accent:#386e57; }
+.options-home .background-preview[data-preview-theme="dark"] { --preview-bg:#192940; --preview-text:#e1f0ef; --preview-accent:#c5dfad; }
+.options-home .wizard-step-indicator,.options-home .background-theme-tab,.options-home .mode-option { border-radius:5px; font-family:inherit; }
+.options-home .wizard-intro,.options-home .background-help { font-size:14px; }
+.font-preview { --preview-font:var(--navigation-font); --preview-size:16px; padding:20px 22px; border:1px solid var(--border-soft-color); border-radius:5px; background:linear-gradient(var(--page-bg) 70%,var(--selected-bg) 70%); color:var(--text-primary); font:var(--preview-size)/1.6 var(--preview-font); margin-bottom:14px; }
+.font-preview :where(strong,span,div) { font-family:var(--preview-font); }
+.preview-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.preview-top strong { font-size:20px; color:var(--accent-primary); }
+.preview-top span { font-size:12px; color:var(--text-secondary); }
+.preview-time { font-size:54px; text-align:center; line-height:1.25; font-variant-numeric:tabular-nums; margin:12px 0 3px; }
+.preview-date { text-align:center; font-size:12px; }
+.preview-search { margin:16px auto; max-width:400px; padding:10px 14px; background:var(--surface-1); border:1px solid var(--border-soft-color); border-radius:4px; }
+.preview-search i { margin-right:8px; }
+.preview-categories { text-align:center; margin:20px 0 14px; }
+.preview-sites { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; text-align:center; }
+.preview-sites > div { min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px; }
+.preview-sites i { width:42px; height:42px; display:grid; place-items:center; font-size:23px; border-radius:6px; background:var(--surface-1); color:var(--accent-primary); box-shadow:2px 2px 0 #30526522; }
+.preview-sites span { overflow-wrap:anywhere; }
+@media(max-width:950px) { .options-home .settings-grid { grid-template-columns:1fr; } .options-home .side-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .options-home { padding:20px 14px 40px; } .options-home .card { padding:18px; } .settings-header { align-items:flex-start; } .settings-header>.btn { white-space:nowrap; padding:8px; } .options-home h1 { font-size:24px; } .settings-header p { font-size:13px; } .font-controls,.options-home .side-cards { grid-template-columns:1fr; } .font-controls { gap:0; } .font-preview { padding:16px 12px; } .preview-sites { gap:8px; } .preview-top { flex-wrap:wrap; } .settings-nav a { padding:7px 12px; } }

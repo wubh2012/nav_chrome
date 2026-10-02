@@ -1,0 +1,167 @@
+/* 首页采用已选定的 D「像素果园」：场景连接草地，网站用图标启动器呈现。 */
+.pixel-home {
+  --page: #def0fa; --surface: #f7fcff; --ink: #305265; --muted: #44616b;
+  --line: #b9d4dc; --accent: #386e57; --wash: #d7e9d1; --fruit: #f2af83;
+  --meadow: #ccdfa5; --pixel-leaf: #448664; --pixel-leaf-light: #5b9b76; --cloud: #f3fbff;
+  --page-bg: var(--page); --surface-1: var(--surface); --surface-2: var(--wash);
+  --surface-3: var(--wash); --surface-raised: var(--surface); --surface-input: var(--surface);
+  --text-primary: var(--ink); --text-secondary: var(--muted); --text-muted: var(--muted);
+  --accent-primary: var(--accent); --gold-primary: var(--accent); --on-accent: #ffffff;
+  --selected-bg: var(--wash); --selected-text: var(--accent); --selected-border: var(--line);
+  --border-soft-color: var(--line); --border-strong-color: var(--line); --border-faint-color: var(--line);
+  --bg-primary: var(--page); --bg-secondary: var(--surface); --bg-card: var(--wash);
+  --hover-surface: var(--surface); --hover-border: var(--accent); --tooltip-bg: var(--surface);
+  background: var(--meadow); color: var(--ink);
+  --home-font: var(--navigation-font, "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif);
+  font-family: var(--home-font);
+  font-size: var(--navigation-text-size, 16px);
+}
+.pixel-home :where(button, input, select, textarea, kbd) { font-family: inherit; }
+.pixel-home .modal-header h2 { font-family: var(--home-font); }
+[data-theme="dark"] .pixel-home {
+  --page: #192940; --surface: #283e53; --ink: #e1f0ef; --muted: #a3bbcf;
+  --line: #567088; --accent: #c5dfad; --on-accent: #243929; --wash: #334c39;
+  --fruit: #d9a179; --meadow: #304c3e; --pixel-leaf: #37654d; --pixel-leaf-light: #4a7e60; --cloud: #2d435a;
+}
+[data-skin="graphite"][data-theme="light"] .pixel-home { --page: #e3eaf0; --meadow: #d2ddcb; --accent: #3c5866; }
+[data-skin="graphite"][data-theme="dark"] .pixel-home { --page: #202b37; --meadow: #33433e; --accent: #b7d0df; }
+.pixel-home .artdeco-grid, .pixel-home .artdeco-bg::before, .pixel-home .artdeco-bg::after { display: none; }
+.pixel-home:not(.has-custom-background) .background-overlay-layer { background: transparent !important; }
+.pixel-home .main-content { padding: 0; width: 100%; min-height: 100vh; }
+.pixel-home .main-content-inner { width: 100%; max-width: none; margin: 0; gap: 0; }
+.pixel-sky { background: var(--page); }
+.pixel-home.has-custom-background .pixel-sky { background: transparent; }
+.pixel-ground { background: var(--meadow); flex: 1; }
+.pixel-home.has-custom-background .pixel-ground { background: color-mix(in srgb, var(--meadow) 88%, transparent); }
+.pixel-header { max-width: 1440px; margin: 0 auto; padding: 22px 48px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.pixel-brand { display: flex; align-items: center; gap: 10px; color: var(--accent); }
+.pixel-brand svg { width: 32px; height: 32px; }
+.pixel-brand strong { font-size: 18px; font-weight: 650; }
+.pixel-home .top-actions { position: relative; top: auto; right: auto; gap: 6px; }
+.pixel-home .theme-toggle-anchor { gap: 6px; }
+.pixel-home .shortcut-help-button, .pixel-home .theme-toggle-button, .pixel-settings { display: grid; place-items: center; width: 35px; height: 35px; color: var(--ink); border: 0; border-radius: 5px; background: transparent; box-shadow: none; font-size: 16px; cursor: pointer; backdrop-filter: none; }
+.pixel-home .shortcut-help-button:hover, .pixel-home .theme-toggle-button:hover, .pixel-settings:hover { background: var(--surface); transform: none; }
+.pixel-home .add-link-btn { position: static; flex: 0 0 auto; width: auto; height: 36px; padding: 0 13px; gap: 8px; border-radius: 3px; border: 1px solid var(--line); background: transparent; color: var(--ink); box-shadow: none; font: 14px var(--home-font); }
+.pixel-home .add-link-btn span { font-size: 14px; }
+.pixel-home .add-link-btn i { font-size: 12px; }
+.pixel-home .add-link-btn:hover, .pixel-home .add-link-btn:hover i { background: var(--surface); transform: none; box-shadow: none; }
+.pixel-intro { position: relative; padding: 8px 24px 0; text-align: center; }
+.pixel-home .time-info { width: fit-content; margin: 0 auto; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.pixel-home .time-stack { gap: 11px; }
+.pixel-home .current-time { font: 400 90px/1 Consolas, "Courier New", monospace; font-variant-numeric: tabular-nums; letter-spacing: -5px; margin: 0; text-shadow: none; }
+.pixel-home .date-info { font: 11px/1.8 "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; max-width: 560px; }
+.pixel-home .home-search { position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; width: min(560px, 100%); height: 54px; margin: 22px auto 0; padding: 0 18px; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 3px; box-shadow: 0 3px 0 #30526514; text-align: left; font: 15px var(--home-font); cursor: pointer; }
+.pixel-home .home-search > i { color: var(--accent); font-size: 18px; }
+.pixel-home .home-search kbd { margin-left: auto; padding: 3px 7px; font: 12px var(--home-font); border: 1px solid var(--line); border-radius: 3px; }
+.pixel-home .home-search:hover { border-color: var(--accent); }
+.pixel-cloud { position: absolute; pointer-events: none; width: 110px; height: 25px; background: var(--cloud); box-shadow: 18px -13px 0 -1px var(--cloud), 38px -23px 0 -2px var(--cloud), 65px -9px 0 -1px var(--cloud); }
+.cloud-one { left: 14%; top: 89px; }
+.cloud-two { right: 16%; top: 136px; transform: scale(.75); }
+.pixel-home .tools-container { width: 100%; max-width: 1090px; margin: 0 auto; padding: 0 35px 62px; flex: none; }
+.pixel-categories { margin: 0 0 18px; }
+.pixel-home #category-menu { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 9px; list-style: none; }
+.pixel-home #category-menu li { display: flex; align-items: center; gap: 7px; padding: 8px 12px; min-height: 36px; color: var(--ink); font-size: 14px; border: 1px solid transparent; border-radius: 3px; cursor: pointer; white-space: nowrap; }
+.pixel-home #category-menu li > i { display: none; }
+.pixel-home #category-menu li.active { background: var(--surface); color: var(--accent); border-color: var(--line); font-weight: 600; }
+.pixel-home #category-menu li:hover { background: color-mix(in srgb, var(--surface) 65%, transparent); }
+.category-count { font-size: 12px; color: var(--muted); }
+.collection-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+.collection-header h1 { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.collection-count { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.collection-controls { display: flex; align-items: center; gap: 12px; }
+.manage-sites-btn { display: grid; place-items: center; width: 28px; height: 28px; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
+.manage-sites-btn:hover, .manage-sites-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--line); background: var(--surface); }
+.pixel-home.site-manage-mode .tool-item-edit-btn, .pixel-home.site-manage-mode .tool-item-delete-btn { opacity: 1; }
+.pixel-home .tools-grid { grid-template-columns: repeat(10, minmax(0,1fr)); gap: 18px 10px; }
+.pixel-home .tool-item { width: auto; min-width: 0; min-height: 77px; aspect-ratio: auto; padding: 0 4px 5px; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; animation: none; gap: 8px; justify-content: flex-start; transition: none; }
+.pixel-home .tool-item:hover { transform: none; background: transparent; box-shadow: none; }
+.tool-icon-tile { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 8px; background: var(--surface); box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 17%, transparent); }
+.pixel-home .tool-item[data-category="设计"] .tool-icon-tile { background: #e1e1f2; }
+.pixel-home .tool-item[data-category="工具"] .tool-icon-tile { background: #e1eef1; }
+.pixel-home .tool-item[data-category="学习"] .tool-icon-tile { background: #f3ebd5; }
+[data-theme="dark"] .pixel-home .tool-item .tool-icon-tile { background: var(--surface); }
+.pixel-home .tool-item:hover .tool-icon-tile { box-shadow: 2px 3px 0 var(--accent); }
+.pixel-home .tool-icon, .pixel-home .text-icon, .pixel-home .emoji-icon { width: 32px; height: 32px; margin: 0; border-radius: 3px; font-size: 28px; filter: none; transform: none; object-fit: contain; }
+.pixel-home .text-icon { background: var(--wash); color: var(--accent); font-size: 16px; }
+.tool-copy { width: 100%; min-width: 0; }
+.pixel-home .tool-name { margin: 0; text-align: center; font: 14px/1.5 var(--home-font); }
+.pixel-home .tool-domain { display: none; }
+.pixel-home .tool-item-hidden { opacity: 0; transform: none; }
+.pixel-home .tool-item-edit-btn, .pixel-home .tool-item-delete-btn { top: -4px; width: 21px; height: 21px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.pixel-home .tool-item-delete-btn { right: 8px; }
+.pixel-home .tool-item-edit-btn { right: 32px; }
+.pixel-home .tool-item:focus-within .tool-item-edit-btn, .pixel-home .tool-item:focus-within .tool-item-delete-btn { opacity: 1; }
+.collection-tip { text-align: center; margin-top: 28px; font-size: 13px; color: var(--muted); }
+.collection-tip > span { color: var(--accent); font-size: 15px; margin-right: 5px; }
+.pixel-home .empty-state { grid-column: 1 / -1; border: 1px dashed var(--line); border-radius: 5px; padding: 35px; color: var(--muted); text-align: center; font-size: 12px; }
+.skip-link { position: fixed; top: -60px; left: 20px; z-index: 3000; padding: 10px 16px; background: var(--surface); border: 1px solid var(--accent); border-radius: 5px; }
+.skip-link:focus { top: 12px; }
+.pixel-home :where(button, a, input, select, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* 搜索焦点由圆角外框承载，避免输入框叠出第二圈方形轮廓。 */
+.pixel-home .quick-search-input:focus-visible { outline: none; }
+.pixel-home .garden-target:focus-visible { outline: none; }
+.pixel-home.time-focus-mode .pixel-header, .pixel-home.time-focus-mode .pixel-ground, .pixel-home.time-focus-mode .home-search, .pixel-home.time-focus-mode #garden-scene-slot { display: none; }
+.pixel-home.time-focus-mode .pixel-intro { height: 100vh; padding: 0; display: grid; place-items: center; }
+.pixel-home.time-focus-mode .time-info { max-width: calc(100% - 32px); border: 0; border-radius: 0; box-shadow: none; background: transparent; backdrop-filter: none; }
+.pixel-home.time-focus-mode .current-time { font-size: clamp(80px, 12vw, 150px); text-shadow: none; }
+.pixel-home.time-focus-mode .date-info { font-size: 13px; }
+@media (max-width: 1000px) {
+  .pixel-home .tools-grid { grid-template-columns: repeat(6,minmax(0,1fr)); }
+}
+@media (max-width: 600px) {
+  .pixel-header { padding: 18px 20px; gap: 8px; }
+  .pixel-brand { gap: 7px; }
+  .pixel-brand strong { font-size: 16px; }
+  .pixel-brand svg { width: 27px; height: 27px; }
+  .pixel-home .top-actions, .pixel-home .theme-toggle-anchor { gap: 2px; }
+  .pixel-home .shortcut-help-button { display: none; }
+  .pixel-home .add-link-btn { width: 34px; height: 34px; padding: 0; }
+  .pixel-home .add-link-btn span { display: none; }
+  .pixel-intro { padding: 8px 20px 0; }
+  .pixel-home .current-time { font-size: 69px; letter-spacing: -4px; }
+  .pixel-home .date-info { font-size: 10px; padding-inline: 8px; }
+  .pixel-home .home-search { margin-top: 20px; font-size: 14px; }
+  .pixel-home .home-search kbd { display: none; }
+  .pixel-cloud { opacity: .55; }
+  .cloud-one { left: -40px; top: 79px; transform: scale(.5); }
+  .cloud-two { right: -10px; top: 53px; transform: scale(.5); }
+  .pixel-home .garden-panel { padding: 0 20px; }
+  .pixel-home .garden-notebook { right: 20px; }
+  .pixel-home .tools-container { padding: 0 20px 42px; }
+  .pixel-categories { margin: 4px 0 18px; overflow-x: auto; }
+  .pixel-home #category-menu { flex-wrap: nowrap; width: max-content; min-width: 100%; justify-content: center; gap: 4px; }
+  .pixel-home #category-menu li { padding: 7px 10px; font-size: 13px; }
+  .category-count { display: none; }
+  .pixel-home .tools-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px 8px; }
+  .pixel-home .tool-item { gap: 8px; }
+  .tool-icon-tile { width: 45px; height: 45px; }
+  .pixel-home .tool-name { font-size: 13px; }
+  .pixel-home .tool-item-edit-btn, .pixel-home .tool-item-delete-btn { width: 22px; height: 22px; }
+  .pixel-home:not(.site-manage-mode) .tool-item-edit-btn, .pixel-home:not(.site-manage-mode) .tool-item-delete-btn { opacity: 0; pointer-events: none; visibility: hidden; }
+  .pixel-home .tool-item-delete-btn { right: 0; }
+  .pixel-home .tool-item-edit-btn { right: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pixel-home *, .pixel-home *::before, .pixel-home *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* 统一页面文字字体，图标字体保持独立。 */
+.pixel-home :where(h1, h2, h3, p, a, span, strong, small, div, label, legend, li, button, input, select, textarea, kbd),
+.pixel-home .current-time, .pixel-home .date-info, .pixel-home .garden-ledger strong, .pixel-home .garden-shop-balance strong {
+  font-family: var(--home-font) !important;
+}
+.pixel-home .tool-name, .pixel-home #category-menu li,
+.pixel-home .add-link-btn, .pixel-home .add-link-btn span,
+.pixel-home .garden-message, .pixel-home .garden-pocket {
+  font-size: var(--navigation-text-size, 16px);
+}
+.pixel-home .home-search, .pixel-home .quick-search-item-name { font-size: calc(var(--navigation-text-size, 16px) + 1px); }
+.pixel-home .quick-search-input { font-size: calc(var(--navigation-text-size, 16px) + 2px); }
+.pixel-home .quick-search-hint, .pixel-home .quick-search-item-meta,
+.pixel-home .collection-tip, .pixel-home .collection-count { font-size: calc(var(--navigation-text-size, 16px) - 2px); }
+.pixel-home .pixel-brand strong, .pixel-home .collection-header h1,
+.pixel-home :where(.modal-header h2, .garden-notebook-heading h2, .dialog-heading h2, .garden-shop-copy h3) {
+  font-family: var(--navigation-heading-font, var(--home-font));
+}
+.pixel-home .collection-header h1 { font-size: calc(var(--navigation-text-size, 16px) + 2px); }
+.pixel-home .tool-name { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.pixel-home .tool-item { min-height: 88px; }

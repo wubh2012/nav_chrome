@@ -987,6 +987,14 @@
         showStatus('测试模式已启用', 'success', elements.testModeStatus);
       } else {
         showStatus('测试模式已关闭', 'success', elements.testModeStatus);
+        try {
+          chrome.runtime.sendMessage({
+            type: 'FLUSH_PENDING_SORT_SYNC',
+            reason: 'test-mode-disabled'
+          }, () => { void chrome.runtime.lastError; });
+        } catch (_error) {
+          // The background worker will recover persisted work on its next start.
+        }
       }
     } catch (error) {
       console.error('[Options] 切换测试模式失败:', error);

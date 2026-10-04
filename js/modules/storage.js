@@ -9,6 +9,7 @@ const Storage = (function() {
   const KEYS = {
     NAV_DATA: 'chromeNav_navData',
     NAV_CATEGORIES: 'chromeNav_categories',
+    NAV_REVISION: 'chromeNav_navRevision',
     DATE_INFO: 'chromeNav_dateInfo',
     FEISHU_CONFIG: 'chromeNav_feishuConfig',
     THEME_PREFERENCE: 'chromeNav_theme',
@@ -20,6 +21,30 @@ const Storage = (function() {
 
   // 缓存有效期（7天）
   const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
+  const SCOPED_NAV_PREFIX = 'chromeNav_scopedNav_';
+
+  function getNavKeys(dataScope) {
+    if (!dataScope) return {
+      data: KEYS.NAV_DATA,
+      categories: KEYS.NAV_CATEGORIES,
+      dateInfo: KEYS.DATE_INFO,
+      syncTime: KEYS.SYNC_TIME,
+      revision: KEYS.NAV_REVISION
+    };
+    let hash = 2166136261;
+    for (const character of String(dataScope)) {
+      hash ^= character.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    const prefix = `${SCOPED_NAV_PREFIX}${(hash >>> 0).toString(36)}`;
+    return {
+      data: `${prefix}_data`,
+      categories: `${prefix}_categories`,
+      dateInfo: `${prefix}_dateInfo`,
+      syncTime: `${prefix}_syncTime`,
+      revision: `${prefix}_revision`
+    };
+  }
 
   /**
    * 异步获取存储数据
@@ -114,7 +139,8 @@ const Storage = (function() {
    * @returns {Promise<void>}
    */
   async function saveNavData(data, categories, dateInfo, options = {}) {
-    const preservedSyncTime = options.preserveSyncTime ? await getSyncTime() : null;
+    const keys = getNavKeys(options.dataScope);
+    const preservedSyncTime = options.preserveSyncTime ? await getSyncTime(options.dataScope) : null;
     const nextSyncTime = typeof options.syncTime === 'number'
       ? options.syncTime
       : (preservedSyncTime || Date.now());
@@ -124,38 +150,64 @@ const Storage = (function() {
       dateInfo: dateInfo,
       timestamp: Date.now()
     };
-    await set({
-      [KEYS.NAV_DATA]: cacheData.data,
-      [KEYS.NAV_CATEGORIES]: cacheData.categories,
-      [KEYS.DATE_INFO]: cacheData.dateInfo,
-      [KEYS.SYNC_TIME]: nextSyncTime
-    });
+    const revisionResult = options.nextRevision === undefined
+      ? await get(keys.revision)
+      : null;
+    const nextRevision = options.nextRevision === undefined
+      ? Number(revisionResult?.[keys.revision] || 0) + 1
+      : Number(options.nextRevision);
+    const storedValues = {
+      [keys.data]: cacheData.data,
+      [keys.categories]: cacheData.categories,
+      [keys.dateInfo]: cacheData.dateInfo,
+      [keys.syncTime]: nextSyncTime,
+      [keys.revision]: nextRevision
+    };
+
+    if (options.pendingSortSync !== undefined) {
+      storedValues[KEYS.PENDING_SORT_SYNC] = await updatePendingSortScopes(
+        options.pendingSortSync,
+        options.dataScope
+      );
+    }
+    await set(storedValues);
     console.log('[Storage] 导航数据已保存');
+    return { revision: nextRevision };
   }
 
   /**
    * 加载导航数据
    * @returns {Promise<Object|null>} 导航数据对象，或 null（无缓存）
    */
-  async function loadNavData() {
+  async function loadNavData(dataScope = null) {
     try {
-      const result = await get([KEYS.NAV_DATA, KEYS.NAV_CATEGORIES, KEYS.DATE_INFO, KEYS.SYNC_TIME]);
+      const keys = getNavKeys(dataScope);
+      const fallbackKeys = dataScope && dataScope !== 'test-mode'
+        ? [KEYS.NAV_DATA, KEYS.NAV_CATEGORIES, KEYS.DATE_INFO, KEYS.SYNC_TIME, KEYS.NAV_REVISION]
+        : [];
+      const result = await get([...Object.values(keys), ...fallbackKeys]);
+      const sourceKeys = result[keys.data] && result[keys.categories]
+        ? keys
+        : fallbackKeys.length && result[KEYS.NAV_DATA] && result[KEYS.NAV_CATEGORIES]
+          ? getNavKeys(null)
+          : keys;
 
-      if (!result[KEYS.NAV_DATA] || !result[KEYS.NAV_CATEGORIES]) {
+      if (!result[sourceKeys.data] || !result[sourceKeys.categories]) {
         return null;
       }
 
       // 检查缓存是否过期
-      const syncTime = result[KEYS.SYNC_TIME] || 0;
+      const syncTime = result[sourceKeys.syncTime] || 0;
       if (Date.now() - syncTime > CACHE_DURATION) {
         console.log('[Storage] 缓存已过期');
         return null;
       }
 
       return {
-        data: result[KEYS.NAV_DATA],
-        categories: result[KEYS.NAV_CATEGORIES],
-        dateInfo: result[KEYS.DATE_INFO],
+        data: result[sourceKeys.data],
+        categories: result[sourceKeys.categories],
+        dateInfo: result[sourceKeys.dateInfo],
+        revision: Number(result[sourceKeys.revision] || 0),
         fromCache: true
       };
     } catch (error) {
@@ -164,17 +216,93 @@ const Storage = (function() {
     }
   }
 
+  async function getNavDataRevision(dataScope = null) {
+    try {
+      const revisionKey = getNavKeys(dataScope).revision;
+      const result = await get(revisionKey);
+      if (result[revisionKey] !== undefined) return Number(result[revisionKey] || 0);
+      if (dataScope && dataScope !== 'test-mode') {
+        const legacy = await get(KEYS.NAV_REVISION);
+        return Number(legacy[KEYS.NAV_REVISION] || 0);
+      }
+      return 0;
+    } catch (_error) {
+      return 0;
+    }
+  }
+
+  function getNavDataRevisionKey(dataScope = null) {
+    return getNavKeys(dataScope).revision;
+  }
+
+  async function commitNavData(data, categories, dateInfo, options = {}) {
+    const request = {
+      type: 'COMMIT_NAV_DATA',
+      data,
+      categories: Array.isArray(categories) ? categories : [],
+      dateInfo: dateInfo || null,
+      expectedRevision: Number(options.expectedRevision || 0),
+      preserveSyncTime: options.preserveSyncTime !== false,
+      pendingSortSync: options.pendingSortSync,
+      dataScope: options.dataScope
+    };
+
+    if (options.localOnly || typeof chrome.runtime?.sendMessage !== 'function') {
+      const actualRevision = await getNavDataRevision(options.dataScope);
+      if (actualRevision !== request.expectedRevision) {
+        return { success: false, conflict: true, current: await loadNavData(options.dataScope) };
+      }
+      const saved = await saveNavData(data, categories, dateInfo, {
+        preserveSyncTime: request.preserveSyncTime,
+        pendingSortSync: options.pendingSortSync,
+        dataScope: options.dataScope,
+        nextRevision: actualRevision + 1
+      });
+      return { success: true, revision: saved.revision };
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage(request, (response) => {
+          const runtimeError = chrome.runtime.lastError;
+          if (runtimeError) {
+            reject(new Error(runtimeError.message || '无法提交导航数据'));
+          } else if (!response) {
+            reject(new Error('后台未返回导航数据提交结果'));
+          } else {
+            resolve(response);
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
   /**
    * 获取缓存的同步时间
    * @returns {Promise<number|null>}
    */
-  async function getSyncTime() {
+  async function getSyncTime(dataScope = null) {
     try {
-      const result = await get(KEYS.SYNC_TIME);
-      return result[KEYS.SYNC_TIME] || null;
+      const scope = dataScope === null ? await getCurrentNavDataScope() : dataScope;
+      const syncTimeKey = getNavKeys(scope).syncTime;
+      const result = await get(syncTimeKey);
+      if (result[syncTimeKey]) return result[syncTimeKey];
+      if (scope && scope !== 'test-mode') {
+        const legacy = await get(KEYS.SYNC_TIME);
+        return legacy[KEYS.SYNC_TIME] || null;
+      }
+      return null;
     } catch (error) {
       return null;
     }
+  }
+
+  async function getCurrentNavDataScope() {
+    if (await getTestMode()) return 'test-mode';
+    const config = await loadFeishuConfig();
+    return `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
   }
 
   // ==================== 飞书配置操作 ====================
@@ -274,28 +402,32 @@ const Storage = (function() {
    * @param {Object|null} pendingSort
    * @returns {Promise<void>}
    */
-  async function savePendingSortSync(pendingSort) {
+  async function savePendingSortSync(pendingSort, dataScope = pendingSort?.dataScope) {
     if (!pendingSort) {
-      await clearPendingSortSync();
+      await clearPendingSortSync(dataScope || null);
       return;
     }
-
-    await set({
-      [KEYS.PENDING_SORT_SYNC]: {
-        ...pendingSort,
-        updatedAt: pendingSort.updatedAt || Date.now()
-      }
-    });
+    const updated = await updatePendingSortScopes(pendingSort, dataScope);
+    await set({ [KEYS.PENDING_SORT_SYNC]: updated });
   }
 
   /**
    * 获取待同步拖拽排序。
    * @returns {Promise<Object|null>}
    */
-  async function loadPendingSortSync() {
+  async function loadPendingSortSync(dataScope = null) {
     try {
       const result = await get(KEYS.PENDING_SORT_SYNC);
-      return result[KEYS.PENDING_SORT_SYNC] || null;
+      const stored = result[KEYS.PENDING_SORT_SYNC] || null;
+      const scopes = normalizePendingSortScopes(stored);
+      if (dataScope && scopes[dataScope]) return scopes[dataScope];
+      if (dataScope && scopes.__legacy__) {
+        scopes[dataScope] = { ...scopes.__legacy__, dataScope };
+        delete scopes.__legacy__;
+        await set({ [KEYS.PENDING_SORT_SYNC]: { version: 2, scopes } });
+        return scopes[dataScope];
+      }
+      return Object.values(scopes)[0] || null;
     } catch (error) {
       return null;
     }
@@ -305,8 +437,41 @@ const Storage = (function() {
    * 清除待同步拖拽排序。
    * @returns {Promise<void>}
    */
-  async function clearPendingSortSync() {
-    await remove(KEYS.PENDING_SORT_SYNC);
+  async function clearPendingSortSync(dataScope = null) {
+    if (!dataScope) {
+      await remove(KEYS.PENDING_SORT_SYNC);
+      return;
+    }
+    const result = await get(KEYS.PENDING_SORT_SYNC);
+    const scopes = normalizePendingSortScopes(result[KEYS.PENDING_SORT_SYNC]);
+    delete scopes[dataScope];
+    if (Object.keys(scopes).length === 0) await remove(KEYS.PENDING_SORT_SYNC);
+    else await set({ [KEYS.PENDING_SORT_SYNC]: { version: 2, scopes } });
+  }
+
+  async function loadAllPendingSortSyncs() {
+    try {
+      const result = await get(KEYS.PENDING_SORT_SYNC);
+      return normalizePendingSortScopes(result[KEYS.PENDING_SORT_SYNC]);
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function normalizePendingSortScopes(value) {
+    if (!value || typeof value !== 'object') return {};
+    if (value.version === 2 && value.scopes && typeof value.scopes === 'object') return { ...value.scopes };
+    if (Array.isArray(value.updates)) return { [value.dataScope || '__legacy__']: value };
+    return {};
+  }
+
+  async function updatePendingSortScopes(payload, dataScope) {
+    const result = await get(KEYS.PENDING_SORT_SYNC);
+    const scopes = normalizePendingSortScopes(result[KEYS.PENDING_SORT_SYNC]);
+    const scope = String(dataScope || payload?.dataScope || '__legacy__');
+    if (!payload) delete scopes[scope];
+    else scopes[scope] = { ...payload, dataScope: scope, updatedAt: payload.updatedAt || Date.now() };
+    return Object.keys(scopes).length > 0 ? { version: 2, scopes } : null;
   }
 
   // ==================== 测试模式操作 ====================
@@ -340,14 +505,16 @@ const Storage = (function() {
    * @returns {Promise<void>}
    */
   async function clearNavCache() {
+    const all = await get(null);
+    const scopedKeys = Object.keys(all).filter((key) => key.startsWith(SCOPED_NAV_PREFIX));
     await remove([
       KEYS.NAV_DATA,
       KEYS.NAV_CATEGORIES,
       KEYS.DATE_INFO,
       KEYS.SYNC_TIME,
       KEYS.SYNC_STATUS,
-      KEYS.PENDING_SORT_SYNC
-    ]);
+      KEYS.NAV_REVISION
+    ].concat(scopedKeys));
     console.log('[Storage] 导航缓存已清除');
   }
 
@@ -374,8 +541,11 @@ const Storage = (function() {
 
     // 导航数据
     saveNavData,
+    commitNavData,
     loadNavData,
+    getNavDataRevision,
     getSyncTime,
+    getNavDataRevisionKey,
     clearNavCache,
 
     // 飞书配置
@@ -393,6 +563,7 @@ const Storage = (function() {
     // 待同步排序
     savePendingSortSync,
     loadPendingSortSync,
+    loadAllPendingSortSyncs,
     clearPendingSortSync,
 
     // 测试模式

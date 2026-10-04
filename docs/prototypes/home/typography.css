@@ -1,5 +1,5 @@
 /* 临时字体对比专用；不由正式首页加载，不进入扩展打包。 */
-@font-face { font-family: TypeWenKai; src: url('/css/fonts/wenkai-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: TypeWenKai; src: url('/docs/prototypes/home/assets/wenkai-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: TypeKuaiLe; src: url('/css/fonts/zcool-kuaile.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: TypePixel; src: url('/css/fonts/fusion-pixel.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 [data-font-variant="A"] { --home-font: TypeWenKai, "Microsoft YaHei", sans-serif; }

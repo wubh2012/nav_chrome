@@ -1,6 +1,6 @@
 /**
  * 拖拽排序管理器
- * 仅支持同分类内拖拽，本地立即生效，远程排序延后同步。
+ * 整理模式下支持全局及分类内拖拽，本地立即生效，远程排序延后同步。
  */
 const DragSortManager = (function() {
   'use strict';
@@ -12,6 +12,11 @@ const DragSortManager = (function() {
   let toolsGrid = null;
   let draggedCard = null;
   let beforeDragSnapshot = null;
+  let initialCardOrder = [];
+  let dropHandled = false;
+  let dragCategory = null;
+  let suppressClickUntil = 0;
+  let isSavingOrder = false;
   let pendingSyncPayload = null;
   let syncTimer = null;
   let retryTimer = null;
@@ -40,11 +45,18 @@ const DragSortManager = (function() {
    */
   function bindRendererEvents() {
     document.addEventListener('chromeNav:toolsRendered', () => {
+      cancelActiveDrag(false);
       refreshDraggableState(false);
     });
 
     document.addEventListener('chromeNav:categoryChanged', () => {
+      cancelActiveDrag(false);
       refreshDraggableState(true);
+    });
+
+    document.body.addEventListener('chromeNav:siteManageModeChanged', () => {
+      cancelActiveDrag(true);
+      refreshDraggableState(false);
     });
   }
 
@@ -71,13 +83,16 @@ const DragSortManager = (function() {
     toolsGrid.addEventListener('dragover', handleDragOver);
     toolsGrid.addEventListener('drop', handleDrop);
     toolsGrid.addEventListener('dragend', cleanupDragState);
+    toolsGrid.addEventListener('click', suppressPostDragClick, true);
   }
 
   /**
    * 恢复待同步排序并续传。
    */
   async function restorePendingSync() {
-    const pending = await Storage.loadPendingSortSync();
+    const testMode = await Storage.getTestMode();
+    const config = testMode ? null : await Storage.loadFeishuConfig();
+    const pending = await Storage.loadPendingSortSync(getDataScope(config, testMode));
     if (!pending) {
       return;
     }
@@ -100,7 +115,10 @@ const DragSortManager = (function() {
 
     const category = UIRenderer.getCurrentCategory();
     const cards = getCards();
-    const canDrag = category !== 'all' && cards.length > 1;
+    const manageMode = document.body.classList.contains('site-manage-mode');
+    const canDrag = manageMode && !isSavingOrder
+      && !document.body.classList.contains('link-manager-saving')
+      && cards.length > 1;
 
     cards.forEach((card) => {
       const recordId = card.getAttribute('data-id');
@@ -112,9 +130,7 @@ const DragSortManager = (function() {
     toolsGrid.classList.toggle('drag-enabled', canDrag);
     toolsGrid.classList.toggle('drag-disabled', !canDrag);
 
-    if (showHint && category === 'all') {
-      UIRenderer.showSyncStatus('请进入具体分类后拖拽排序', 'info');
-    }
+    if (showHint && category === 'all' && !manageMode) return;
   }
 
   /**
@@ -131,13 +147,18 @@ const DragSortManager = (function() {
    */
   function handleDragStart(event) {
     const card = event.target.closest('.tool-item');
-    if (!card || card.getAttribute('draggable') !== 'true') {
+    const startedFromAction = event.target.closest('button, .tool-item-edit-btn, .tool-item-delete-btn');
+    if (!card || startedFromAction || !document.body.classList.contains('site-manage-mode')
+      || card.getAttribute('draggable') !== 'true') {
       event.preventDefault();
       return;
     }
 
     draggedCard = card;
     beforeDragSnapshot = UIRenderer.getNavDataSnapshot();
+    initialCardOrder = getCards();
+    dragCategory = UIRenderer.getCurrentCategory();
+    dropHandled = false;
 
     draggedCard.classList.add('dragging');
     toolsGrid.classList.add('dragging-active');
@@ -201,16 +222,30 @@ const DragSortManager = (function() {
     if (!draggedCard) return;
 
     event.preventDefault();
-
     const category = UIRenderer.getCurrentCategory();
-    const orderedIds = getCards()
+    if (category !== dragCategory || !document.body.classList.contains('site-manage-mode')) {
+      cancelActiveDrag(true);
+      return;
+    }
+
+    const visibleIds = getCards()
       .map((card) => card.getAttribute('data-id'))
       .filter(Boolean);
 
+    dropHandled = true;
+    suppressClickUntil = Date.now() + 500;
     cleanupDragState();
-    persistOrder(category, orderedIds).catch((error) => {
+    persistOrder(category, visibleIds, beforeDragSnapshot).catch((error) => {
       console.error('[DragSortManager] 保存排序失败:', error);
       UIRenderer.showSyncStatus(error.message || '排序保存失败', 'error');
+    }).finally(() => {
+      beforeDragSnapshot = null;
+      initialCardOrder = [];
+      dragCategory = null;
+      dropHandled = false;
+      isSavingOrder = false;
+      document.body.classList.remove('drag-sort-saving');
+      refreshDraggableState(false);
     });
   }
 
@@ -219,73 +254,69 @@ const DragSortManager = (function() {
    * @param {string} category
    * @param {Array<string>} orderedIds
    */
-  async function persistOrder(category, orderedIds) {
-    if (!category || category === 'all') {
-      beforeDragSnapshot = null;
-      return;
-    }
+  async function persistOrder(category, visibleIds, snapshot) {
+    if (!category || !snapshot) return;
+    const orderedBefore = getVisibleGlobalIds(snapshot.data);
+    const currentGlobalIds = orderedBefore;
+    const result = category === 'all'
+      ? DragSortCore.reorderNavDataByGlobalOrder(snapshot.data, visibleIds, SORT_STEP)
+      : DragSortCore.reorderCategoryWithinGlobalOrder(snapshot.data, category, visibleIds, currentGlobalIds, SORT_STEP);
 
-    const safeSnapshot = beforeDragSnapshot || UIRenderer.getNavDataSnapshot();
-    const previousIds = DragSortCore.extractOrderedIds(safeSnapshot.data[category] || []);
+    if (DragSortCore.isSameOrder(orderedBefore, result.orderedIds)) return;
 
-    if (DragSortCore.isSameOrder(previousIds, orderedIds)) {
-      beforeDragSnapshot = null;
-      return;
-    }
-
-    const currentSnapshot = UIRenderer.getNavDataSnapshot();
-    const reorderResult = DragSortCore.reorderCategoryItems(
-      currentSnapshot.data[category] || [],
-      orderedIds,
-      SORT_STEP
-    );
-
-    currentSnapshot.data[category] = reorderResult.reorderedItems;
-    UIRenderer.updateCategoryOrder(category, reorderResult.reorderedItems);
-    beforeDragSnapshot = null;
+    isSavingOrder = true;
+    document.body.classList.add('drag-sort-saving');
+    refreshDraggableState(false);
+    const testMode = await Storage.getTestMode();
+    const config = testMode ? null : await Storage.loadFeishuConfig();
+    const scope = getDataScope(config, testMode);
+    const payload = !testMode && result.updates.length > 0
+      ? DragSortCore.createGlobalPendingSortPayload(result.orderedIds, result.updates, scope)
+      : null;
 
     try {
-      const testMode = await Storage.getTestMode();
-
-      await Storage.saveNavData(
-        currentSnapshot.data,
-        currentSnapshot.categories,
-        currentSnapshot.dateInfo,
-        { preserveSyncTime: true }
+      const saved = await Storage.commitNavData(
+        result.data, snapshot.categories, snapshot.dateInfo,
+        { expectedRevision: snapshot.revision, pendingSortSync: payload, dataScope: scope }
       );
-
-      if (testMode || reorderResult.updates.length === 0) {
-        await clearPendingSyncState();
-        UIRenderer.showSyncStatus('排序已本地保存', 'info');
-        return;
+      if (!saved.success) {
+        if (saved.conflict && saved.current) applyCommittedState(saved.current);
+        throw new Error(saved.conflict ? '网站列表已在其他标签页更新，请重试排序' : '本地排序保存失败');
       }
 
-      const payload = DragSortCore.createPendingSortPayload(
-        category,
-        reorderResult.orderedIds,
-        reorderResult.updates
-      );
-      await queueRemoteSync(payload);
-      UIRenderer.showSyncStatus('排序已本地保存，5 秒后同步到飞书', 'info');
+      applyCommittedState({
+        data: result.data,
+        categories: snapshot.categories,
+        dateInfo: snapshot.dateInfo,
+        revision: saved.revision
+      });
+
+      if (payload) {
+        pendingSyncPayload = payload;
+        scheduleRemoteSync(REMOTE_SYNC_DEBOUNCE_MS);
+        UIRenderer.showSyncStatus('排序已保存，5 秒后同步到飞书', 'info');
+      } else {
+        UIRenderer.showSyncStatus('排序已保存', 'success');
+      }
     } catch (error) {
-      console.error('[DragSortManager] 本地排序保存失败:', error);
-
-      if (safeSnapshot) {
-        UIRenderer.setNavDataAndRefresh(
-          safeSnapshot.data,
-          safeSnapshot.categories,
-          safeSnapshot.dateInfo
-        );
-        await Storage.saveNavData(
-          safeSnapshot.data,
-          safeSnapshot.categories,
-          safeSnapshot.dateInfo,
-          { preserveSyncTime: true }
-        );
+      if (!(error && error.committedConflict)) {
+        const latest = await Storage.loadNavData(scope);
+        if (latest) applyCommittedState(latest);
       }
-
       throw error;
     }
+  }
+
+  function getVisibleGlobalIds(data) {
+    return UIRendererCore.flattenToolsByCategoryPriority(data).map((item) => item.id).filter(Boolean);
+  }
+
+  function getDataScope(config, testMode) {
+    return testMode ? 'test-mode' : `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
+  }
+
+  function applyCommittedState(snapshot) {
+    UIRenderer.setNavDataAndRefresh(snapshot.data, snapshot.categories, snapshot.dateInfo, snapshot.revision);
   }
 
   /**
@@ -340,79 +371,31 @@ const DragSortManager = (function() {
    * @returns {Promise<Object>}
    */
   async function flushPendingRemoteSync(reason = 'manual') {
-    if (isRemoteSyncing) {
-      return { success: false, queued: true };
-    }
-
-    const payload = pendingSyncPayload || await Storage.loadPendingSortSync();
-    if (!payload) {
-      pendingSyncPayload = null;
-      return { success: true, skipped: true };
-    }
-
-    if (!Array.isArray(payload.updates) || payload.updates.length === 0) {
-      await clearPendingSyncState();
-      return { success: true, skipped: true };
-    }
-
-    const testMode = await Storage.getTestMode();
-    if (testMode) {
-      await clearPendingSyncState();
-      return { success: true, skipped: true };
-    }
+    const payload = pendingSyncPayload;
+    if (!payload || isRemoteSyncing) return { success: true, skipped: true };
 
     isRemoteSyncing = true;
     setRemoteSyncState(true);
-
     try {
-      pendingSyncPayload = payload;
-      await Storage.savePendingSortSync(DragSortCore.markPendingSortSyncing(payload));
-
-      if (reason !== 'pagehide' && reason !== 'visibilitychange') {
-        UIRenderer.showSyncStatus('正在后台同步排序...', 'info');
-      }
-
-      const batchResult = await FeishuAPI.batchUpdateRecordSorts(payload.updates);
-      const storedPending = await Storage.loadPendingSortSync();
-      const hasNewerPending = storedPending && !isSamePendingPayload(storedPending, payload);
-
-      if (!hasNewerPending) {
-        await clearPendingSyncState();
-      } else {
-        pendingSyncPayload = storedPending;
-      }
-
-      if (reason !== 'pagehide' && reason !== 'visibilitychange') {
-        if (batchResult?.skippedCount > 0) {
-          UIRenderer.showSyncStatus(`排序已同步（跳过 ${batchResult.skippedCount} 条无效记录）`, 'info');
-        } else {
-          UIRenderer.showSyncStatus('排序已同步到飞书', 'success');
-        }
-      }
-
-      if (hasNewerPending || needsImmediateResync) {
-        needsImmediateResync = false;
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: 'FLUSH_PENDING_SORT_SYNC', reason }, (result) => {
+          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          else resolve(result || { success: false, error: '后台未返回同步结果' });
+        });
+      });
+      const latest = await Storage.loadPendingSortSync(payload.dataScope);
+      if (response.success && !latest) {
+        clearLocalPendingMarkers();
+        UIRenderer.showSyncStatus('排序已同步到飞书', 'success');
+      } else if (latest && !isSamePendingPayload(latest, payload)) {
+        pendingSyncPayload = latest;
         scheduleRemoteSync(0);
+      } else if (!response.success) {
+        UIRenderer.showSyncStatus('本地已保存，飞书同步将在后台重试', 'error');
       }
-
-      return { success: true, batchResult };
+      return response;
     } catch (error) {
-      console.error('[DragSortManager] 远程排序同步失败:', error);
-
-      const storedPending = await Storage.loadPendingSortSync();
-      const hasNewerPending = storedPending && !isSamePendingPayload(storedPending, payload);
-
-      if (!hasNewerPending) {
-        const failedPayload = DragSortCore.markPendingSortFailure(payload, error.message);
-        pendingSyncPayload = failedPayload;
-        await Storage.savePendingSortSync(failedPayload);
-        scheduleRetry();
-      } else {
-        pendingSyncPayload = storedPending;
-        scheduleRemoteSync(0);
-      }
-
-      UIRenderer.showSyncStatus('本地已保存，远程同步失败，将重试', 'error');
+      UIRenderer.showSyncStatus('本地已保存，飞书同步将在后台重试', 'error');
       return { success: false, error };
     } finally {
       isRemoteSyncing = false;
@@ -454,12 +437,7 @@ const DragSortManager = (function() {
    * @returns {boolean}
    */
   function isSamePendingPayload(left, right) {
-    if (!left || !right) {
-      return false;
-    }
-
-    return String(left.category || '') === String(right.category || '')
-      && Number(left.updatedAt || 0) === Number(right.updatedAt || 0);
+    return DragSortCore.isSamePendingSortPayload(left, right);
   }
 
   /**
@@ -497,11 +475,38 @@ const DragSortManager = (function() {
     if (draggedCard) {
       draggedCard.classList.remove('dragging');
     }
+    if (!dropHandled && initialCardOrder.length > 0) restoreCardOrder();
     draggedCard = null;
     clearDragOverStyles();
     if (toolsGrid) {
       toolsGrid.classList.remove('dragging-active');
     }
+  }
+
+  function restoreCardOrder() {
+    if (!toolsGrid || typeof toolsGrid.appendChild !== 'function') return;
+    initialCardOrder.forEach((card) => {
+      if (card?.parentNode === toolsGrid || card?.parentElement === toolsGrid) toolsGrid.appendChild(card);
+    });
+  }
+
+  function cancelActiveDrag(restoreOrder) {
+    if (!draggedCard) return;
+    if (restoreOrder) restoreCardOrder();
+    dropHandled = true;
+    cleanupDragState();
+    dropHandled = false;
+    beforeDragSnapshot = null;
+    initialCardOrder = [];
+    dragCategory = null;
+  }
+
+  function suppressPostDragClick(event) {
+    if (Date.now() >= suppressClickUntil) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    suppressClickUntil = 0;
   }
 
   /**

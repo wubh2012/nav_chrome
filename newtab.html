@@ -32,10 +32,11 @@
   <link rel="stylesheet" href="css/typography.css">
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/pixel-garden.css">
+  <link rel="stylesheet" href="css/wood-home.css">
 
 </head>
 
-<body class="pixel-home">
+<body class="pixel-home wooden-home">
   <a class="skip-link" href="#home-search-btn">跳到搜索</a>
   <div class="artdeco-bg" aria-hidden="true"><div class="background-image-layer"></div><div class="background-overlay-layer"></div></div>
   <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite"><span>按 Ctrl+F 快速搜索，点击键盘查看快捷键</span></div>
@@ -56,7 +57,6 @@
                 <li><span><kbd>↑</kbd><kbd>↓</kbd></span><strong>切换结果</strong></li>
                 <li><span><kbd>Enter</kbd></span><strong>打开结果</strong></li>
                 <li><span><kbd>Esc</kbd></span><strong>关闭搜索</strong></li>
-                <li><span><kbd>Shift</kbd><kbd>滚轮</kbd></span><strong>切换分类</strong></li>
 
                 <li><span><kbd>双击时间</kbd></span><strong>时间聚焦</strong></li>
               </ul>
@@ -77,8 +77,26 @@
       <div class="pixel-ground">
         <div id="garden-panel-slot"></div>
         <section class="tools-container">
-          <nav class="pixel-categories" aria-label="网站分类"><ul id="category-menu"></ul></nav>
-          <div class="collection-header"><h1 id="collection-title">我的网站果园</h1><div class="collection-controls"><span id="collection-count" class="collection-count"></span><button id="manage-sites-btn" class="manage-sites-btn" aria-label="整理网站" aria-pressed="false" title="整理网站"><i class="bi bi-pencil" aria-hidden="true"></i></button></div></div>
+<div class="orchard-leaves" aria-hidden="true">
+            <span style="--leaf-x:8px;--leaf-y:58px;--leaf-turn:0deg"></span>
+            <span style="--leaf-x:calc(100% - 24px);--leaf-y:70px;--leaf-turn:90deg"></span>
+            <span style="--leaf-x:4px;--leaf-y:14%;--leaf-turn:270deg"></span>
+            <span style="--leaf-x:calc(100% - 20px);--leaf-y:19%;--leaf-turn:0deg"></span>
+            <span style="--leaf-x:12px;--leaf-y:25%;--leaf-turn:90deg"></span>
+            <span style="--leaf-x:calc(100% - 27px);--leaf-y:31%;--leaf-turn:180deg"></span>
+            <span style="--leaf-x:5px;--leaf-y:38%;--leaf-turn:0deg"></span>
+            <span style="--leaf-x:calc(100% - 20px);--leaf-y:44%;--leaf-turn:270deg"></span>
+            <span style="--leaf-x:10px;--leaf-y:51%;--leaf-turn:180deg"></span>
+            <span style="--leaf-x:calc(100% - 26px);--leaf-y:56%;--leaf-turn:90deg"></span>
+            <span style="--leaf-x:3px;--leaf-y:63%;--leaf-turn:270deg"></span>
+            <span style="--leaf-x:calc(100% - 21px);--leaf-y:69%;--leaf-turn:0deg"></span>
+            <span style="--leaf-x:11px;--leaf-y:75%;--leaf-turn:90deg"></span>
+            <span style="--leaf-x:calc(100% - 25px);--leaf-y:81%;--leaf-turn:180deg"></span>
+            <span style="--leaf-x:6px;--leaf-y:88%;--leaf-turn:0deg"></span>
+            <span style="--leaf-x:calc(100% - 20px);--leaf-y:94%;--leaf-turn:270deg"></span>
+          </div>
+          <div class="wood-internal-categories" hidden aria-hidden="true"><ul id="category-menu"></ul></div>
+          <div class="collection-header"><h1 id="collection-title">我的网站果园</h1><div class="collection-controls"><button id="wood-tuner-toggle" class="wood-tuner-toggle" aria-expanded="false" aria-controls="wood-tuner"><i class="bi bi-palette" aria-hidden="true"></i>调色</button><span id="collection-count" class="collection-count"></span><button id="manage-sites-btn" class="manage-sites-btn" aria-label="整理网站" aria-pressed="false" title="整理网站"><i class="bi bi-pencil" aria-hidden="true"></i></button></div></div>
           <div id="tools-grid" class="tools-grid"></div>
           <p class="collection-tip"><span aria-hidden="true">✿</span> 喜欢的网站，就是每天的小小收获。</p>
         </section>
@@ -140,7 +158,8 @@
 
           <div class="form-group">
             <label for="site-sort">排序 (可选)</label>
-            <input type="number" id="site-sort" name="site-sort" placeholder="数字越小，排序越靠前" min="0" max="999" value="200">
+            <input type="number" id="site-sort" name="site-sort" placeholder="数字越小，排序越靠前；留空则追加到末尾" min="0" step="1" value="200">
+            <div class="error-message" id="sort-error" role="alert"></div>
           </div>
         </form>
       </div>
@@ -202,6 +221,7 @@
     </div>
   </div>
 
+<aside id="wood-tuner" class="wood-tuner" aria-label="木牌外观设置" hidden><header><h2>木牌调色</h2><button id="wood-tuner-close" aria-label="关闭木牌调色">×</button></header><p>边调边看，自动保存在本地，下次打开自动恢复。</p><div class="wood-tuner-row"><label for="wood-wood">木牌底色</label><input type="color" id="wood-wood" data-wood-color="wood" aria-label="木牌底色取色"><input type="text" data-wood-hex="wood" aria-label="木牌底色色值" maxlength="7" spellcheck="false"></div><div class="wood-tuner-row"><label for="wood-wood-hover">悬停底色</label><input type="color" id="wood-wood-hover" data-wood-color="wood-hover" aria-label="悬停底色取色"><input type="text" data-wood-hex="wood-hover" aria-label="悬停底色色值" maxlength="7" spellcheck="false"></div><div class="wood-tuner-row"><label for="wood-wood-edge">描边</label><input type="color" id="wood-wood-edge" data-wood-color="wood-edge" aria-label="描边取色"><input type="text" data-wood-hex="wood-edge" aria-label="描边色值" maxlength="7" spellcheck="false"></div><div class="wood-tuner-row"><label for="wood-wood-bottom">底部阴影</label><input type="color" id="wood-wood-bottom" data-wood-color="wood-bottom" aria-label="底部阴影取色"><input type="text" data-wood-hex="wood-bottom" aria-label="底部阴影色值" maxlength="7" spellcheck="false"></div><div class="wood-tuner-row"><label for="wood-wood-ink">文字</label><input type="color" id="wood-wood-ink" data-wood-color="wood-ink" aria-label="文字取色"><input type="text" data-wood-hex="wood-ink" aria-label="文字色值" maxlength="7" spellcheck="false"></div><div class="wood-tuner-row"><label for="wood-wood-knot">右侧木结</label><input type="color" id="wood-wood-knot" data-wood-color="wood-knot" aria-label="右侧木结取色"><input type="text" data-wood-hex="wood-knot" aria-label="右侧木结色值" maxlength="7" spellcheck="false"></div><label class="wood-tuner-slider" for="wood-lightness"><span>明亮度</span><input type="range" id="wood-lightness" min="0" max="100" step="1"><output id="wood-lightness-value"></output></label><label class="wood-tuner-slider" for="wood-saturation"><span>饱和度</span><input type="range" id="wood-saturation" min="0" max="100" step="1"><output id="wood-saturation-value"></output></label><label class="wood-tuner-slider" for="wood-grain"><span>木纹强度</span><input type="range" id="wood-grain" min="0" max="100" step="1"><output id="wood-grain-value"></output></label><label class="wood-tuner-slider" for="wood-fontWeight"><span>文字增强</span><input type="range" id="wood-fontWeight" min="300" max="800" step="100"><output id="wood-fontWeight-value"></output></label><label class="wood-tuner-slider" for="wood-fontSize"><span>站名字号</span><input type="range" id="wood-fontSize" min="14" max="20" step="1"><output id="wood-fontSize-value"></output></label><footer><button id="wood-tuner-reset">恢复默认</button><button id="wood-tuner-copy">复制配色</button></footer><textarea id="wood-tuner-css" aria-label="配色 CSS 参数" readonly hidden></textarea><p id="wood-tuner-status" role="status"></p></aside>
   <!-- Scripts -->
   <script src="lib/lunar.js"></script>
   <script src="lib/pinyin-pro.js"></script>
@@ -222,8 +242,13 @@
   <script src="js/modules/sync-manager.js"></script>
   <script src="js/modules/quick-search-core.js"></script>
   <script src="js/modules/quick-search-manager.js"></script>
+  <script src="js/modules/home-keyboard.js"></script>
   <script src="js/modules/pixel-garden-state.js"></script>
   <script src="js/modules/pixel-garden.js"></script>
+  <script src="js/modules/wood-appearance-core.js"></script>
+  <script src="js/modules/wood-appearance.js"></script>
+  <script src="js/modules/home-layout.js"></script>
+  <script src="js/modules/site-logo-manager.js"></script>
   <script src="js/app.js"></script>
 </body>
 

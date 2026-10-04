@@ -72,6 +72,10 @@
 .manage-sites-btn { display: grid; place-items: center; width: 28px; height: 28px; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .manage-sites-btn:hover, .manage-sites-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--line); background: var(--surface); }
 .pixel-home.site-manage-mode .tool-item-edit-btn, .pixel-home.site-manage-mode .tool-item-delete-btn { opacity: 1; }
+.pixel-home.site-manage-mode .tool-item[draggable="true"] { cursor: grab; }
+.pixel-home.site-manage-mode .tool-item.dragging { cursor: grabbing; opacity: .48; }
+.pixel-home.site-manage-mode .tool-item.drag-over-before { box-shadow: inset 0 3px 0 var(--accent); }
+.pixel-home.site-manage-mode .tool-item.drag-over-after { box-shadow: inset 0 -3px 0 var(--accent); }
 .pixel-home .tools-grid { grid-template-columns: repeat(10, minmax(0,1fr)); gap: 18px 10px; }
 .pixel-home .tool-item { width: auto; min-width: 0; min-height: 77px; aspect-ratio: auto; padding: 0 4px 5px; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; animation: none; gap: 8px; justify-content: flex-start; transition: none; }
 .pixel-home .tool-item:hover { transform: none; background: transparent; box-shadow: none; }

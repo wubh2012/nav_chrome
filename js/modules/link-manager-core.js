@@ -187,7 +187,8 @@
     return {
       data: JSON.parse(JSON.stringify(snapshot?.data || {})),
       categories: Array.isArray(snapshot?.categories) ? [...snapshot.categories] : [],
-      dateInfo: snapshot?.dateInfo ? JSON.parse(JSON.stringify(snapshot.dateInfo)) : null
+      dateInfo: snapshot?.dateInfo ? JSON.parse(JSON.stringify(snapshot.dateInfo)) : null,
+      revision: Number(snapshot?.revision || 0)
     };
   }
 
@@ -278,8 +279,7 @@
     return String(category || '') === String(formData?.category || '未分类')
       && String(record?.name || '') === String(formData?.name || '')
       && String(record?.url || '') === String(formData?.url || '')
-      && String(record?.customIcon || '') === String(formData?.icon || '')
-      && (Number(record?.sort) || 999) === (Number(formData?.sort) || 999);
+      && String(record?.customIcon || '') === String(formData?.icon || '');
   }
 
   function applyOptimisticLinkChangeToSnapshot(snapshot, formData, options = {}) {
@@ -358,7 +358,7 @@
         nextSnapshot.data,
         nextCategories,
         operation.previousLink.category,
-        createRecordFromLink(operation.previousLink)
+        createRecordFromLink({ ...operation.previousLink, sort: match.item.sort })
       );
     }
 

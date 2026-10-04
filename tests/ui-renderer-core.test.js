@@ -27,7 +27,7 @@ test('分类列表按 主页 → AI → Code → 其他 → 影视 排序', () =
   assert.deepEqual(result, ['主页', 'AI', 'Code', '工具', '设计', '影视']);
 });
 
-test('全部分类视图按分类优先级展开，分类内保持原有顺序', () => {
+test('全部分类视图按全局排序字段展开，旧排序值并列时按分类优先级', () => {
   const result = flattenToolsByCategoryPriority({
     工具: [
       { id: 'tool-2', name: 'Tool B', sort: 2 },
@@ -49,6 +49,18 @@ test('全部分类视图按分类优先级展开，分类内保持原有顺序',
 
   assert.deepEqual(
     result.map((item) => `${item.category}:${item.id}`),
-    ['主页:home-5', 'AI:ai-4', 'Code:code-3', '工具:tool-2', '工具:tool-8', '影视:movie-1']
+    ['影视:movie-1', '工具:tool-2', 'Code:code-3', 'AI:ai-4', '主页:home-5', '工具:tool-8']
   );
+});
+
+test('缺少或非法排序值排在末尾，并用分类和记录 ID 稳定并列顺序', () => {
+  const result = flattenToolsByCategoryPriority({
+    工具: [{ id: 'z', sort: 20 }, { id: 'b', sort: 10 }, { id: 'a', sort: 10 }],
+    AI: [{ id: 'ai', sort: 10 }],
+    Code: [{ id: 'invalid', sort: 'bad' }, { id: 'missing' }]
+  });
+
+  assert.deepEqual(result.map((item) => `${item.category}:${item.id}`), [
+    'AI:ai', '工具:a', '工具:b', '工具:z', 'Code:invalid', 'Code:missing'
+  ]);
 });

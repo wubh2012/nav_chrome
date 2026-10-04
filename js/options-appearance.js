@@ -22,11 +22,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await FontManager.loadFont(value.body);
       if (request !== revision) return;
-      status.textContent = '字体已就绪 · 离线可用';
+      const selectedFont = FontManager.fonts[value.body];
+      status.textContent = selectedFont.stylesheet ? '字体已就绪 · 在线加载' : selectedFont.face ? '字体已就绪 · 离线可用' : '已使用系统字体';
       save.disabled = false;
     } catch (_) {
       if (request !== revision) return;
-      status.textContent = '字体加载失败，请重新加载设置页后再试。';
+      if (FontManager.fonts[value.body].stylesheet) {
+        status.textContent = '在线字体暂不可用，预览使用系统回退；仍可保存，联网后会自动加载。';
+        save.disabled = false;
+      } else {
+        status.textContent = '字体加载失败，请重新加载设置页后再试。';
+      }
     }
   }
   [body, size].forEach(control => control.addEventListener('change', preview));

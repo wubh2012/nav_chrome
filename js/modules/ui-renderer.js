@@ -46,7 +46,18 @@ const UIRenderer = (function() {
             });
           });
 
-          return tools;
+          return tools.sort((left, right) => {
+            const leftSort = Number(left.sort);
+            const rightSort = Number(right.sort);
+            const leftValid = left.sort != null && left.sort !== '' && Number.isFinite(leftSort);
+            const rightValid = right.sort != null && right.sort !== '' && Number.isFinite(rightSort);
+            if (leftValid !== rightValid) return leftValid ? -1 : 1;
+            if (leftValid && leftSort !== rightSort) return leftSort - rightSort;
+            const priorityDiff = this.getCategoryPriority(left.category) - this.getCategoryPriority(right.category);
+            if (priorityDiff) return priorityDiff;
+            const categoryDiff = String(left.category || '').localeCompare(String(right.category || ''), 'zh-Hans-CN');
+            return categoryDiff || String(left.id || '').localeCompare(String(right.id || ''), 'zh-Hans-CN');
+          });
         }
       };
 
@@ -57,6 +68,7 @@ const UIRenderer = (function() {
   let cachedNavData = null;
   let cachedCategories = [];
   let cachedDateInfo = null;
+  let cachedRevision = 0;
 
   /**
    * 初始化 UI
@@ -64,10 +76,11 @@ const UIRenderer = (function() {
    * @param {Array} categories - 分类列表
    * @param {Object} dateInfo - 日期信息
    */
-  async function init(data, categories, dateInfo) {
+  async function init(data, categories, dateInfo, revision = 0) {
     cachedNavData = data;
     cachedCategories = categories;
     cachedDateInfo = dateInfo;
+    cachedRevision = Number(revision || 0);
     if (currentCategory !== 'all' && !cachedCategories.includes(currentCategory)) {
       currentCategory = 'all';
     }
@@ -571,7 +584,8 @@ const UIRenderer = (function() {
     return {
       data: JSON.parse(JSON.stringify(cachedNavData || {})),
       categories: [...cachedCategories],
-      dateInfo: cachedDateInfo ? JSON.parse(JSON.stringify(cachedDateInfo)) : null
+      dateInfo: cachedDateInfo ? JSON.parse(JSON.stringify(cachedDateInfo)) : null,
+      revision: cachedRevision
     };
   }
 
@@ -581,10 +595,11 @@ const UIRenderer = (function() {
    * @param {Array} categories
    * @param {Object} dateInfo
    */
-  function setNavDataAndRefresh(data, categories, dateInfo) {
+  function setNavDataAndRefresh(data, categories, dateInfo, revision = cachedRevision) {
     cachedNavData = data || {};
     cachedCategories = categories || [];
     cachedDateInfo = dateInfo || null;
+    cachedRevision = Number(revision || 0);
     if (!cachedCategories.includes(currentCategory)) currentCategory = 'all';
 
     renderCategoryMenu(cachedCategories);

@@ -1,0 +1,169 @@
+/* 无分类木牌首页：复用果园与上半部交互，提供本地外观调节。 */
+.pixel-home.wooden-home {
+  --wood: #fff0d5;
+  --wood-hover: #fff7e6;
+  --wood-edge: #a1aa71;
+  --wood-bottom: #bdad80;
+  --wood-ink: #305265;
+  --wood-active: #448664;
+  --wood-active-edge: #386e57;
+}
+[data-theme="dark"] .wooden-home {
+  --wood: #3b463c; --wood-hover: #465445; --wood-edge: #718b68;
+  --wood-bottom: #263829; --wood-ink: #e1f0ef;
+  --wood-active: #5c825d; --wood-active-edge: #9cba85;
+}
+.wooden-home .tools-container { max-width: 1090px; padding-bottom: 50px; }
+.wooden-home .pixel-categories { margin-bottom: 20px; overflow: visible; }
+.wooden-home #category-menu { gap: 16px; padding: 0; }
+.wooden-home #category-menu li {
+  position: relative; isolation: isolate; border: 0; border-radius: 0;
+  min-width: 108px; min-height: 40px; padding: 8px 18px;
+  justify-content: center; background: transparent; color: var(--wood-ink);
+  font-size: 16px; font-weight: 400;
+}
+.wooden-home #category-menu li::before,
+.wooden-home .tool-item::before {
+  content: ''; position: absolute; z-index: -1; inset: 0;
+  background: var(--wood-edge);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+}
+.wooden-home #category-menu li::after,
+.wooden-home .tool-item::after {
+  content: ''; position: absolute; z-index: -1; inset: 2px 2px 3px;
+  background: var(--wood); box-shadow: inset 0 -2px 0 var(--wood-bottom);
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, calc(100% - 5px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 5px) calc(100% - 3px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 3px), 0 calc(100% - 3px), 0 3px, 5px 3px);
+}
+.wooden-home #category-menu li.active { color: #fffaf0; font-weight: 600; }
+.wooden-home #category-menu li.active::before { background: var(--wood-active-edge); }
+.wooden-home #category-menu li.active::after { background: var(--wood-active); box-shadow: inset 0 -2px 0 var(--wood-active-edge); }
+.wooden-home #category-menu li.active .category-count { color: #fffaf0; }
+.wooden-home #category-menu li:hover:not(.active)::after,
+.wooden-home .tool-item:hover::after { background: var(--wood-hover); }
+.wooden-home .collection-header { margin-bottom: 18px; }
+.wooden-home .collection-header h1 { font-size: 21px; font-weight: 600; color: var(--wood-ink); }
+.wooden-home .collection-count { font-size: 16px; }
+.wooden-home .tools-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 22px; }
+.pixel-home.wooden-home .tool-item {
+  position: relative; isolation: isolate; display: flex; flex-direction: row;
+  align-items: center; justify-content: flex-start; gap: 14px;
+  min-height: 48px; height: 48px; padding: 0 19px; border: 0;
+  border-radius: 0; background: transparent; box-shadow: none; color: var(--wood-ink);
+  overflow: visible; transform: none; transition: translate .12s;
+}
+.wooden-home .tool-item:hover { translate: 0 -1px; }
+.wooden-home .tool-item .tool-icon-tile {
+  flex: 0 0 26px; width: 26px; height: 26px; background: transparent;
+  border-radius: 0; box-shadow: none;
+}
+.wooden-home .tool-icon,
+.wooden-home .text-icon,
+.wooden-home .emoji-icon { width: 26px; height: 26px; font-size: 24px; border-radius: 2px; }
+.wooden-home .text-icon { background: transparent !important; color: var(--wood-ink); font-size: 16px; }
+.wooden-home .tool-copy { min-width: 0; flex: 1; }
+.pixel-home.wooden-home .tool-name {
+  display: block; text-align: left; font-size: 16px; line-height: 1.5;
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+}
+.wooden-home .tool-item-edit-btn,
+.wooden-home .tool-item-delete-btn { z-index: 2; top: -8px; background: var(--wood-hover); border-color: var(--wood-edge); }
+.wooden-home .tool-item-delete-btn { right: 9px; }
+.wooden-home .tool-item-edit-btn { right: 33px; }
+.wooden-home .tool-item:focus-visible,
+.wooden-home #category-menu li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wooden-home .tool-item.drag-over-before { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wooden-home .tool-item.drag-over-after { outline: 2px dashed var(--accent); outline-offset: 3px; }
+.wooden-home .collection-tip { margin-top: 32px; }
+@media (max-width: 900px) {
+  .wooden-home .tools-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+}
+@media (max-width: 680px) {
+  .wooden-home .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .wooden-home #category-menu { width: auto; min-width: 0; flex-wrap: wrap; gap: 8px; }
+  .wooden-home #category-menu li { min-width: 82px; padding: 7px 12px; font-size: 14px; }
+  .wooden-home .category-count { display: inline; }
+  .wooden-home .collection-header h1 { font-size: 18px; }
+  .wooden-home .collection-count { font-size: 13px; }
+  .pixel-home.wooden-home .tool-item { padding: 0 12px; gap: 9px; }
+  .pixel-home.wooden-home .tool-name { font-size: 14px; }
+  .wooden-home .tool-item .tool-icon-tile { width: 22px; flex-basis: 22px; }
+  .wooden-home .tool-icon, .wooden-home .emoji-icon { width: 22px; height: 22px; font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .wooden-home .tool-item { transition: none; } }
+
+
+.pixel-home.wooden-home {
+  --wood: #f9e9cf; --wood-hover: #fff2dc;
+  --wood-edge: #879058; --wood-bottom: #c1a16a;
+  --wood-ink: #234657; --wood-knot: #b6a06b; --wood-grain: .06;
+  --wood-font-weight: 600; --wood-font-size: 17px;
+}
+/* 通用页头的 1002 层级会压住果园弹层（35），在此原型恢复合理顺序。 */
+.pixel-home.wooden-home .top-actions { z-index: 20; }
+[data-theme="dark"] .wooden-home {
+  --wood: #46513d; --wood-hover: #536047;
+  --wood-edge: #8b9c68; --wood-bottom: #273b28; --wood-ink: #f0f3dc;
+}
+/* 保留原木牌大小、间距和上半部分，只去掉分类区占位。 */
+.wooden-home .wood-internal-categories { display: none !important; }
+.wooden-home .tools-container { position: relative; padding-top: 12px; }
+.wooden-home .tool-item::after {
+  background:
+    linear-gradient(0deg, transparent 28%, rgb(183 136 62 / var(--wood-grain)) 29%, transparent 32%, transparent 68%, rgb(183 136 62 / var(--wood-grain)) 70%, transparent 73%),
+    linear-gradient(90deg, #fff7df44, transparent 18%, transparent 84%, rgb(201 157 81 / var(--wood-grain))),
+    var(--wood);
+  box-shadow: inset 0 1px 0 #fff6deaa, inset 0 -2px 0 var(--wood-bottom);
+}
+.pixel-home.wooden-home .tool-name {
+  font-size: var(--wood-font-size); font-weight: var(--wood-font-weight); color: var(--wood-ink);
+}
+.wooden-home .collection-header h1 { font-size: 22px; font-weight: 700; }
+.wooden-home .collection-count { color: var(--wood-ink); font-weight: 600; }
+.wooden-home .tool-copy::before,
+.wooden-home .tool-copy::after {
+  content: ''; position: absolute; right: 7px; width: 5px; height: 5px;
+  background: var(--wood-knot); pointer-events: none;
+  clip-path: polygon(2px 0, 4px 0, 4px 2px, 5px 2px, 5px 4px, 3px 4px, 3px 5px, 1px 5px, 1px 3px, 0 3px, 0 1px, 2px 1px);
+}
+.wooden-home .tool-copy::before { top: 8px; }
+.wooden-home .tool-copy::after { bottom: 8px; }
+.wood-tuner-toggle { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #7b8b6266; background: #fffae266; color: var(--wood-ink); padding: 5px 8px; border-radius: 4px; font: inherit; font-size: 13px; cursor: pointer; }
+.wood-tuner { position: fixed; z-index: 1000; right: 18px; bottom: 18px; width: min(330px, calc(100vw - 28px)); max-height: calc(100dvh - 36px); overflow: auto; padding: 18px; border: 1px solid #99a181; border-radius: 10px; background: #fffdf4; color: #234657; box-shadow: 0 8px 28px #23465724; font-family: 'Microsoft YaHei', sans-serif; font-size: 13px; }
+.wood-tuner[hidden] { display: none; }
+.wood-tuner header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.wood-tuner h2 { font-size: 17px; margin: 0; }
+.wood-tuner button { cursor: pointer; font: inherit; border: 1px solid #bcc3ac; border-radius: 4px; padding: 6px 10px; background: #f1f3e6; color: #234657; }
+.wood-tuner header button { border: 0; background: transparent; font-size: 20px; padding: 0 6px; }
+.wood-tuner p { font-size: 12px; color: #647467; line-height: 1.6; margin: 6px 0 12px; }
+.wood-tuner-row { display: grid; grid-template-columns: 1fr 36px 85px; align-items: center; gap: 8px; margin: 8px 0; }
+.wood-tuner input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid #bbc2ae; background: transparent; cursor: pointer; }
+.wood-tuner input[type="text"] { width: 85px; padding: 5px 6px; border: 1px solid #bbc2ae; border-radius: 3px; font: 12px monospace; color: #234657; background: white; }
+.wood-tuner input[aria-invalid="true"] { border-color: #b94c3c; }
+.wood-tuner-slider { display: grid; grid-template-columns: 60px 1fr 36px; align-items: center; gap: 8px; margin: 14px 0; }
+.wood-tuner input[type="range"] { width: 100%; accent-color: #65855b; }
+.wood-tuner output { text-align: right; font-size: 12px; }
+.wood-tuner footer { display: flex; gap: 8px; margin-top: 16px; }
+.wood-tuner textarea { width: 100%; margin-top: 10px; height: 156px; border: 1px solid #bbc2ae; color: #234657; background: white; font: 12px/1.6 monospace; resize: vertical; }
+.orchard-leaves { position: absolute; inset: 0; pointer-events: none; }
+.orchard-leaves span {
+  position: absolute; left: var(--leaf-x); top: var(--leaf-y);
+  width: 18px; height: 20px; opacity: .75;
+  transform: rotate(var(--leaf-turn)); image-rendering: pixelated;
+  background: url('../img/wood-leaf.svg') center / contain no-repeat;
+}
+.wooden-home .tool-icon-tile .logo-fallback {
+  display: grid; place-items: center; width: 26px; height: 26px;
+  border: 1px solid var(--wood-edge); border-radius: 3px;
+  background: var(--wood-hover); color: var(--wood-ink);
+  font-size: 15px; line-height: 1; font-weight: 600;
+}
+.wooden-home .tool-icon-tile .logo-placeholder {
+  color: var(--wood-edge); font-size: 21px;
+}
+.quick-search-item-icon .logo-fallback { font-size: 16px; font-weight: 600; }
+@media (max-width: 680px) {
+  .pixel-home.wooden-home .tool-name { font-size: clamp(14px, calc(var(--wood-font-size) - 2px), 20px); }
+  .wooden-home .collection-header h1 { font-size: 19px; }
+  .orchard-leaves span { width: 12px; height: 14px; }
+  .wooden-home .tool-icon-tile .logo-fallback { width: 22px; height: 22px; font-size: 13px; }
+}

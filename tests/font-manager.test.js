@@ -21,7 +21,7 @@ function create(stored, fail = false) {
 test('损坏或未知偏好回退，字号限制范围，拒绝自定义 CSS 注入', async () => {
   const env = create({body:'evil; color:red', size:40});
   await env.manager.init();
-  assert.equal(env.manager.get().body, 'wenkai');
+  assert.equal(env.manager.get().body, 'wenkaiGb');
   assert.equal(env.manager.get().size, 20);
   assert.equal(env.manager.normalize({body:'pixel', size:'bad'}).size, 16);
   assert.equal(env.manager.normalize(null).size, 16);
@@ -41,7 +41,7 @@ test('保存偏好并统一正文和标题；其他页面更改与删除实时�
   env.change({body:'pixel', size:17});
   assert.equal(env.manager.get().body,'pixel');
   env.change(undefined);
-  assert.equal(env.manager.get().body,'wenkai');
+  assert.equal(env.manager.get().body,'wenkaiGb');
 });
 test('保存失败保留原配置', async () => {
   const env = create({body:'system', size:15},true);

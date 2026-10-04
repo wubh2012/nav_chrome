@@ -16,6 +16,7 @@ const LinkManager = (function() {
 
   let currentDeleteLink = null;
   let currentEditingLink = null;
+  let defaultSiteSort = 10;
   let cachedCategories = [];
   let lastSuggestedIconUrl = '';
   let deletedLocalRecordIds = new Set();
@@ -275,7 +276,8 @@ const LinkManager = (function() {
     setInputValue('site-url', 'https://');
     setInputValue('site-name', '');
     setInputValue('site-icon', '');
-    setInputValue('site-sort', '200');
+    defaultSiteSort = getNextGlobalSort();
+    setInputValue('site-sort', String(defaultSiteSort));
     setInputValue('custom-category', '');
     handleCategoryChange();
   }
@@ -294,7 +296,8 @@ const LinkManager = (function() {
     setInputValue('site-url', link.url || 'https://');
     setInputValue('site-name', link.name || '');
     setInputValue('site-icon', icon);
-    setInputValue('site-sort', Number.isFinite(Number(link.sort)) ? String(link.sort) : '999');
+    defaultSiteSort = Number.isFinite(Number(link.sort)) ? Number(link.sort) : getNextGlobalSort();
+    setInputValue('site-sort', String(defaultSiteSort));
     setInputValue('custom-category', '');
 
     const categorySelect = document.getElementById('site-category');
@@ -453,6 +456,7 @@ const LinkManager = (function() {
     }
 
     try {
+      setLinkMutationBusy(true);
       await applyOptimisticDelete(beforeSnapshot, deleteLink);
       closeDeleteModal();
 
@@ -474,6 +478,7 @@ const LinkManager = (function() {
       await rollbackOptimisticDelete(deleteLink);
       UIRenderer.showSyncStatus(error.message || '删除失败', 'error');
     } finally {
+      setLinkMutationBusy(false);
       if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.textContent = '确认删除';
@@ -498,10 +503,20 @@ const LinkManager = (function() {
       return;
     }
 
+    if (!Number.isSafeInteger(formData.sort) || formData.sort < 0) {
+      setError('sort-error', '排序请输入不小于 0 的整数');
+      return;
+    }
+
     const saveBtn = document.getElementById('save-link-btn');
     const isEditing = Boolean(currentEditingLink?.id);
     const editingLink = currentEditingLink ? { ...currentEditingLink } : null;
     const beforeSnapshot = UIRenderer.getNavDataSnapshot();
+    const manualSort = Number(formData.sort) !== Number(defaultSiteSort);
+    if (isEditing && !manualSort) {
+      const currentLink = findCurrentLink(editingLink.id);
+      if (currentLink && Number.isFinite(Number(currentLink.sort))) formData.sort = Number(currentLink.sort);
+    }
     const optimisticRecordId = isEditing ? editingLink.id : createLocalRecordId();
     if (saveBtn) {
       saveBtn.disabled = true;
@@ -509,10 +524,12 @@ const LinkManager = (function() {
     }
 
     try {
+      setLinkMutationBusy(true);
       await applyOptimisticLinkChange(beforeSnapshot, formData, {
         isEditing,
         recordId: optimisticRecordId,
-        previousLink: editingLink
+        previousLink: editingLink,
+        manualSort
       });
       closeAddModal();
       UIRenderer.showSyncStatus(isEditing ? '已本地更新，正在同步到飞书' : '已添加，正在同步到飞书', 'info');
@@ -558,6 +575,8 @@ const LinkManager = (function() {
         saveBtn.disabled = false;
         saveBtn.textContent = isEditing ? '更新' : '保存';
       }
+    } finally {
+      setLinkMutationBusy(false);
     }
   }
 
@@ -574,7 +593,7 @@ const LinkManager = (function() {
     const icon = document.getElementById('site-icon')?.value.trim() || '';
     const categorySelect = document.getElementById('site-category');
     const customCategoryInput = document.getElementById('custom-category');
-    const sortValue = document.getElementById('site-sort')?.value;
+    const sortValue = document.getElementById('site-sort')?.value?.trim();
     let category = categorySelect?.value || '';
 
     if (category === '__custom__') {
@@ -586,8 +605,29 @@ const LinkManager = (function() {
       name,
       icon,
       category,
-      sort: parseInt(sortValue, 10) || 999
+      sort: sortValue ? Number(sortValue) : getNextGlobalSort()
     };
+  }
+
+  function getNextGlobalSort() {
+    const data = UIRenderer?.getNavDataSnapshot?.()?.data || {};
+    const tools = globalThis.UIRendererCore?.flattenToolsByCategoryPriority(data) || [];
+    const values = tools.map((item) => Number(item.sort)).filter(Number.isFinite);
+    return (values.length ? Math.max(0, ...values) : 0) + 10;
+  }
+
+  function findCurrentLink(recordId) {
+    const data = UIRenderer.getNavDataSnapshot().data;
+    for (const [category, items] of Object.entries(data)) {
+      const item = (items || []).find((candidate) => candidate?.id === recordId);
+      if (item) return { ...item, category };
+    }
+    return null;
+  }
+
+  function setLinkMutationBusy(busy) {
+    document.body.classList.toggle('link-manager-saving', busy);
+    globalThis.DragSortManager?.refreshDraggableState(false);
   }
 
   /**
@@ -629,7 +669,10 @@ const LinkManager = (function() {
    */
   async function applyOptimisticLinkChange(snapshot, formData, options) {
     const nextSnapshot = core.applyOptimisticLinkChangeToSnapshot(snapshot, formData, options);
-    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo, {
+      expectedRevision: snapshot.revision,
+      manualSort: options.manualSort
+    });
   }
 
   /**
@@ -643,7 +686,9 @@ const LinkManager = (function() {
    */
   async function applyOptimisticDelete(snapshot, link) {
     const nextSnapshot = core.applyOptimisticDeleteToSnapshot(snapshot, link);
-    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo, {
+      expectedRevision: snapshot.revision
+    });
   }
 
   /**
@@ -660,8 +705,9 @@ const LinkManager = (function() {
       return;
     }
 
+    const beforeSnapshot = UIRenderer.getNavDataSnapshot();
     const nextSnapshot = core.replaceRecordIdInSnapshot(
-      UIRenderer.getNavDataSnapshot(),
+      beforeSnapshot,
       localRecordId,
       remoteRecordId
     );
@@ -670,7 +716,9 @@ const LinkManager = (function() {
       return;
     }
 
-    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+    await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo, {
+      expectedRevision: beforeSnapshot.revision
+    });
   }
 
   /**
@@ -765,15 +813,18 @@ const LinkManager = (function() {
    */
   async function rollbackOptimisticSave(operation) {
     try {
+      const beforeSnapshot = UIRenderer.getNavDataSnapshot();
       const nextSnapshot = core.rollbackOptimisticSaveInSnapshot(
-        UIRenderer.getNavDataSnapshot(),
+        beforeSnapshot,
         operation
       );
       if (!nextSnapshot.changed) {
         return;
       }
 
-      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo, {
+        expectedRevision: beforeSnapshot.revision
+      });
     } catch (rollbackError) {
       console.error('[LinkManager] 回滚本地保存失败:', rollbackError);
     }
@@ -789,15 +840,18 @@ const LinkManager = (function() {
    */
   async function rollbackOptimisticDelete(link) {
     try {
+      const beforeSnapshot = UIRenderer.getNavDataSnapshot();
       const nextSnapshot = core.rollbackOptimisticDeleteInSnapshot(
-        UIRenderer.getNavDataSnapshot(),
+        beforeSnapshot,
         link
       );
       if (!nextSnapshot.changed) {
         return;
       }
 
-      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo);
+      await persistSnapshotData(nextSnapshot.data, nextSnapshot.categories, nextSnapshot.dateInfo, {
+        expectedRevision: beforeSnapshot.revision
+      });
     } catch (rollbackError) {
       console.error('[LinkManager] 回滚本地删除失败:', rollbackError);
     }
@@ -813,16 +867,60 @@ const LinkManager = (function() {
    * @throws {Error} Storage 或 UI 更新异常会向上抛出。
    * @sideeffects 更新 UIRenderer 缓存和 chrome.storage.local。
    */
-  async function persistSnapshotData(data, categories, dateInfo) {
+  async function persistSnapshotData(data, categories, dateInfo, options = {}) {
     const nextCategories = new Set(categories || []);
     pruneEmptyCategories(data, nextCategories);
     const categoryList = Array.from(nextCategories);
+    const testMode = await Storage.getTestMode();
+    const config = testMode ? null : await Storage.loadFeishuConfig();
+    const scope = testMode ? 'test-mode'
+      : `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
+    let nextData = data;
+    let nextPending = await Storage.loadPendingSortSync(scope);
 
-    UIRenderer.setNavDataAndRefresh(data, categoryList, dateInfo);
-    cachedCategories = categoryList;
-    await Storage.saveNavData(data, categoryList, dateInfo, {
+    if (nextPending?.version >= 2 && nextPending.scope === 'global') {
+      const visibleItems = globalThis.UIRendererCore.flattenToolsByCategoryPriority(nextData);
+      const availableIds = new Set(visibleItems.map((item) => item.id).filter(Boolean));
+      let orderedIds;
+      if (options.manualSort) {
+        orderedIds = visibleItems.map((item) => item.id).filter(Boolean);
+      } else {
+        orderedIds = nextPending.orderedIds.filter((id) => availableIds.has(id));
+        const included = new Set(orderedIds);
+        visibleItems.forEach((item) => {
+          if (item.id && !included.has(item.id)) {
+            included.add(item.id);
+            orderedIds.push(item.id);
+          }
+        });
+      }
+      const reordered = DragSortCore.reorderNavDataByGlobalOrder(nextData, orderedIds);
+      nextData = reordered.data;
+      nextPending = DragSortCore.createGlobalPendingSortPayload(
+        reordered.orderedIds, reordered.updates, scope
+      );
+    } else if (nextPending && globalThis.DragSortCore) {
+      nextData = DragSortCore.applyPendingSortToNavData(nextData, nextPending);
+    }
+
+    const committed = await Storage.commitNavData(nextData, categoryList, dateInfo, {
+      expectedRevision: options.expectedRevision ?? UIRenderer.getNavDataSnapshot().revision,
+      pendingSortSync: nextPending || undefined,
+      dataScope: scope,
       preserveSyncTime: true
     });
+    if (!committed.success) {
+      if (committed.current) {
+        UIRenderer.setNavDataAndRefresh(committed.current.data, committed.current.categories,
+          committed.current.dateInfo, committed.current.revision);
+      }
+      throw new Error(committed.conflict
+        ? '网站列表已在其他标签页更新，请重新操作'
+        : committed.error || '本地保存失败');
+    }
+
+    UIRenderer.setNavDataAndRefresh(nextData, categoryList, dateInfo, committed.revision);
+    cachedCategories = categoryList;
   }
 
   /**
@@ -877,7 +975,7 @@ const LinkManager = (function() {
    * @sideeffects 清空错误提示元素文本。
    */
   function clearFormErrors() {
-    ['url-error', 'name-error', 'icon-error', 'category-error'].forEach(id => {
+    ['url-error', 'name-error', 'icon-error', 'category-error', 'sort-error'].forEach(id => {
       const element = document.getElementById(id);
       if (element) {
         element.textContent = '';
@@ -1091,14 +1189,30 @@ const LinkManager = (function() {
    */
   async function refreshData() {
     try {
+      const beforeSnapshot = UIRenderer.getNavDataSnapshot();
       const result = await FeishuAPI.getRecords();
-      const pendingSortSync = await Storage.loadPendingSortSync();
-      await Storage.saveNavData(result.data, result.categories, result.dateInfo);
-      cachedCategories = result.categories;
+      const testMode = await Storage.getTestMode();
+      const config = testMode ? null : await Storage.loadFeishuConfig();
+      const scope = testMode ? 'test-mode'
+        : `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
+      const pendingSortSync = await Storage.loadPendingSortSync(scope);
       const resolvedData = pendingSortSync && globalThis.DragSortCore
         ? DragSortCore.applyPendingSortToNavData(result.data, pendingSortSync)
         : result.data;
-      UIRenderer.init(resolvedData, result.categories, result.dateInfo);
+      const committed = await Storage.commitNavData(resolvedData, result.categories, result.dateInfo, {
+        expectedRevision: beforeSnapshot.revision,
+        dataScope: scope,
+        preserveSyncTime: false
+      });
+      if (!committed.success) {
+        if (committed.current) {
+          UIRenderer.setNavDataAndRefresh(committed.current.data, committed.current.categories,
+            committed.current.dateInfo, committed.current.revision);
+        }
+        return;
+      }
+      cachedCategories = result.categories;
+      UIRenderer.init(resolvedData, result.categories, result.dateInfo, committed.revision);
     } catch (error) {
       console.error('[LinkManager] 刷新数据失败:', error);
       UIRenderer.showSyncStatus(error.message || '刷新数据失败', 'error');

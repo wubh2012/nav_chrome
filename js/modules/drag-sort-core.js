@@ -136,6 +136,97 @@
   }
 
   /**
+   * 按首页当前显示的完整顺序重排多分类数据，并生成完整远端排序快照。
+   */
+  function reorderNavDataByGlobalOrder(navData, orderedIds, sortStep = DEFAULT_SORT_STEP) {
+    const source = navData && typeof navData === 'object' ? navData : {};
+    const itemById = new Map();
+    const itemsWithoutId = [];
+
+    Object.entries(source).forEach(([category, items]) => {
+      (Array.isArray(items) ? items : []).forEach((item) => {
+        if (!item) return;
+        const cloned = { ...item, category };
+        const id = normalizeId(cloned.id);
+        if (id && !itemById.has(id)) itemById.set(id, cloned);
+        else if (!id) itemsWithoutId.push(cloned);
+      });
+    });
+
+    const ordered = [];
+    (Array.isArray(orderedIds) ? orderedIds : []).forEach((rawId) => {
+      const id = normalizeId(rawId);
+      const item = itemById.get(id);
+      if (!item) return;
+      ordered.push(item);
+      itemById.delete(id);
+    });
+
+    itemById.forEach((item) => ordered.push(item));
+    itemsWithoutId.forEach((item) => ordered.push(item));
+
+    const nextData = {};
+    const updates = [];
+    const changedItems = [];
+    const step = Number.isFinite(Number(sortStep)) && Number(sortStep) > 0
+      ? Number(sortStep)
+      : DEFAULT_SORT_STEP;
+
+    ordered.forEach((item, index) => {
+      const category = String(item.category || '未分类');
+      const { category: _category, ...categoryItem } = item;
+      const nextSort = (index + 1) * step;
+      if (!Number.isFinite(Number(item.sort)) || Number(item.sort) !== nextSort) changedItems.push(categoryItem);
+      categoryItem.sort = nextSort;
+      if (!nextData[category]) nextData[category] = [];
+      nextData[category].push(categoryItem);
+
+      const id = normalizeId(item.id);
+      if (id && !id.startsWith('mock-') && !id.startsWith('local-')) {
+        updates.push({ recordId: id, sort: nextSort });
+      }
+    });
+
+    return {
+      data: nextData,
+      reorderedItems: ordered.map((item, index) => ({ ...item, sort: (index + 1) * step })),
+      changedItems,
+      updates,
+      orderedIds: ordered.map((item) => normalizeId(item.id)).filter(Boolean)
+    };
+  }
+
+  /**
+   * 将分类内的新顺序写回全局序列原有位置，其他分类的相对位置不变。
+   */
+  function reorderCategoryWithinGlobalOrder(navData, category, categoryIds, globalIds, sortStep = DEFAULT_SORT_STEP) {
+    const safeCategory = String(category || '').trim();
+    const currentGlobalIds = Array.isArray(globalIds) ? [...globalIds] : [];
+    const reorderedCategoryIds = Array.isArray(categoryIds) ? [...categoryIds] : [];
+    let nextIndex = 0;
+
+    const nextGlobalIds = currentGlobalIds.map((id) => {
+      const item = findItem(navData, id);
+      if (!item || item.category !== safeCategory) return id;
+      const replacement = reorderedCategoryIds[nextIndex];
+      nextIndex += 1;
+      return replacement || id;
+    });
+
+    return reorderNavDataByGlobalOrder(navData, nextGlobalIds, sortStep);
+  }
+
+  function findItem(navData, id) {
+    const normalizedId = normalizeId(id);
+    for (const [category, items] of Object.entries(navData || {})) {
+      if (!Array.isArray(items)) continue;
+      const item = items.find((candidate) => normalizeId(candidate?.id) === normalizedId);
+      if (item) return { ...item, category };
+    }
+    return null;
+  }
+
+  /**
    * 将本地待同步排序覆盖到导航数据。
    * @param {Object<string, Array<Object>>} navData
    * @param {{category?: string, orderedIds?: Array<string>}|null} pendingSort
@@ -145,6 +236,10 @@
   function applyPendingSortToNavData(navData, pendingSort, sortStep = DEFAULT_SORT_STEP) {
     if (!navData || typeof navData !== 'object') {
       return {};
+    }
+
+    if (pendingSort?.version >= 2 && pendingSort?.scope === 'global') {
+      return reorderNavDataByGlobalOrder(navData, pendingSort.orderedIds || [], sortStep).data;
     }
 
     const category = String(pendingSort?.category || '').trim();
@@ -182,6 +277,29 @@
       retryCount: 0,
       status: 'queued'
     };
+  }
+
+  function createGlobalPendingSortPayload(orderedIds, updates, dataScope, now = Date.now()) {
+    return {
+      version: 2,
+      scope: 'global',
+      dataScope: String(dataScope || 'default'),
+      revision: `${Number(now) || Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      orderedIds: Array.isArray(orderedIds) ? orderedIds.map(normalizeId).filter(Boolean) : [],
+      updates: Array.isArray(updates) ? updates.map((item) => ({ ...item })) : [],
+      updatedAt: now,
+      retryCount: 0,
+      status: 'queued'
+    };
+  }
+
+  function isSamePendingSortPayload(left, right) {
+    if (!left || !right) return false;
+    if (left.revision || right.revision) {
+      return String(left.revision || '') === String(right.revision || '');
+    }
+    return String(left.category || '') === String(right.category || '')
+      && Number(left.updatedAt || 0) === Number(right.updatedAt || 0);
   }
 
   /**
@@ -229,8 +347,12 @@
     extractOrderedIds,
     isSameOrder,
     reorderCategoryItems,
+    reorderNavDataByGlobalOrder,
+    reorderCategoryWithinGlobalOrder,
     applyPendingSortToNavData,
     createPendingSortPayload,
+    createGlobalPendingSortPayload,
+    isSamePendingSortPayload,
     getPendingSyncDelay,
     markPendingSortSyncing,
     markPendingSortFailure

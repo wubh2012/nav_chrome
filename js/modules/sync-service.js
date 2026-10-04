@@ -23,7 +23,9 @@
     return {
       Storage: overrides.Storage || root.Storage,
       FeishuAPI: overrides.FeishuAPI || root.FeishuAPI,
-      flushPendingSortSync: overrides.flushPendingSortSync || null
+      flushPendingSortSync: overrides.flushPendingSortSync || null,
+      commitNavigationData: overrides.commitNavigationData || null,
+      DragSortCore: overrides.DragSortCore || root.DragSortCore || null
     };
   }
 
@@ -66,6 +68,7 @@
     const deps = resolveDeps(options.deps || {});
     const { Storage, FeishuAPI } = deps;
     const flushPendingSortSync = options.flushPendingSortSync || deps.flushPendingSortSync;
+    const commitNavigationData = options.commitNavigationData || deps.commitNavigationData;
     const reason = options.reason || 'manual';
 
     if (!Storage || !FeishuAPI) {
@@ -101,6 +104,11 @@
 
       await saveStatus(Storage, 'syncing', '同步中...');
 
+      const dataScope = `${feishuConfig.appToken || 'unconfigured'}:${feishuConfig.tableId || 'default'}`;
+      const baseRevision = typeof Storage.getNavDataRevision === 'function'
+        ? await Storage.getNavDataRevision(dataScope)
+        : null;
+
       let pendingSortResult = null;
       if (typeof flushPendingSortSync === 'function') {
         pendingSortResult = await flushPendingSortSync(reason);
@@ -111,16 +119,32 @@
         throw new Error(result?.error || result?.message || '获取数据失败');
       }
 
-      await Storage.saveNavData(result.data, result.categories || [], result.dateInfo || null);
+      const data = pendingSortResult?.pending && deps.DragSortCore
+        ? deps.DragSortCore.applyPendingSortToNavData(result.data, pendingSortResult.pending)
+        : result.data;
+      const categories = result.categories || [];
+      const dateInfo = result.dateInfo || null;
+      let stale = false;
+
+      if (typeof commitNavigationData === 'function' && baseRevision !== null) {
+        const committed = await commitNavigationData(data, categories, dateInfo, {
+          expectedRevision: baseRevision,
+          dataScope
+        });
+        if (committed?.conflict) stale = true;
+      } else {
+        await Storage.saveNavData(data, categories, dateInfo, { dataScope });
+      }
       await saveStatus(Storage, 'success', '同步成功');
 
       return createResult({
         success: true,
         message: '同步成功',
         reason,
-        data: result.data,
-        categories: result.categories || [],
-        dateInfo: result.dateInfo || null,
+        data: stale ? undefined : data,
+        categories: stale ? undefined : categories,
+        dateInfo: stale ? undefined : dateInfo,
+        stale,
         pendingSortResult
       });
     } catch (error) {

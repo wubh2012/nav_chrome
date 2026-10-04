@@ -56,6 +56,7 @@
       bindTimeFocusToggle();
       bindShortcutHelp();
       listenSyncMessages();
+      listenNavigationStorageChanges();
 
       document.body.classList.add('loaded');
       showShortcutToastIfNeeded();
@@ -121,15 +122,44 @@
     });
   }
 
+  function listenNavigationStorageChanges() {
+    chrome.storage?.onChanged?.addListener(async (changes, areaName) => {
+      if (areaName !== 'local') return;
+      try {
+        const [testMode, config] = await Promise.all([
+          Storage.getTestMode(), Storage.loadFeishuConfig()
+        ]);
+        const scope = testMode ? 'test-mode'
+          : `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
+        const revisionChange = changes[Storage.getNavDataRevisionKey(scope)];
+        if (!revisionChange) return;
+        const nextRevision = Number(revisionChange.newValue || 0);
+        if (nextRevision <= UIRenderer.getNavDataSnapshot().revision) return;
+
+        const [cached, pending] = await Promise.all([
+          Storage.loadNavData(scope), Storage.loadPendingSortSync(scope)
+        ]);
+        if (!cached || cached.revision < nextRevision) return;
+        await renderResolvedNavigation(cached.data, cached.categories, cached.dateInfo,
+          pending, cached.revision, scope);
+      } catch (error) {
+        console.warn('[ChromeNav] 同步其他标签页的网站顺序失败:', error);
+      }
+    });
+  }
+
   /**
    * 检查是否首次安装
    */
   async function loadStartupState() {
-    const [testMode, feishuConfig, cached, pendingSortSync] = await Promise.all([
+    const [testMode, feishuConfig] = await Promise.all([
       Storage.getTestMode(),
-      Storage.loadFeishuConfig(),
-      Storage.loadNavData(),
-      Storage.loadPendingSortSync()
+      Storage.loadFeishuConfig()
+    ]);
+    const dataScope = testMode ? 'test-mode'
+      : `${feishuConfig?.appToken || 'unconfigured'}:${feishuConfig?.tableId || 'default'}`;
+    const [cached, pendingSortSync] = await Promise.all([
+      Storage.loadNavData(dataScope), Storage.loadPendingSortSync(dataScope)
     ]);
 
     return {
@@ -137,6 +167,7 @@
       feishuConfig,
       cached,
       pendingSortSync,
+      dataScope,
       isFirstInstall: !feishuConfig
     };
   }
@@ -162,9 +193,10 @@
    * @param {Object} dateInfo
    * @param {Object|null} pendingSortSync
    */
-  function renderResolvedNavigation(data, categories, dateInfo, pendingSortSync = null) {
+  async function renderResolvedNavigation(data, categories, dateInfo, pendingSortSync = null, revision = null, dataScope = null) {
     const resolvedData = resolveNavDataForRender(data, pendingSortSync);
-    UIRenderer.init(resolvedData, categories, dateInfo);
+    await UIRenderer.init(resolvedData, categories, dateInfo,
+      revision === null ? await Storage.getNavDataRevision(dataScope) : revision);
     window.cachedCategories = categories;
 
     if (window.LinkManager) {
@@ -189,11 +221,13 @@
 
       if (state.cached && !state.isFirstInstall) {
         console.log('[ChromeNav] 使用缓存数据');
-        renderResolvedNavigation(
+        await renderResolvedNavigation(
           state.cached.data,
           state.cached.categories,
           getCurrentDateInfo(state.cached.dateInfo),
-          state.pendingSortSync
+          state.pendingSortSync,
+          state.cached.revision,
+          state.dataScope
         );
         return;
       }
@@ -218,11 +252,13 @@
         console.warn('[ChromeNav] 获取飞书数据失败:', error);
 
         if (state.cached) {
-          renderResolvedNavigation(
+          await renderResolvedNavigation(
             state.cached.data,
             state.cached.categories,
             getCurrentDateInfo(state.cached.dateInfo),
-            state.pendingSortSync
+            state.pendingSortSync,
+            state.cached.revision,
+            state.dataScope
           );
           UIRenderer.showSyncStatus('使用缓存数据', 'info');
         } else {
@@ -239,12 +275,33 @@
    * 加载飞书数据
    */
   async function loadFeishuData() {
+    const config = await Storage.loadFeishuConfig();
+    const dataScope = `${config?.appToken || 'unconfigured'}:${config?.tableId || 'default'}`;
+    const expectedRevision = await Storage.getNavDataRevision(dataScope);
     const result = await FeishuAPI.getRecords();
     const dateInfo = getCurrentDateInfo(result.dateInfo);
-    const pendingSortSync = await Storage.loadPendingSortSync();
+    const pendingSortSync = await Storage.loadPendingSortSync(dataScope);
+    const resolvedData = pendingSortSync && globalThis.DragSortCore
+      ? DragSortCore.applyPendingSortToNavData(result.data, pendingSortSync)
+      : result.data;
+    const committed = await Storage.commitNavData(result.data, result.categories, dateInfo, {
+      expectedRevision,
+      dataScope,
+      preserveSyncTime: false
+    });
 
-    await Storage.saveNavData(result.data, result.categories, dateInfo);
-    renderResolvedNavigation(result.data, result.categories, dateInfo, pendingSortSync);
+    if (!committed.success) {
+      const latest = committed.current || await Storage.loadNavData(dataScope);
+      if (!latest) throw new Error(committed.error || '网站列表已更新，请重新加载');
+      const latestPendingSort = await Storage.loadPendingSortSync(dataScope);
+      await renderResolvedNavigation(latest.data, latest.categories,
+        getCurrentDateInfo(latest.dateInfo), latestPendingSort, latest.revision, dataScope);
+      UIRenderer.showSyncStatus('网站列表已在其他标签页更新，已显示最新版本', 'info');
+      return;
+    }
+
+    await renderResolvedNavigation(resolvedData, result.categories, dateInfo, pendingSortSync,
+      committed.revision, dataScope);
 
     UIRenderer.showSyncStatus('数据加载完成', 'success');
     console.log('[ChromeNav] 飞书数据加载完成');
@@ -256,12 +313,22 @@
   async function loadTestData() {
     console.log('[ChromeNav] 加载测试数据');
 
+    const cached = await Storage.loadNavData('test-mode');
+    if (cached) {
+      const pendingSortSync = await Storage.loadPendingSortSync('test-mode');
+      await renderResolvedNavigation(cached.data, cached.categories,
+        getCurrentDateInfo(cached.dateInfo), pendingSortSync, cached.revision, 'test-mode');
+      UIRenderer.showSyncStatus('测试模式已启用', 'info');
+      return;
+    }
+
     const mockData = FeishuAPI.getMockData();
     const mockDateInfo = getCurrentDateInfo(FeishuAPI.getMockDateInfo());
     const categories = Object.keys(mockData);
 
-    await Storage.saveNavData(mockData, categories, mockDateInfo);
-    renderResolvedNavigation(mockData, categories, mockDateInfo, null);
+    await Storage.saveNavData(mockData, categories, mockDateInfo, { dataScope: 'test-mode' });
+    await renderResolvedNavigation(mockData, categories, mockDateInfo, null,
+      await Storage.getNavDataRevision('test-mode'), 'test-mode');
 
     UIRenderer.showSyncStatus('测试模式已启用', 'info');
   }
@@ -297,6 +364,9 @@
       const label = managing ? '完成整理' : '整理网站';
       manageBtn.setAttribute('aria-label',label); manageBtn.title = label;
       manageBtn.querySelector('i').className = managing ? 'bi bi-check-lg' : 'bi bi-pencil';
+      document.body.dispatchEvent(new CustomEvent('chromeNav:siteManageModeChanged', {
+        detail: { managing }
+      }));
     });
     const settingsBtn = document.getElementById('open-settings-btn');
     if (settingsBtn) {
@@ -316,6 +386,7 @@
    * 绑定滚轮切换分类
    */
   function bindCategoryWheelSwitch() {
+    if (document.body.classList.contains('wooden-home')) return;
     const categoryMenu = document.getElementById('category-menu');
     const mainContent = document.querySelector('.main-content');
     if (!window.UIRenderer) {

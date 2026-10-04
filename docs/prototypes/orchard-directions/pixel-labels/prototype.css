@@ -1,0 +1,102 @@
+/* 方案 1 原型：仅覆盖网站区域，复用正式首页的上半部分与交互。 */
+@font-face { font-family: 'LXGW WenKai GB'; src: url('../../home/assets/wenkai-regular.woff2') format('woff2'); font-display: swap; }
+.pixel-home.wooden-prototype {
+  --wood: #fff0d5;
+  --wood-hover: #fff7e6;
+  --wood-edge: #a1aa71;
+  --wood-bottom: #bdad80;
+  --wood-ink: #305265;
+  --wood-active: #448664;
+  --wood-active-edge: #386e57;
+}
+[data-theme="dark"] .wooden-prototype {
+  --wood: #3b463c; --wood-hover: #465445; --wood-edge: #718b68;
+  --wood-bottom: #263829; --wood-ink: #e1f0ef;
+  --wood-active: #5c825d; --wood-active-edge: #9cba85;
+}
+.wooden-prototype .tools-container { max-width: 1090px; padding-bottom: 50px; }
+.wooden-prototype .pixel-categories { margin-bottom: 20px; overflow: visible; }
+.wooden-prototype #category-menu { gap: 16px; padding: 0; }
+.wooden-prototype #category-menu li {
+  position: relative; isolation: isolate; border: 0; border-radius: 0;
+  min-width: 108px; min-height: 40px; padding: 8px 18px;
+  justify-content: center; background: transparent; color: var(--wood-ink);
+  font-size: 16px; font-weight: 400;
+}
+.wooden-prototype #category-menu li::before,
+.wooden-prototype .tool-item::before {
+  content: ''; position: absolute; z-index: -1; inset: 0;
+  background: var(--wood-edge);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+}
+.wooden-prototype #category-menu li::after,
+.wooden-prototype .tool-item::after {
+  content: ''; position: absolute; z-index: -1; inset: 2px 2px 3px;
+  background: var(--wood); box-shadow: inset 0 -2px 0 var(--wood-bottom);
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, calc(100% - 5px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 5px) calc(100% - 3px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 3px), 0 calc(100% - 3px), 0 3px, 5px 3px);
+}
+.wooden-prototype #category-menu li.active { color: #fffaf0; font-weight: 600; }
+.wooden-prototype #category-menu li.active::before { background: var(--wood-active-edge); }
+.wooden-prototype #category-menu li.active::after { background: var(--wood-active); box-shadow: inset 0 -2px 0 var(--wood-active-edge); }
+.wooden-prototype #category-menu li.active .category-count { color: #fffaf0; }
+.wooden-prototype #category-menu li:hover:not(.active)::after,
+.wooden-prototype .tool-item:hover::after { background: var(--wood-hover); }
+.wooden-prototype .collection-header { margin-bottom: 18px; }
+.wooden-prototype .collection-header h1 { font-size: 21px; font-weight: 600; color: var(--wood-ink); }
+.wooden-prototype .collection-count { font-size: 16px; }
+.wooden-prototype .tools-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 22px; }
+.pixel-home.wooden-prototype .tool-item {
+  position: relative; isolation: isolate; display: flex; flex-direction: row;
+  align-items: center; justify-content: flex-start; gap: 14px;
+  min-height: 48px; height: 48px; padding: 0 19px; border: 0;
+  border-radius: 0; background: transparent; box-shadow: none; color: var(--wood-ink);
+  overflow: visible; transform: none; transition: translate .12s;
+}
+.wooden-prototype .tool-item:hover { translate: 0 -1px; }
+.wooden-prototype .tool-item .tool-icon-tile {
+  flex: 0 0 26px; width: 26px; height: 26px; background: transparent;
+  border-radius: 0; box-shadow: none;
+}
+.wooden-prototype .tool-icon,
+.wooden-prototype .text-icon,
+.wooden-prototype .emoji-icon { width: 26px; height: 26px; font-size: 24px; border-radius: 2px; }
+.wooden-prototype .text-icon { background: transparent !important; color: var(--wood-ink); font-size: 16px; }
+.wooden-prototype .tool-copy { min-width: 0; flex: 1; }
+.pixel-home.wooden-prototype .tool-name {
+  display: block; text-align: left; font-size: 16px; line-height: 1.5;
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+}
+.wooden-prototype .tool-item-edit-btn,
+.wooden-prototype .tool-item-delete-btn { z-index: 2; top: -8px; background: var(--wood-hover); border-color: var(--wood-edge); }
+.wooden-prototype .tool-item-delete-btn { right: 9px; }
+.wooden-prototype .tool-item-edit-btn { right: 33px; }
+.wooden-prototype .tool-item:focus-visible,
+.wooden-prototype #category-menu li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wooden-prototype .tool-item.drag-over-before { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wooden-prototype .tool-item.drag-over-after { outline: 2px dashed var(--accent); outline-offset: 3px; }
+.wooden-prototype .collection-tip { margin-top: 32px; }
+.prototype-settings { margin: auto; width: min(360px, calc(100% - 40px)); padding: 24px; border: 1px solid var(--wood-edge); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.prototype-settings::backdrop { background: #182b3b55; }
+.prototype-settings-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.prototype-settings-heading h2 { font-size: 20px; }
+.prototype-settings-heading button { border: 0; background: transparent; color: inherit; padding: 8px; cursor: pointer; }
+.prototype-settings label { display: block; margin: 18px 0 8px; }
+.prototype-settings select, .prototype-settings input { width: 100%; }
+.prototype-settings select { border: 1px solid var(--line); padding: 9px; color: inherit; background: var(--surface); }
+.prototype-settings p { margin-top: 20px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+@media (max-width: 900px) {
+  .wooden-prototype .tools-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+}
+@media (max-width: 680px) {
+  .wooden-prototype .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .wooden-prototype #category-menu { width: auto; min-width: 0; flex-wrap: wrap; gap: 8px; }
+  .wooden-prototype #category-menu li { min-width: 82px; padding: 7px 12px; font-size: 14px; }
+  .wooden-prototype .category-count { display: inline; }
+  .wooden-prototype .collection-header h1 { font-size: 18px; }
+  .wooden-prototype .collection-count { font-size: 13px; }
+  .pixel-home.wooden-prototype .tool-item { padding: 0 12px; gap: 9px; }
+  .pixel-home.wooden-prototype .tool-name { font-size: 14px; }
+  .wooden-prototype .tool-item .tool-icon-tile { width: 22px; flex-basis: 22px; }
+  .wooden-prototype .tool-icon, .wooden-prototype .emoji-icon { width: 22px; height: 22px; font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .wooden-prototype .tool-item { transition: none; } }

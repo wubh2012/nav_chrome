@@ -39,11 +39,11 @@
           <div class="card-title" id="appearance-title"><i class="bi bi-fonts"></i> 字体外观</div>
           <p class="section-note">全页统一使用一款字体，包含时间、标题、网站名称和弹窗。字号可单独调整。</p>
           <div class="font-controls">
-            <div class="form-group"><label for="font-body">页面字体</label><select id="font-body"><option value="wenkai">A · 霞鹜文楷 TC — 温和手写</option><option value="kuaile">B · 站酷快乐体 — 圆润活泼</option><option value="pixel">C · 缝合像素 — 复古像素</option><option value="system">系统黑体 — 清晰简洁</option></select></div>
+            <div class="form-group"><label for="font-body">页面字体</label><select id="font-body"><option value="kuaile">A · 站酷快乐体 — 圆润活泼（内置）</option><option value="pixel">B · 缝合像素 — 复古像素（内置）</option><option value="notoSerif">C · 思源宋体 SC — 清雅衬线（在线）</option><option value="notoSans">D · 思源黑体 SC — 清晰简洁（在线）</option><option value="smiley">E · 得意黑 — 窄斜个性（在线）</option><option value="wenkaiGb">F · 霞鹜文楷 GB — 简体规范（在线）</option><option value="system">系统黑体 — 清晰简洁</option></select></div>
             <div class="form-group"><label for="font-size">网站与正文大小</label><select id="font-size"><option value="14">14 px · 紧凑</option><option value="15">15 px</option><option value="16">16 px · 推荐</option><option value="17">17 px</option><option value="18">18 px · 更大</option><option value="19">19 px</option><option value="20">20 px · 大字</option></select></div>
           </div>
           <div class="font-preview" id="font-preview" aria-label="首页字体预览"><div class="preview-top"><strong>水果导航</strong><span id="font-draft">当前首页字体</span></div><div class="preview-time">21:05</div><div class="preview-date">10月2日 · 星期五 · 八月廿二</div><div class="preview-search"><i class="bi bi-search"></i> 找一条熟悉的小路…</div><div class="preview-categories">全部　主页　AI　Code　影视</div><div class="preview-sites"><div><i class="bi bi-play-btn"></i><span>哔哩哔哩</span></div><div><i class="bi bi-chat-dots"></i><span>微信公众平台</span></div><div><i class="bi bi-book"></i><span>中国大学慕课</span></div><div><i class="bi bi-github"></i><span>GitHub</span></div></div></div>
-          <p class="subtle-note">三款字体已内置，无需联网；生僻字由系统字库补齐。长网站名称最多显示两行，完整名称可悬停查看。</p>
+          <p class="subtle-note">A–B 已内置，离线可用；C–F 在线加载，按页面文字获取所需字形。离线时会回退到系统字体，生僻字也由系统字库补齐。长网站名称最多显示两行，完整名称可悬停查看。</p>
           <div class="btn-group"><button type="button" class="btn btn-secondary" id="font-reset"><i class="bi bi-arrow-counterclockwise"></i> 恢复推荐</button><button type="button" class="btn btn-primary" id="font-save"><i class="bi bi-check-lg"></i> 保存字体</button></div>
           <p id="font-status" class="draft-status" role="status" aria-live="polite"></p>
         </section>

@@ -68,22 +68,46 @@
       return [];
     }
 
-    const sortedCategories = sortCategoriesByPriority(Object.keys(data));
     const tools = [];
 
-    sortedCategories.forEach((category) => {
+    Object.keys(data).forEach((category) => {
       const categoryTools = Array.isArray(data[category]) ? data[category] : [];
       categoryTools.forEach((tool) => {
         tools.push({ ...tool, category });
       });
     });
 
-    return tools;
+    return tools.sort(compareNavigationOrder);
+  }
+
+  /**
+   * 比较两个网站的共享导航顺序。
+   * 缺失的排序值置后；旧数据并列时沿用分类优先级，再按分类名和 ID 稳定排序。
+   */
+  function compareNavigationOrder(left, right) {
+    const leftSort = Number(left?.sort);
+    const rightSort = Number(right?.sort);
+    const leftHasSort = left?.sort !== null && left?.sort !== '' && Number.isFinite(leftSort);
+    const rightHasSort = right?.sort !== null && right?.sort !== '' && Number.isFinite(rightSort);
+    if (leftHasSort !== rightHasSort) return leftHasSort ? -1 : 1;
+    if (leftHasSort && leftSort !== rightSort) return leftSort - rightSort;
+
+    const categoryDiff = getCategoryPriority(left?.category) - getCategoryPriority(right?.category);
+    if (categoryDiff !== 0) return categoryDiff;
+
+    const categoryNameDiff = String(left?.category || '').localeCompare(String(right?.category || ''), CATEGORY_LOCALE);
+    if (categoryNameDiff !== 0) return categoryNameDiff;
+
+    const idDiff = String(left?.id || '').localeCompare(String(right?.id || ''), CATEGORY_LOCALE);
+    if (idDiff !== 0) return idDiff;
+
+    return String(left?.name || '').localeCompare(String(right?.name || ''), CATEGORY_LOCALE);
   }
 
   return {
     getCategoryPriority,
     sortCategoriesByPriority,
-    flattenToolsByCategoryPriority
+    flattenToolsByCategoryPriority,
+    compareNavigationOrder
   };
 });

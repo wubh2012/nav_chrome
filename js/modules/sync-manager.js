@@ -59,7 +59,12 @@ const SyncManager = (function() {
     isSyncing = true;
 
     try {
-      const result = await SyncService.syncNavigation({ reason: 'periodic' });
+      const result = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: 'SYNC_NOW', reason: 'periodic' }, (response) => {
+          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          else resolve(response || { success: false, error: '后台未返回同步结果' });
+        });
+      });
 
       if (result.skipped) {
         console.log('[SyncManager] Sync skipped:', result.message);

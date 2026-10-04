@@ -18,6 +18,7 @@
   function seed(snapshot) {
     if (!snapshot?.data || !Array.isArray(snapshot.categories)) return;
     const data = JSON.parse(JSON.stringify(snapshot.data));
+    normalizeLegacyGlobalSort(data);
     Object.values(data).flat().forEach(site => {
       const local = window.OrchardLocalIcons?.byUrl[site.url];
       if (local) site.icon = new URL(local, document.baseURI).href;
@@ -27,6 +28,34 @@
     Object.assign(state, { [key + '_data']: data, [key + '_categories']: [...snapshot.categories],
       [key + '_revision']: 1, [key + '_syncTime']: Date.now() });
     document.documentElement.dataset.prototypeDataSource = snapshot.source || 'extension-snapshot';
+  }
+  function normalizeLegacyGlobalSort(data) {
+    const categoryPriority = { '主页': 1, 'AI': 2, 'Code': 3, '影视': 5 };
+    const categories = Object.keys(data).sort((left, right) => {
+      const priorityDiff = (categoryPriority[left] || 4) - (categoryPriority[right] || 4);
+      return priorityDiff || left.localeCompare(right, 'zh-Hans-CN');
+    });
+    let globalSort = 10;
+    categories.forEach(category => {
+      const items = Array.isArray(data[category]) ? data[category] : [];
+      items
+        .map((site, index) => ({ site, index }))
+        .sort((left, right) => {
+          const leftSort = Number(left.site?.sort);
+          const rightSort = Number(right.site?.sort);
+          const leftHasSort = left.site?.sort != null && left.site.sort !== '' && Number.isFinite(leftSort);
+          const rightHasSort = right.site?.sort != null && right.site.sort !== '' && Number.isFinite(rightSort);
+          if (leftHasSort !== rightHasSort) return leftHasSort ? -1 : 1;
+          if (leftHasSort && leftSort !== rightSort) return leftSort - rightSort;
+          return left.index - right.index;
+        })
+        .forEach(({ site }) => {
+          if (site && typeof site === 'object') {
+            site.sort = globalSort;
+            globalSort += 10;
+          }
+        });
+    });
   }
   seed(window.OrchardPrototypeData);
   const ready = (async () => {

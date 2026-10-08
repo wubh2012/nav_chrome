@@ -26,7 +26,7 @@
 
   <div class="container">
     <header class="settings-header"><div><a class="settings-brand" href="newtab.html"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><path d="M7 18C7 29 15 38 25 38C36 38 41 29 38 20L7 18Z" fill="currentColor"/><path d="M11 21C12 30 18 34 25 34C32 34 36 29 35 23L11 21Z" fill="#f2af83"/><path d="M22 15C22 8 31 5 35 8C32 14 26 17 22 15Z" fill="currentColor"/><path d="M20 26V28M27 28V30M31 25V27" stroke="currentColor" stroke-width="2"/></svg>水果导航</a><h1>让果园更像你</h1><p>挑一款字体，换一张背景，安放常去的网站。</p></div><a class="btn btn-secondary" href="newtab.html"><i class="bi bi-arrow-up-right"></i> 返回首页</a></header>
-    <nav class="settings-nav" aria-label="设置分区"><a href="#appearance">字体外观</a><a href="#background-settings">背景设置</a><a href="#feishu-settings">飞书同步</a><a href="#data-settings">数据管理</a></nav>
+    <nav class="settings-nav" aria-label="设置分区"><a href="#layout-settings">首页布局</a><a href="#appearance">字体外观</a><a href="#background-settings">背景设置</a><a href="#feishu-settings">飞书同步</a><a href="#data-settings">数据管理</a></nav>
 
     <div class="test-mode-notice" id="test-mode-notice">
       <i class="bi bi-info-circle"></i>
@@ -35,6 +35,14 @@
 
     <div class="settings-grid">
       <div class="primary-cards">
+        <section class="card" id="layout-settings" aria-labelledby="layout-title">
+          <div class="card-title" id="layout-title"><i class="bi bi-layout-sidebar"></i> 首页布局</div>
+          <p class="section-note">选择习惯的布局，两种布局共用网站收藏、分类、搜索和同步数据。</p>
+          <div class="form-group"><label for="home-layout">布局方式</label><select id="home-layout" aria-describedby="home-layout-note"><option value="wooden">木牌果园 · 当前布局</option><option value="classic">经典分类 · 10 月 1 日前布局</option></select></div>
+          <p class="subtle-note" id="home-layout-note">木牌果园集中展示所有网站，保留果园场景和调色；经典分类恢复左侧分类栏、侧栏折叠和网站卡片。保存后刷新或重新打开首页生效。</p>
+          <div class="btn-group"><button type="button" class="btn btn-primary" id="home-layout-save"><i class="bi bi-check-lg"></i> 保存布局</button></div>
+          <p id="home-layout-status" class="draft-status" role="status" aria-live="polite"></p>
+        </section>
         <section class="card appearance-card" id="appearance" aria-labelledby="appearance-title">
           <div class="card-title" id="appearance-title"><i class="bi bi-fonts"></i> 字体外观</div>
           <p class="section-note">全页统一使用一款字体，包含时间、标题、网站名称和弹窗。字号可单独调整。</p>
@@ -324,6 +332,8 @@
 
   <script src="js/modules/storage.js"></script>
   <script src="js/modules/font-manager.js"></script>
+  <script src="js/modules/home-layout.js"></script>
+  <script src="js/options-layout.js"></script>
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/background-config.js"></script>
   <script src="js/modules/background-storage.js"></script>

@@ -6,7 +6,7 @@
   HTML 本身不直接读写网络、文件或数据库。
   关键依赖与约束：依赖 Manifest V3 扩展环境、css/style.css、Bootstrap Icons、
   js/modules 下的全局模块加载顺序以及 newtab 页面固定容器 ID。
-  首页采用 D 像素果园，玩法收进场景与果园面板。
+  首页支持木牌果园与经典分类布局，布局偏好在设置页独立保存。
 -->
 <html lang="zh-CN" data-skin="cream" data-theme="light">
 
@@ -33,10 +33,11 @@
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/pixel-garden.css">
   <link rel="stylesheet" href="css/wood-home.css">
+  <link rel="stylesheet" href="css/home-layout.css">
 
 </head>
 
-<body class="pixel-home wooden-home">
+<body class="pixel-home wooden-home home-layout-pending">
   <a class="skip-link" href="#home-search-btn">跳到搜索</a>
   <div class="artdeco-bg" aria-hidden="true"><div class="background-image-layer"></div><div class="background-overlay-layer"></div></div>
   <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite"><span>按 Ctrl+F 快速搜索，点击键盘查看快捷键</span></div>
@@ -104,6 +105,160 @@
     </div>
     <div id="sync-status" class="sync-status"></div>
   </main>
+
+  <!-- 经典分类布局：来自 2026-10-01 前的版本，弹窗及业务逻辑与木牌布局共用。 -->
+  <template id="classic-home-template">
+    <div class="artdeco-grid" aria-hidden="true"></div>
+<div class="container">
+    <!-- 左侧侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="user-avatar">
+        <svg class="logo-svg" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+
+          <defs>
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path class="grid-path" d="M 50 0 L 0 0 0 50"/>
+            </pattern>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <rect class="bg" width="100%" height="100%"/>
+          <rect width="100%" height="100%" fill="url(#grid)" opacity="0.5"/>
+
+          <path class="neon-stroke" d="M 200 300 Q 200 500 400 550 Q 600 500 600 300 Q 550 250 650 250 L 700 150 L 600 200 Q 550 250 500 250 Z" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+          <path class="neon-stroke" d="M 250 320 Q 250 480 400 520 Q 550 480 580 350 Q 550 320 500 320 Z" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+          <ellipse class="neon-fill" cx="320" cy="380" rx="15" ry="8" transform="rotate(30 320 380)" filter="url(#glow)"/>
+          <ellipse class="neon-fill" cx="370" cy="450" rx="15" ry="8" transform="rotate(30 370 450)" filter="url(#glow)"/>
+          <ellipse class="neon-fill" cx="450" cy="480" rx="15" ry="8" transform="rotate(30 450 480)" filter="url(#glow)"/>
+          <ellipse class="neon-fill" cx="530" cy="440" rx="15" ry="8" transform="rotate(30 530 440)" filter="url(#glow)"/>
+          <path class="neon-stroke" d="M 600 250 L 700 150 L 600 200 Z" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+        </svg>
+      </div>
+      <nav class="nav-menu">
+        <ul id="category-menu">
+          <li class="active" data-category="all"><i class="bi bi-grid-3x3-gap"></i> 全部</li>
+          <!-- 动态生成的分类菜单项 -->
+        </ul>
+
+        <!-- 皮肤选择器 -->
+        <div class="skin-selector" id="skin-selector">
+          <div class="current-skin">
+            <div class="current-skin-preview">
+              <i class="bi bi-flower1 current-skin-icon"></i>
+            </div>
+            <span class="current-skin-name">奶油复古</span>
+            <button class="skin-expand-btn">
+              <i class="bi bi-chevron-down"></i>
+            </button>
+          </div>
+
+          <div class="skin-options">
+            <div class="skin-grid">
+              <div class="skin-option" data-skin="graphite">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">石墨中性</span>
+              </div>
+
+              <div class="skin-option active" data-skin="cream">
+                <div class="skin-colors">
+                  <div class="color-dot primary"></div>
+                  <div class="color-dot secondary"></div>
+                  <div class="color-dot accent"></div>
+                </div>
+                <span class="skin-label">奶油复古</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 设置入口 -->
+        <ul class="settings-menu">
+          <li id="open-settings-btn">
+            <i class="bi bi-gear"></i>
+            <span>设置</span>
+          </li>
+          <li id="github-link">
+            <a href="https://github.com/wubh2012/nav_chrome" target="_blank">
+              <i class="bi bi-github"></i>
+              <span>GitHub</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <div class="main-content-inner">
+        <div class="top-actions">
+          <div class="theme-toggle-anchor">
+            <div class="theme-shortcut-hint" aria-hidden="true">
+              <kbd>Ctrl</kbd>
+              <kbd>F</kbd>
+              <span>快速搜索</span>
+            </div>
+            <button id="shortcut-help-btn" class="shortcut-help-button" title="快捷键" aria-label="查看快捷键" aria-expanded="false" aria-controls="shortcut-help-panel">
+              <i class="bi bi-keyboard"></i>
+            </button>
+            <button id="desktop-theme-toggle-btn" class="theme-toggle-button" title="切换主题" aria-label="切换主题">
+              <i class="bi bi-moon-fill"></i>
+            </button>
+            <div id="shortcut-help-panel" class="shortcut-help-panel" role="dialog" aria-label="快捷键" aria-hidden="true">
+              <div class="shortcut-help-title">快捷键</div>
+              <ul>
+                <li><span><kbd>Ctrl</kbd><kbd>F</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>↑</kbd><kbd>↓</kbd></span><strong>切换结果</strong></li>
+                <li><span><kbd>Enter</kbd></span><strong>打开结果</strong></li>
+                <li><span><kbd>Esc</kbd></span><strong>关闭搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>滚轮</kbd></span><strong>切换分类</strong></li>
+                <li><span><kbd>侧栏滚轮</kbd></span><strong>切换分类</strong></li>
+                <li><span><kbd>双击时间</kbd></span><strong>时间聚焦</strong></li>
+              </ul>
+            </div>
+          </div>
+
+          <a class="classic-mobile-settings manage-sites-btn" href="options.html" aria-label="设置"><i class="bi bi-gear" aria-hidden="true"></i></a>
+          <button id="manage-sites-btn" class="manage-sites-btn" aria-label="整理网站" aria-pressed="false" title="整理网站"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+          <button id="add-link-btn" class="add-link-btn" title="添加网站" aria-label="添加网站">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+
+        <!-- 顶部信息区 -->
+        <header class="top-info">
+          <div class="time-info" title="双击进入时间聚焦">
+            <div class="time-stack">
+              <div class="current-time" id="current-time">--:--</div>
+              <div class="date-info" id="date-info">加载中...</div>
+            </div>
+          </div>
+        </header>
+
+        <!-- 工具图标列表 -->
+        <div class="tools-container">
+          <div id="tools-grid" class="tools-grid">
+            <!-- 动态生成的工具图标 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 同步状态提示 -->
+      <div id="sync-status" class="sync-status"></div>
+    </main>
+  </div>
+  </template>
 
   <!-- 添加链接模态框 -->
   <div id="add-link-modal" class="modal">

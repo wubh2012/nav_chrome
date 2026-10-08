@@ -67,7 +67,7 @@
       initial.title = initial.closest('.tool-item')?.getAttribute('aria-label') + '：暂无本地图标';
     });
   }
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('chromeNav:layoutReady', () => {
     ['tools-grid', 'quick-search-list'].forEach(id => {
       const container = document.getElementById(id);
       if (container) new MutationObserver(scan).observe(container, { childList: true, subtree: true });

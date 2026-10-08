@@ -186,6 +186,7 @@ const UIRenderer = (function() {
    * @param {string} category - 分类名称
    */
   function switchCategory(category) {
+    if (document.body.classList.contains('wooden-home')) category = 'all';
     currentCategory = category;
 
     // 更新菜单激活状态
@@ -562,6 +563,7 @@ const UIRenderer = (function() {
    * @returns {string|null}
    */
   function switchAdjacentCategory(direction) {
+    if (document.body.classList.contains('wooden-home')) return null;
     const categories = getCategorySequence();
     if (categories.length <= 1) return null;
 

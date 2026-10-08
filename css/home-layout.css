@@ -1,0 +1,26 @@
+/* 经典首页结构取自 2026-10-01 前的 412ef9a；基础布局沿用 style.css。 */
+.home-layout-pending { visibility: hidden; }
+.classic-home { font-family: var(--navigation-font, "Microsoft YaHei", sans-serif); }
+.classic-home :where(button, input, select, textarea, kbd, .tool-name, .current-time, .date-info) { font-family: inherit; }
+.classic-home .tool-name { font-size: var(--navigation-text-size, var(--tool-name-font-size)); }
+.classic-home :is(.tool-icon-tile, .tool-copy) { display: contents; }
+.classic-home .tool-domain { display: none; }
+.classic-home .category-count { margin-left: auto; font-size: 11px; opacity: .65; }
+.classic-home .logo-svg .neon-stroke { stroke: currentColor; fill: none; }
+.classic-home .logo-svg .neon-fill { fill: currentColor; }
+.classic-home .logo-svg .bg { fill: var(--bg-primary); }
+.classic-home .logo-svg .grid-path { stroke: var(--border-faint-color); fill: none; }
+.classic-home .manage-sites-btn {
+  width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--border-soft-color); color: var(--text-secondary); background: var(--surface-2);
+}
+.classic-home .manage-sites-btn[aria-pressed="true"] { color: var(--accent-primary); border-color: var(--accent-primary); }
+.classic-home.site-manage-mode .tool-item-edit-btn,
+.classic-home.site-manage-mode .tool-item-delete-btn { opacity: 1; }
+.classic-home .tool-item:focus-within .tool-item-edit-btn,
+.classic-home .tool-item:focus-within .tool-item-delete-btn { opacity: 1; }
+.classic-mobile-settings { display: none; }
+@media (max-width: 768px) {
+  .classic-mobile-settings { display: inline-flex; align-items: center; justify-content: center; }
+  .classic-home .time-info { padding-top: 48px; }
+}

@@ -19,11 +19,12 @@
    */
   async function initApp() {
     try {
+      if (window.HomeLayout) await HomeLayout.init();
       await ThemeManager.init();
       if (typeof FontManager !== 'undefined') await FontManager.init();
       ThemeManager.bindEvents();
 
-      if (window.PixelGarden) {
+      if (window.PixelGarden && document.body.classList.contains('pixel-home')) {
         await PixelGarden.init(document.querySelector('.main-content'));
       }
 

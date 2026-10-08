@@ -27,7 +27,8 @@
     };
     return '#' + component(0) + component(8) + component(4);
   }
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('chromeNav:layoutReady', () => {
+    if (!document.body.classList.contains('wooden-home')) return;
     const panel = document.getElementById('wood-tuner');
     const toggle = document.getElementById('wood-tuner-toggle');
     const status = document.getElementById('wood-tuner-status');

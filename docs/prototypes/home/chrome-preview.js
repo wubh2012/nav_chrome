@@ -1,6 +1,9 @@
 // 仅供开发服务器预览扩展页面。浏览器预览数据与真实扩展存储隔离。
 (() => {
   const state = { chromeNav_testMode: true };
+  const layoutKey = 'chromeNav_homeLayout_v1';
+  const layoutPreviewKey = 'chromeNav_previewHomeLayout';
+  try { state[layoutKey] = localStorage.getItem(layoutPreviewKey); } catch (_) {}
   const navigationPreviewKey = 'chromeNav_previewNavigation_v1';
   try { Object.assign(state, JSON.parse(localStorage.getItem(navigationPreviewKey) || '{}')); } catch (_) {}
   const previewKey = 'chromeNav_previewGarden';
@@ -39,6 +42,7 @@
         Object.assign(state, items);
         if ('chromeNav_pixelGarden_v1' in items) localStorage.setItem(previewKey,JSON.stringify(items.chromeNav_pixelGarden_v1));
         if (fontKey in items) localStorage.setItem(fontPreviewKey, JSON.stringify(items[fontKey]));
+        if (layoutKey in items) localStorage.setItem(layoutPreviewKey, items[layoutKey]);
         if (Object.keys(items).some(key => key.startsWith('chromeNav_scopedNav_')
           || ['chromeNav_navData', 'chromeNav_categories', 'chromeNav_dateInfo', 'chromeNav_lastSyncTime',
             'chromeNav_navRevision', 'chromeNav_pendingSortSync'].includes(key))) persistNavigationPreview();
@@ -46,7 +50,7 @@
         callback?.(); return Promise.resolve();
       },
       remove(keys, callback) { (Array.isArray(keys) ? keys : [keys]).forEach(key => delete state[key]); persistNavigationPreview(); callback?.(); return Promise.resolve(); },
-      clear(callback) { Object.keys(state).forEach(key => delete state[key]); localStorage.removeItem(fontPreviewKey); localStorage.removeItem(previewKey); localStorage.removeItem(navigationPreviewKey); changesEvent.emit({[fontKey]:{newValue:undefined}}); callback?.(); return Promise.resolve(); }
+      clear(callback) { Object.keys(state).forEach(key => delete state[key]); localStorage.removeItem(fontPreviewKey); localStorage.removeItem(previewKey); localStorage.removeItem(navigationPreviewKey); localStorage.removeItem(layoutPreviewKey); changesEvent.emit({[fontKey]:{newValue:undefined}}); callback?.(); return Promise.resolve(); }
     }, onChanged: changesEvent },
     runtime: { id: 'prototype-only', onMessage: event(), getURL: file => '/' + file,
       openOptionsPage() { window.open('/options.html','_blank','noopener'); },

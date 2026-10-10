@@ -25,6 +25,12 @@
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
+  "commands": {
+    "open-quick-search": {
+      "suggested_key": "Ctrl+Shift+F",
+      "description": "打开水果导航新标签页内的快速搜索"
+    }
+  },
   "background": {
     "service_worker": "js/background.js"
   },

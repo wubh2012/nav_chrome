@@ -62,6 +62,21 @@ const QuickSearchManager = (function() {
   function bindEvents() {
     document.getElementById('home-search-btn')?.addEventListener('click', () => open());
     document.addEventListener('keydown', handleGlobalKeyDown, true);
+    // 浏览器命令不依赖页面键盘焦点；各新标签页都能收到事件，只处理目标标签页。
+    if (typeof chrome !== 'undefined' && chrome.commands?.onCommand) {
+      chrome.commands.onCommand.addListener(async (command, tab) => {
+        if (command !== 'open-quick-search' || !tab?.id) return;
+        try {
+          const currentTab = await chrome.tabs.getCurrent();
+          if (currentTab?.id !== tab.id || !currentTab.active) return;
+          window.focus();
+          if (isOpen()) inputEl.focus();
+          else open();
+        } catch (error) {
+          console.warn('[QuickSearchManager] 浏览器快捷键唤起失败:', error);
+        }
+      });
+    }
 
     overlayEl.addEventListener('click', close);
 

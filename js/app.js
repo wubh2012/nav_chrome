@@ -19,6 +19,11 @@
    */
   async function initApp() {
     try {
+      // 搜索只依赖现有 DOM，先绑定快捷键，避免布局和导航数据加载阻塞唤起。
+      if (window.QuickSearchManager) {
+        QuickSearchManager.init();
+      }
+
       if (window.HomeLayout) await HomeLayout.init();
       await ThemeManager.init();
       if (typeof FontManager !== 'undefined') await FontManager.init();
@@ -46,10 +51,6 @@
 
       if (window.DragSortManager) {
         DragSortManager.init();
-      }
-
-      if (window.QuickSearchManager) {
-        QuickSearchManager.init();
       }
 
       bindPageActions();

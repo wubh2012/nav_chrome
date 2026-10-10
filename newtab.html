@@ -40,7 +40,7 @@
 <body class="pixel-home wooden-home home-layout-pending">
   <a class="skip-link" href="#home-search-btn">跳到搜索</a>
   <div class="artdeco-bg" aria-hidden="true"><div class="background-image-layer"></div><div class="background-overlay-layer"></div></div>
-  <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite"><span>按 Ctrl+F 快速搜索，点击键盘查看快捷键</span></div>
+  <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite"><span>按 Ctrl+Shift+F 快速搜索，无需先点击页面</span></div>
   <main class="main-content">
     <div class="main-content-inner">
       <div class="pixel-sky">
@@ -53,8 +53,9 @@
             <div id="shortcut-help-panel" class="shortcut-help-panel" role="dialog" aria-label="快捷键" aria-hidden="true">
               <div class="shortcut-help-title">快捷键</div>
               <ul>
+                <li><span><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd></span><strong>搜索（无需点击）</strong></li>
                 <li><span><kbd>Ctrl</kbd><kbd>F</kbd></span><strong>快速搜索</strong></li>
-                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>搜索（页面有焦点时）</strong></li>
                 <li><span><kbd>↑</kbd><kbd>↓</kbd></span><strong>切换结果</strong></li>
                 <li><span><kbd>Enter</kbd></span><strong>打开结果</strong></li>
                 <li><span><kbd>Esc</kbd></span><strong>关闭搜索</strong></li>
@@ -217,8 +218,9 @@
             <div id="shortcut-help-panel" class="shortcut-help-panel" role="dialog" aria-label="快捷键" aria-hidden="true">
               <div class="shortcut-help-title">快捷键</div>
               <ul>
+                <li><span><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd></span><strong>搜索（无需点击）</strong></li>
                 <li><span><kbd>Ctrl</kbd><kbd>F</kbd></span><strong>快速搜索</strong></li>
-                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>快速搜索</strong></li>
+                <li><span><kbd>Shift</kbd><kbd>Shift</kbd></span><strong>搜索（页面有焦点时）</strong></li>
                 <li><span><kbd>↑</kbd><kbd>↓</kbd></span><strong>切换结果</strong></li>
                 <li><span><kbd>Enter</kbd></span><strong>打开结果</strong></li>
                 <li><span><kbd>Esc</kbd></span><strong>关闭搜索</strong></li>
@@ -370,7 +372,7 @@
           aria-label="网站快速搜索输入框"
         >
       </div>
-      <div class="quick-search-hint">Ctrl+F / Shift 双击唤起，↑/↓ 切换，Enter 打开，Esc 关闭</div>
+      <div class="quick-search-hint">Ctrl+Shift+F 无需点击唤起；页面有焦点时可用 Ctrl+F / 双击 Shift，↑/↓ 切换，Enter 打开，Esc 关闭</div>
       <ul id="quick-search-list" class="quick-search-list" role="listbox"></ul>
       <div id="quick-search-empty" class="quick-search-empty">没有匹配的网站</div>
     </div>

@@ -313,9 +313,12 @@ body {
   border-bottom: none;
 }
 
-.quick-search-item:hover,
-.quick-search-item.active {
+.quick-search-item:hover {
   background: var(--selected-bg);
+}
+
+.quick-search-item.active {
+  background: color-mix(in srgb, var(--accent-primary) 18%, var(--selected-bg));
 }
 
 .quick-search-item-icon {

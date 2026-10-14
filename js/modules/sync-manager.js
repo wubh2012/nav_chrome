@@ -8,6 +8,7 @@ const SyncManager = (function() {
   const MAX_RETRIES = 3;
   const RETRY_INTERVAL = 1 * 60 * 1000;
   const DEFAULT_SYNC_INTERVAL = 30;
+  const INITIAL_SYNC_DELAY = 1;
 
   let syncInterval = DEFAULT_SYNC_INTERVAL;
   let isSyncing = false;
@@ -19,19 +20,18 @@ const SyncManager = (function() {
   async function startPeriodicSync(intervalMinutes = DEFAULT_SYNC_INTERVAL) {
     syncInterval = intervalMinutes;
 
-    await stopPeriodicSync();
-
-    await chrome.alarms.create(syncAlarmName, {
-      delayInMinutes: syncInterval,
-      periodInMinutes: syncInterval
-    });
+    // 闹钟属于整个扩展，打开新标签页时保留已有计划。
+    const existingAlarm = await chrome.alarms.get(syncAlarmName);
+    if (!existingAlarm || existingAlarm.periodInMinutes !== syncInterval) {
+      await chrome.alarms.create(syncAlarmName, {
+        delayInMinutes: INITIAL_SYNC_DELAY,
+        periodInMinutes: syncInterval
+      });
+    }
 
     isPeriodicEnabled = true;
     console.log(`[SyncManager] Periodic sync started, interval ${syncInterval} minutes`);
 
-    syncNow().catch((error) => {
-      console.warn('[SyncManager] Initial background sync failed:', error);
-    });
   }
 
   async function stopPeriodicSync() {
@@ -78,8 +78,7 @@ const SyncManager = (function() {
 
       retryCount = 0;
 
-      console.log(`[SyncManager] Sync completed, ${result.categories.length} categories`);
-      notifyFrontend();
+      console.log('[SyncManager] Sync completed');
     } catch (error) {
       console.error('[SyncManager] Sync failed:', error);
       handleRetry();
@@ -113,17 +112,6 @@ const SyncManager = (function() {
     console.error(`[SyncManager] Sync failed after ${MAX_RETRIES} retries`);
   }
 
-  function notifyFrontend() {
-    try {
-      chrome.runtime.sendMessage({
-        type: 'SYNC_COMPLETE',
-        timestamp: Date.now()
-      });
-    } catch (error) {
-      // Ignore when no page is listening.
-    }
-  }
-
   async function getStatus() {
     const status = await Storage.getSyncStatus();
     const syncTime = await Storage.getSyncTime();
@@ -140,23 +128,8 @@ const SyncManager = (function() {
   }
 
   async function init() {
-    chrome.alarms.onAlarm.addListener((alarm) => {
-      if (alarm.name === syncAlarmName) {
-        console.log('[SyncManager] Alarm triggered');
-        handleSync();
-      }
-    });
-
+    // 定时同步、SYNC_NOW 请求和完成广播统一由后台处理。
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.type === 'SYNC_NOW') {
-        syncNow().then(() => {
-          sendResponse({ success: true });
-        }).catch((error) => {
-          sendResponse({ success: false, error: error.message });
-        });
-        return true;
-      }
-
       if (message.type === 'GET_SYNC_STATUS') {
         getStatus().then((status) => {
           sendResponse(status);

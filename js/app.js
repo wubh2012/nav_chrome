@@ -13,6 +13,8 @@
   const TIME_FOCUS_MODE_CLASS = 'time-focus-mode';
   let wheelDeltaAccumulator = 0;
   let wheelCooldownUntil = 0;
+  let renderedDataScope = null;
+  let navigationRefreshQueue = Promise.resolve();
 
   /**
    * 初始化应用
@@ -43,7 +45,6 @@
       }
 
       SyncManager.init();
-      startPeriodicSyncIfNeeded();
 
       const startupState = await loadStartupState();
       await loadNavigationData(startupState);
@@ -62,6 +63,8 @@
 
       document.body.classList.add('loaded');
       showShortcutToastIfNeeded();
+      // 缓存和页面交互准备好后再安排后台同步，不阻塞首屏。
+      startPeriodicSyncIfNeeded(startupState);
 
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
@@ -102,7 +105,7 @@
       if (message.type === 'SYNC_COMPLETE') {
         console.log('[ChromeNav] 收到同步完成通知');
 
-        loadNavigationData(false).then(() => {
+        refreshNavigationFromCache().then(() => {
           sendResponse({ success: true });
         }).catch((error) => {
           console.warn('[ChromeNav] 更新数据失败:', error);
@@ -136,18 +139,29 @@
         const revisionChange = changes[Storage.getNavDataRevisionKey(scope)];
         if (!revisionChange) return;
         const nextRevision = Number(revisionChange.newValue || 0);
-        if (nextRevision <= UIRenderer.getNavDataSnapshot().revision) return;
-
-        const [cached, pending] = await Promise.all([
-          Storage.loadNavData(scope), Storage.loadPendingSortSync(scope)
-        ]);
-        if (!cached || cached.revision < nextRevision) return;
-        await renderResolvedNavigation(cached.data, cached.categories, cached.dateInfo,
-          pending, cached.revision, scope);
+        if (scope === renderedDataScope && nextRevision <= UIRenderer.getNavDataSnapshot().revision) return;
+        await refreshNavigationFromCache(nextRevision);
       } catch (error) {
         console.warn('[ChromeNav] 同步其他标签页的网站顺序失败:', error);
       }
     });
+  }
+
+  /**
+   * 两种同步通知共用缓存更新队列，避免并发通知重复显示同一修订。
+   */
+  function refreshNavigationFromCache(minRevision = 0) {
+    const refresh = navigationRefreshQueue.then(async () => {
+      const state = await loadStartupState();
+      if (!state.cached || state.cached.revision < minRevision) return;
+      if (state.dataScope === renderedDataScope
+          && state.cached.revision <= UIRenderer.getNavDataSnapshot().revision) return;
+      await renderResolvedNavigation(state.cached.data, state.cached.categories,
+        getCurrentDateInfo(state.cached.dateInfo), state.pendingSortSync,
+        state.cached.revision, state.dataScope);
+    });
+    navigationRefreshQueue = refresh.catch(() => {});
+    return refresh;
   }
 
   /**
@@ -199,6 +213,7 @@
     const resolvedData = resolveNavDataForRender(data, pendingSortSync);
     await UIRenderer.init(resolvedData, categories, dateInfo,
       revision === null ? await Storage.getNavDataRevision(dataScope) : revision);
+    renderedDataScope = dataScope;
     window.cachedCategories = categories;
 
     if (window.LinkManager) {

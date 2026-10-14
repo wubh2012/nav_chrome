@@ -46,11 +46,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
     console.log(`[Background] Periodic sync configured, interval ${interval} minutes`);
 
-    setTimeout(() => {
-      handleBackgroundSync('startup').catch((error) => {
-        console.warn('[Background] Startup sync failed:', error);
-      });
-    }, 2000);
+    // 首次同步由一分钟后的闹钟触发，首页优先使用缓存。
   }
 
   flushPendingSortSync('startup').catch((error) => {

@@ -1,6 +1,7 @@
 {
   "scripts": {
     "prototype:home": "node scripts/preview-home-prototypes.cjs",
+    "preview:orchard": "node scripts/preview-orchard.cjs",
     "test": "node --test",
     "package": "node scripts/package-extension.js",
     "package:skip-tests": "node scripts/package-extension.js --skip-tests"

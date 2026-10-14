@@ -1,0 +1,278 @@
+/* 正式果园组件样式：限制在果园窗口与景观，不改变网站导航布局。 */
+:where(.orchard-world,.orchard-dialog){--sky:#def0fa;--ground:#ccdfa5;--ink:#294e59;--muted:#4c6560;--leaf:#478c65;--leaf-light:#68a17a;--wood:#f9e9cf;--edge:#949966;--paper:#fbf8ed;--line:#becba4;--accent:#386e57;--pond:#91c3cc;color:var(--ink);font-family:var(--navigation-font,"Microsoft YaHei",sans-serif);font-size:16px;line-height:1.65}
+:where(.orchard-world,.orchard-dialog) :where(button,input,select,textarea){font:inherit;color:inherit}
+:where(.orchard-world,.orchard-dialog) button{cursor:pointer;border:0;background:transparent;touch-action:manipulation}
+:where(.orchard-world,.orchard-dialog) button:disabled{opacity:.5;cursor:default}
+:where(.orchard-world,.orchard-dialog) :where(h1,h2,h3,p){margin:0}
+:where(.orchard-world,.orchard-dialog) :where(h1,h2,h3){font-family:inherit;font-weight:500}
+:where(.orchard-world,.orchard-dialog) :where(button,[role=button]):focus-visible{outline:3px solid #d99a66;outline-offset:3px}
+:where(.orchard-world,.orchard-dialog) button:hover:not(:disabled){filter:brightness(1.04)}
+.orchard-world{width:min(1360px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:22px 0 35px;border:1px solid var(--line);border-radius:7px;background:var(--sky);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 15px 50px #122d3030}
+.orchard-dialog{width:min(550px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--line);border-radius:7px;background:var(--paper);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 15px 50px #122d3030}
+.orchard-world::backdrop,.orchard-dialog::backdrop{background:#17373c66;backdrop-filter:blur(2px)}
+:where(.orchard-world,.orchard-dialog)[data-night=true],html[data-theme=dark] :where(.orchard-world,.orchard-dialog){--sky:#192b40;--ground:#304b3d;--ink:#e5eedb;--muted:#b8cbb9;--leaf:#3f7255;--leaf-light:#518762;--wood:#465843;--edge:#7f9675;--paper:#304538;--line:#58735b;--accent:#d0dfa7;--pond:#547c85}
+.orchard-home{--ground:var(--meadow);--leaf:var(--pixel-leaf);--leaf-light:var(--pixel-leaf-light);--pond:#91c3cc}
+.orchard-home .pixel-scene{max-width:1200px;margin:auto!important}
+.orchard-home .garden-pocket,.orchard-home .garden-menu-close,.orchard-home .garden-menu-footer button{min-height:44px}
+.orchard-home .garden-menu-action{display:flex;align-items:center;justify-content:space-between;gap:15px;width:100%;min-height:55px}
+.orchard-home .garden-menu-action strong,.orchard-home .garden-menu-action small{display:block;text-align:left}
+.orchard-home .garden-menu-action small{color:var(--muted);font-size:12px}
+.orchard-home[data-interactive=false] .scene-object{pointer-events:none}
+.world-header-actions{display:flex;align-items:center;gap:10px}
+.orchard-world .journal-entries{display:grid;gap:7px;margin:13px 0}
+.orchard-world .notebook>.secondary-button,.orchard-world .notebook>.primary-button{width:100%;margin-top:10px}
+.orchard-world .workshop-notebook>.secondary-button{margin-top:15px}
+.orchard-world .world-header-actions .secondary-button{min-width:44px}
+.orchard-toast{position:fixed;top:15px;left:50%;translate:-50% 0;max-width:calc(100vw - 32px);width:max-content;z-index:1100;padding:12px 18px;background:#fbf8ed;color:#34533c;border:1px solid #a6b58c;box-shadow:0 4px 15px #20372a18;border-radius:6px;font:14px/1.6 var(--navigation-font,"Microsoft YaHei",sans-serif)}
+body.wooden-home[data-orchard-night=true]:not(.has-custom-background){--page:#192940;--surface:#283e53;--ink:#e1f0ef;--muted:#a3bbcf;--line:#567088;--accent:#c5dfad;--on-accent:#243929;--wash:#334c39;--meadow:#304c3e;--pixel-leaf:#37654d;--pixel-leaf-light:#4a7e60;--cloud:#2d435a}
+body.wooden-home[data-orchard-night=true]:not(.has-custom-background) .collection-header h1,body.wooden-home[data-orchard-night=true]:not(.has-custom-background) .wood-tuner-toggle{color:var(--ink)}
+body.wooden-home[data-orchard-night=true]:not(.has-custom-background) .collection-count{color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene{overflow:visible;shape-rendering:crispEdges}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object{cursor:pointer;outline:none}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object .hit{fill:transparent;stroke:transparent;stroke-width:3}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object:hover .hit,:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object:focus-visible .hit{stroke:var(--accent);stroke-dasharray:5 5;fill:#ffffff0b}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object:hover .object-art{filter:brightness(1.1)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene text{font-family:Orchard,'Microsoft YaHei',sans-serif;fill:var(--ink);font-size:13px;shape-rendering:auto}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .hint-label{opacity:0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object:hover .hint-label,:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .scene-object:focus-visible .hint-label{opacity:1}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .scene-heading{max-width:1300px;margin:16px auto 22px;padding:0 42px;display:flex;justify-content:space-between;align-items:end;gap:24px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .eyebrow{font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-bottom:5px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .scene-heading h1{font-size:35px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .scene-heading p{font-size:13px;color:var(--muted);margin-top:5px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .quiet-link{min-height:44px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .explore-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;max-width:1300px;padding:0 42px;margin:auto}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .map-wrap{position:relative;background:#d3e3b5;border:1px solid #a8bd93;box-shadow:0 5px 0 #abc198;padding:14px;align-self:start}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .map-wrap svg{width:100%;display:block}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .map-sign{position:absolute;top:25px;left:30px;pointer-events:none;font-size:11px;background:#f8f4de;padding:5px 10px;border:1px solid #b4bd92;color:#456553}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .map-tip{display:flex;justify-content:space-between;gap:10px;padding:9px 6px 0;font-size:11px;color:#526b51}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook{background:var(--paper);border:1px solid var(--line);padding:21px 20px;position:relative;box-shadow:4px 4px 0 #7e967918}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook:before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:repeating-linear-gradient(0deg,transparent 0 15px,#71896a30 15px 17px)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook h2{font-size:23px;margin:5px 0 9px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook .description{font-size:13px;color:var(--muted);line-height:1.9}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook .divider{border-top:1px dashed var(--line);margin:20px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-top:18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-tabs button{flex:1;font-size:12px;padding:6px 2px;min-height:38px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-tabs button[aria-pressed=true]{background:var(--accent);color:var(--paper);border-radius:3px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .entry{padding:14px 0;border-bottom:1px dashed var(--line);font-size:12px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .entry strong{display:block;font-size:14px;font-weight:400;margin-bottom:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .entry span{color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .entry i{margin-right:7px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .primary-button{background:#426f50;color:#fff9e9;border:1px solid #335b41;padding:9px 14px;border-radius:4px;min-height:44px;font-size:13px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .secondary-button{border:1px solid var(--line);border-radius:4px;padding:8px 12px;min-height:44px;font-size:13px;background:color-mix(in srgb,var(--paper) 75%,transparent)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .full-button{width:100%;margin-top:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .side-stat{font-size:12px;margin-top:15px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .side-stat strong{font:16px Consolas,monospace;color:var(--ink);margin-left:5px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .night-garden .pixel-scene{width:100%;display:block}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .night-layout .notebook{margin-top:18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-head{display:flex;align-items:start;justify-content:space-between;gap:12px;padding:22px 24px 12px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-head h2{font-size:25px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-head .eyebrow{margin-bottom:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-close{font-size:20px;width:40px;height:40px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-body{padding:0 24px 24px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-body p{font-size:14px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-art{display:flex;justify-content:center;height:150px;background:color-mix(in srgb,var(--ground) 60%,var(--paper));margin:6px 0 18px;border-radius:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-art svg{width:180px;height:150px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-steps{display:flex;margin:15px 0 18px;gap:6px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-step{flex:1;font-size:11px;color:var(--muted);border-top:3px solid var(--line);padding-top:7px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-step.current{border-color:#67976b;color:var(--ink)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .button-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .dialog-body .hint{font-size:11px;margin-top:14px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .seed-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .seed-option{border:1px solid var(--line);background:var(--wood);padding:12px 4px;text-align:center;border-radius:4px;font-size:13px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .seed-option svg{width:80px;height:90px;display:block;margin:auto}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .seed-option small{display:block;color:var(--muted);font-size:11px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-list .entry{display:flex;justify-content:space-between;gap:20px;align-items:center}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-list .entry p{font-size:12px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-list .entry button{flex-shrink:0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .tone-buttons{display:flex;gap:12px;margin-top:20px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .tone-buttons button{flex:1;background:var(--wood);border:1px solid var(--edge);min-height:65px;border-radius:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .puzzle-picture{height:160px;display:grid;place-items:center;background:var(--ground);margin:15px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .puzzle-picture svg{width:220px;height:150px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .mini-progress{font-size:12px;color:var(--muted);margin-top:13px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fish-items{display:flex;gap:10px;margin-top:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fish-item{flex:1;padding:12px 5px;text-align:center;background:var(--wood);font-size:12px;border:1px solid var(--line)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fish-item svg{display:block;width:60px;height:45px;margin:auto}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fish-item.unknown{opacity:.6}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .rain-lines{pointer-events:none;opacity:.35}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .rain-lines path{stroke:#669caa;stroke-width:2}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .scene-ground{fill:var(--ground)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .scene-water{fill:var(--pond)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .grass-mark{fill:var(--leaf-light);opacity:.5}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .tree-shadow{fill:#718d5825}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .lantern-light{fill:#ead898;opacity:.12}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .warm-light{fill:#f5d990}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .notebook .small-pill{color:var(--ink)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) button.entry{display:block;width:100%;text-align:left;min-height:44px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) button.entry:hover{background:color-mix(in srgb,var(--ground) 35%,transparent)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .journal-tabs button{min-height:44px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-layout{grid-template-columns:minmax(0,1fr) 315px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-notebook h3{font-size:19px;margin-bottom:8px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-heading h2{margin:0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:80px;border:1px solid var(--line);background:#eaf0dc75;border-radius:4px;padding:7px 3px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette i{font-size:21px;color:#567b58}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette strong{font-size:11px;font-weight:400}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette small{font-size:10px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .item-palette button[aria-pressed=true]{border:2px solid #577c54;background:#d7e8c1}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .object-tools{display:flex;gap:7px;margin-top:16px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .object-tools button{flex:1;border:1px solid var(--line);min-height:44px;font-size:12px;border-radius:3px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .color-swatches{display:flex;gap:10px;margin-top:16px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .color-swatches button{width:44px;height:44px;background:var(--swatch);border:3px solid var(--paper);border-radius:50%;outline:1px solid var(--line)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .color-swatches button[aria-pressed=true]{outline:2px solid #456c4b}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-hit{fill:transparent;stroke:transparent;stroke-width:2;rx:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-item{cursor:grab;outline:none}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-item:focus-visible .workshop-hit,:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-item:hover .workshop-hit{stroke:#658c5e;stroke-dasharray:4 4;fill:#ffffff12}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .workshop-hit.selected{stroke:#3e774d;stroke-dasharray:5 4;fill:#f5ffd421}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .editing-map{touch-action:none;user-select:none;cursor:crosshair}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .editing-map .scene-object{pointer-events:none}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walking-discoveries{max-width:1300px;margin:24px auto 30px;padding:0 42px;color:var(--ink)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walking-discoveries h2{font-size:23px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walking-discoveries p{font-size:12px;color:var(--muted);margin-top:3px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walk-event-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walk-event-list button{text-align:left;border:1px solid #b7c99f;background:#f4f8e8;padding:15px 16px;min-height:88px;border-radius:4px;display:grid;grid-template-columns:26px 1fr;gap:4px 8px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walk-event-list i{grid-row:1/3;font-size:20px;color:#62885d}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walk-event-list strong{font-size:13px;font-weight:400}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .walk-event-list span{font-size:11px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-routes{max-width:1300px;margin:28px auto 0;padding:0 42px;color:var(--ink)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-heading h2{font-size:23px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-heading p{font-size:12px;color:var(--muted);margin-top:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-route-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-route{padding:15px 14px;background:#f9f9ec;border:1px solid #becda6;border-top:3px solid var(--route-color);border-radius:3px;text-align:left;min-height:142px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-top{display:flex;align-items:center;gap:8px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-top i{font-size:20px;color:var(--route-color)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-top strong{font-family:Orchard,sans-serif;font-size:18px;font-weight:400}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-top small{margin-left:auto;font:12px Consolas,monospace;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-description{display:block;font-size:11px;color:var(--muted);min-height:40px;margin:10px 0 11px;line-height:1.8}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-progress{height:5px;border-radius:2px;background:#dce4cf;overflow:hidden;margin:7px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-progress span{display:block;height:100%;background:var(--route-color,#73916a)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-xp{display:block;font-size:10px;color:var(--muted);line-height:1.7}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-dialog-progress{padding:15px;background:var(--ground);margin:16px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .route-dialog-progress strong{font-size:14px;font-weight:400}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .life-route-note{margin:16px 0 5px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-book{display:grid;gap:12px;margin-top:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-book button{text-align:left;padding:15px;background:var(--wood);border:1px solid var(--line);border-radius:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .growth-book strong{font-weight:400;font-size:15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-choices{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:20px 0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-choices i{display:block;font-size:36px;color:#67976c;margin:12px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:145px;background:var(--ground);padding:15px;margin:12px 0 18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-preview i{font-size:40px;color:#6e9573}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-preview strong{font-family:Orchard,sans-serif;font-size:23px;font-weight:400}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .crop-preview span{font-size:12px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-list{display:grid;gap:10px;margin-top:17px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px dashed var(--line)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-entry h3{font-size:17px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-entry p{font-size:12px;margin-top:4px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-entry small{font-size:11px;color:var(--muted)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .recipe-entry button{white-space:nowrap;font-size:11px;flex-shrink:0}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .friend-story{padding:18px;background:var(--ground);margin-top:18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .friend-story p{font-family:Orchard,sans-serif;font-size:17px;line-height:1.8;color:var(--ink)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .gift-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .gift-list small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-places{display:flex;gap:8px;margin:8px 0 15px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-places button{flex:1;border:1px solid var(--line);border-radius:4px;min-height:44px;font-size:13px;padding:8px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-places button[aria-pressed=true]{background:#4e7d76;color:#fff9e5}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-places small{display:block;font-size:10px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-water{height:155px;background:#a4ccce;position:relative;padding:15px;text-align:center;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:end;overflow:hidden}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-water p{font-size:12px!important;color:#294e59!important;position:relative}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-water svg{width:65px;height:45px;position:absolute;left:58%;top:30px}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-float{position:absolute;left:49%;top:45px;width:7px;height:22px;background:#edede0;border-top:10px solid #d49881;box-shadow:0 3px 0 #44645b}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-ripples{position:absolute;width:90px;height:17px;border:2px solid #d0e7e3;border-radius:50%;top:63px;left:calc(50% - 45px)}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .fishing-notice{margin:16px 0 8px;min-height:28px;font-size:13px!important}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .hint-label{pointer-events:none}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene .hint-label{pointer-events:none}
+:where(.orchard-world,.orchard-dialog) .entry{min-height:44px;text-align:left}
+:where(.orchard-world,.orchard-dialog) button.entry{display:block;width:100%;border:0;border-bottom:1px dashed var(--line)}
+:where(.orchard-world,.orchard-dialog) .entry strong,:where(.orchard-world,.orchard-dialog) .entry span{display:block}
+:where(.orchard-world,.orchard-dialog) .entry .secondary-button{margin-top:8px}
+:where(.orchard-world,.orchard-dialog) .journal-tabs button{min-height:44px}
+:where(.orchard-world,.orchard-dialog) .bi-leaf::before{content:"\f5e2"}
+:where(.orchard-world,.orchard-dialog) .walking-discoveries .walk-event-list button{background:var(--paper);color:var(--ink);border-color:var(--line)}
+:where(.orchard-world,.orchard-dialog) .life-route{background:var(--paper);color:var(--ink);border-color:var(--line)}
+:where(.orchard-world,.orchard-dialog) .item-palette button{background:var(--paper)}
+:where(.orchard-world,.orchard-dialog) .item-palette button[aria-pressed=true]{background:var(--ground)}
+@media(max-width:1050px){.orchard-world .explore-layout{grid-template-columns:minmax(0,1fr) 245px;padding:0 24px;gap:17px}.orchard-world .scene-heading{padding:0 24px}.orchard-world .life-route-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.orchard-world .life-routes,.orchard-world .walking-discoveries{padding:0 24px}}
+@media(max-width:760px){.orchard-world{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:15px 0 25px}.orchard-world .explore-layout{grid-template-columns:1fr;padding:0 16px}.orchard-world .scene-heading{padding:0 16px;align-items:center;gap:12px;margin:8px auto 18px}.orchard-world .scene-heading h1{font-size:25px}.orchard-world .scene-heading p{font-size:12px}.orchard-world .map-wrap{padding:7px}.orchard-world .map-sign{top:12px;left:15px;font-size:10px}.orchard-world .map-tip{font-size:10px}.orchard-world .life-routes,.orchard-world .walking-discoveries{padding:0 16px}.orchard-world .life-route-grid{grid-template-columns:1fr 1fr;gap:10px}.orchard-world .life-heading h2{font-size:20px}.orchard-world .walk-event-list{grid-template-columns:1fr}.orchard-world .item-palette{grid-template-columns:repeat(4,1fr)}.orchard-world .life-route{padding:12px 10px}.orchard-dialog .dialog-head,.orchard-dialog .dialog-body{padding-left:18px;padding-right:18px}.orchard-dialog .seed-options{gap:7px}.orchard-dialog .seed-option svg{width:65px}.orchard-dialog .recipe-entry{gap:10px}.orchard-dialog .recipe-entry h3{font-size:15px}.orchard-dialog .recipe-entry button{padding:7px 8px}.orchard-home .garden-notebook{max-width:calc(100vw - 24px)}.orchard-world .scene-heading .primary-button{font-size:12px;white-space:nowrap}}
+@media(prefers-reduced-motion:reduce){.orchard-world *,.orchard-dialog *,.orchard-home *{animation:none!important;transition:none!important}}
+.orchard-world,.orchard-dialog{margin:auto}
+:where(.orchard-world,.orchard-dialog,.orchard-home) .pixel-scene text{font-family:var(--navigation-font,"Microsoft YaHei",sans-serif)}
+.orchard-world .map-wrap{background:var(--ground);border-color:var(--line)}
+.orchard-world .map-tip{color:var(--muted)}
+
+/* 钓鱼的舞台由状态驱动，持续水面动画不依赖点击或计时奖励。 */
+.orchard-dialog .fishing-water{height:205px;background:linear-gradient(180deg,#a4ccce,#91bdc2);isolation:isolate;margin-bottom:16px}
+.orchard-dialog .fishing-water[data-place=river]{background:linear-gradient(165deg,#91bdc2,#79a9b2)}
+.orchard-dialog .fishing-water[data-place=shallows]{background:linear-gradient(180deg,#b7d5ca,#91c4bd)}
+.orchard-dialog[data-night=true] .fishing-water{background:linear-gradient(180deg,#4b727e,#385967)}
+.orchard-dialog .fishing-water .fishing-caption{color:#294e59!important;z-index:2;margin-top:auto;min-height:20px}
+.orchard-dialog[data-night=true] .fishing-water .fishing-caption{color:#e0eeeb!important}
+.fishing-current{position:absolute;inset:0;pointer-events:none}
+.fishing-current span{position:absolute;width:65px;height:3px;background:#daefeb80;animation:orchard-current 5s ease-in-out infinite}
+.fishing-current span:nth-child(1){left:12%;top:38%;animation-delay:-2s}
+.fishing-current span:nth-child(2){left:73%;top:24%;width:38px;animation-delay:-4s}
+.fishing-current span:nth-child(3){left:61%;top:65%;width:52px}
+.fishing-reeds{position:absolute;left:19px;bottom:42px;width:4px;height:35px;background:#658b73;box-shadow:8px 9px #7aa080,16px -7px #658b73,24px 12px #7aa080}
+.fishing-rig{position:absolute;left:50%;top:65px;width:1px;height:1px;transform:translate(calc(var(--fish-progress,0) * -.7px),calc(var(--fish-progress,0) * .12px));transition:transform 380ms ease-out;pointer-events:none}
+.orchard-dialog .fishing-float{left:-3px;top:0;transform-origin:50% 90%;animation:orchard-bob 2.5s ease-in-out infinite;transition:opacity 220ms}
+.orchard-dialog .fishing-ripples{left:-45px;top:19px;animation:orchard-ripple 2.8s ease-out infinite;opacity:0;pointer-events:none}
+.orchard-dialog .fishing-ripples.ripple-echo{animation-delay:-1.4s}
+.fishing-line{position:absolute;left:0;top:-70px;width:1px;height:74px;background:#e6efe9a0;transform-origin:bottom;transform:rotate(-32deg);transition:transform 350ms}
+.fishing-shadow{position:absolute;left:61%;top:96px;opacity:.26;animation:orchard-fish-swim 6s ease-in-out infinite;pointer-events:none}
+.orchard-dialog .fishing-shadow svg{position:static;width:48px;height:34px}
+.orchard-dialog .fishing-catch{position:absolute;left:calc(50% - 30px);top:32px;pointer-events:none}
+.orchard-dialog .fishing-catch svg{position:static;width:60px;height:45px}
+.fishing-water[data-phase=ready] .fishing-rig,.fishing-water[data-phase=caught] .fishing-rig{opacity:0}
+.fishing-water[data-phase=miss] .fishing-rig,.fishing-water[data-phase=released] .fishing-rig{opacity:0}
+.fishing-water[data-phase=ready] .fishing-shadow{opacity:.15}
+.fishing-water[data-phase=wait] .fishing-rig{animation:orchard-cast 550ms ease-out both}
+.fishing-water[data-phase=bite] .fishing-float{animation:orchard-bite 950ms ease-in-out infinite}
+.fishing-water[data-phase=bite] .fishing-ripples{animation-duration:1.3s}
+.fishing-water[data-phase=reel] .fishing-float{animation:orchard-tug 1.3s ease-in-out infinite}
+.fishing-water[data-phase=reel] .fishing-line{transform:rotate(-15deg)}
+.fishing-water[data-phase=caught] .fishing-catch{animation:orchard-catch 700ms ease-out both}
+.fishing-water[data-phase=caught] .fishing-shadow{opacity:0}
+.fishing-water[data-phase=miss] .fishing-shadow{animation:orchard-fish-away 650ms ease-in both}
+.fishing-water[data-phase=released] .fishing-catch{animation:orchard-release 850ms ease-in both}
+.fishing-water[data-phase=released] .fishing-shadow{opacity:0}
+@keyframes orchard-fish-away{from{transform:translateX(0);opacity:.26}to{transform:translateX(95px);opacity:0}}
+@keyframes orchard-release{0%{transform:translateY(0);opacity:1}40%{transform:translateY(-10px);opacity:1}100%{transform:translateY(80px);opacity:0}}
+@keyframes orchard-bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(5px) rotate(5deg)}}
+@keyframes orchard-ripple{0%{transform:scale(.45);opacity:.75}100%{transform:scale(1.55);opacity:0}}
+@keyframes orchard-current{0%,100%{transform:translateX(-12px);opacity:.15}50%{transform:translateX(18px);opacity:.65}}
+@keyframes orchard-fish-swim{0%,100%{transform:translateX(15px) translateY(0)}50%{transform:translateX(-55px) translateY(7px)}}
+@keyframes orchard-cast{0%{translate:-110px 30px;opacity:0}50%{translate:-45px -40px;opacity:1}100%{translate:0 0;opacity:1}}
+@keyframes orchard-bite{0%,100%{transform:translateY(5px) rotate(3deg)}35%{transform:translateY(20px) rotate(-12deg)}65%{transform:translateY(10px) rotate(9deg)}}
+@keyframes orchard-tug{0%,100%{transform:translateY(7px) rotate(-6deg)}50%{transform:translateY(13px) rotate(12deg)}}
+@keyframes orchard-catch{0%{transform:translateY(65px) rotate(-20deg);opacity:0}55%{transform:translateY(-12px) rotate(8deg);opacity:1}100%{transform:translateY(0) rotate(0);opacity:1}}
+
+/* 每次操作只有短暂反馈；导航首页保持安静。 */
+:where(.orchard-world,.orchard-dialog,.orchard-home) button{transition:background-color 180ms,color 180ms,box-shadow 180ms}
+:where(.orchard-world,.orchard-dialog,.orchard-home) button:active:not(:disabled){box-shadow:inset 0 2px 4px #294e591c}
+:where(.orchard-world,.orchard-home) .object-art{transform-box:fill-box;transform-origin:center bottom;transition:translate 180ms}
+:where(.orchard-world,.orchard-home) .scene-object:hover>.object-art,:where(.orchard-world,.orchard-home) .scene-object:focus-visible>.object-art{translate:0 -2px}
+.orchard-world .editing-map .object-art{translate:0 0;animation:none}
+.orchard-world [data-creature=butterfly]>.object-art,.orchard-world [data-creature=moth]>.object-art{animation:orchard-visitor 4s ease-in-out infinite}
+.orchard-dialog .fish-item:not(.unknown) svg{animation:orchard-visitor 4s ease-in-out infinite}
+.orchard-dialog .fish-item:nth-child(2n) svg{animation-delay:-2s}
+.orchard-dialog .friend-portrait{height:100px;display:grid;place-items:center;margin-top:14px;background:var(--ground);border-bottom:1px dashed var(--line)}
+.orchard-dialog .friend-portrait svg{width:100px;height:80px;animation:orchard-breathe 4s ease-in-out infinite}
+.orchard-feedback{position:fixed;left:50%;top:38%;translate:-50% -50%;pointer-events:none;z-index:3;text-align:center;width:240px;animation:orchard-feedback 1.1s ease-out both;--feedback-color:#edb56d}
+.orchard-feedback[data-effect=water]{--feedback-color:#7cb9d1}
+.orchard-feedback[data-effect=grow],.orchard-feedback[data-effect=gather],.orchard-feedback[data-effect=place]{--feedback-color:#a6c286}
+.orchard-feedback[data-effect=heart]{--feedback-color:#e3a3b2}
+.orchard-feedback[data-effect=craft],.orchard-feedback[data-effect=spark]{--feedback-color:#ead093}
+.feedback-particle{position:absolute;left:50%;top:-10px;width:7px;height:7px;background:var(--feedback-color);animation:orchard-particle 850ms ease-out both;animation-delay:var(--particle-delay)}
+.orchard-feedback[data-effect=heart] .feedback-particle{width:11px;height:10px;clip-path:polygon(0 0,40% 0,50% 25%,60% 0,100% 0,100% 60%,50% 100%,0 60%)}
+.orchard-feedback[data-effect=water] .feedback-particle{height:11px;border-radius:2px 2px 5px 5px}
+.feedback-label{display:inline-block;padding:7px 14px;background:var(--paper,#fbf8ed);color:var(--ink,#294e59);font-size:13px;border:1px solid var(--line,#becba4);border-radius:4px;box-shadow:0 4px 12px #18383215}
+@keyframes orchard-feedback{0%{opacity:0;transform:translateY(10px)}18%,75%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-15px)}}
+@keyframes orchard-particle{0%{opacity:0;transform:translate(0,15px) scale(.7)}20%{opacity:1}100%{opacity:0;transform:translate(var(--particle-x),-55px) scale(.5)}}
+@keyframes orchard-visitor{0%,100%{translate:0 0}50%{translate:3px -4px}}
+@keyframes orchard-breathe{0%,100%{scale:1}50%{scale:1.025}}
+.orchard-world .rain-lines,.orchard-home .rain-lines{animation:orchard-rain 900ms linear infinite}
+.orchard-world[data-night=true] .lantern-light{animation:orchard-lamplight 4s ease-in-out infinite}
+@keyframes orchard-rain{from{translate:2px -8px}to{translate:-2px 8px}}
+@keyframes orchard-lamplight{0%,100%{opacity:.1}50%{opacity:.2}}
+body[data-orchard-paused=true] :where(.orchard-world,.orchard-dialog,.orchard-home) *{animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce){.orchard-world *,.orchard-dialog *,.orchard-home *,.orchard-feedback,.orchard-feedback *{animation:none!important;transition:none!important}.orchard-dialog .fishing-ripples{opacity:.65}.orchard-dialog .fishing-water[data-phase=bite] .fishing-float{top:17px}.orchard-feedback{display:none}}

@@ -3,11 +3,12 @@
  * Handles startup, alarms, and sync message routing.
  */
 
-importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js', 'modules/sync-service.js');
+importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js', 'modules/sync-service.js', 'modules/orchard-core.js', 'modules/orchard-service.js');
 
 const PENDING_SORT_ALARM = 'chromeNav_pending_sort_retry';
 let navigationCommitQueue = Promise.resolve();
 let pendingSortFlushQueue = Promise.resolve();
+let orchardService;
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[Background] Extension installed/updated:', details.reason);
@@ -55,6 +56,12 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'ORCHARD_ACTION') {
+    if (sender.id !== chrome.runtime.id) { sendResponse({ success:false, message:'果园操作来源无法识别。' }); return false; }
+    if (!orchardService) orchardService = OrchardService.create(chrome.storage.local);
+    orchardService.handle(message).then(sendResponse).catch(error => sendResponse({success:false,message:error.message}));
+    return true;
+  }
   if (message.type === 'COMMIT_NAV_DATA') {
     commitNavigationState(message).then(sendResponse).catch((error) => {
       sendResponse({ success: false, error: error.message });

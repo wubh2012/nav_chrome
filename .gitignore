@@ -44,3 +44,8 @@ Thumbs.db
 *.zip
 .ace-tool/
 .agents/
+
+# 果园开发预览、隔离浏览器资料与已归档的可丢弃原型
+.orchard-qa/
+.playwright-mcp/
+docs/prototypes/orchard-play/

@@ -8,6 +8,9 @@
   try { Object.assign(state, JSON.parse(localStorage.getItem(navigationPreviewKey) || '{}')); } catch (_) {}
   const previewKey = 'chromeNav_previewGarden';
   try { state.chromeNav_pixelGarden_v1 = JSON.parse(localStorage.getItem(previewKey)); } catch (_) {}
+  const orchardKey = 'chromeNav_orchard_v2';
+  const orchardPreviewKey = 'chromeNav_previewOrchard_v2';
+  try { state[orchardKey] = JSON.parse(localStorage.getItem(orchardPreviewKey)); } catch (_) {}
   const fontKey = 'chromeNav_typography_v1';
   const fontPreviewKey = 'chromeNav_previewTypography';
   try { state[fontKey] = JSON.parse(localStorage.getItem(fontPreviewKey)); } catch (_) {}
@@ -25,6 +28,12 @@
     localStorage.setItem(navigationPreviewKey, JSON.stringify(navigationState));
   }
   window.addEventListener('storage', event => {
+    if (event.key === orchardPreviewKey) {
+      const oldValue = state[orchardKey];
+      try { state[orchardKey] = JSON.parse(event.newValue); } catch (_) { delete state[orchardKey]; }
+      changesEvent.emit({[orchardKey]:{oldValue,newValue:state[orchardKey]}});
+      return;
+    }
     if (event.key !== fontPreviewKey) return;
     const oldValue = state[fontKey];
     try { state[fontKey] = JSON.parse(event.newValue); } catch (_) { delete state[fontKey]; }
@@ -33,6 +42,9 @@
   window.chrome = {
     storage: { local: {
       get(keys, callback) {
+        if (keys == null || (Array.isArray(keys) ? keys : [keys]).includes(orchardKey)) {
+          try { state[orchardKey] = JSON.parse(localStorage.getItem(orchardPreviewKey)); } catch (_) {}
+        }
         const result = keys == null ? { ...state } : Object.fromEntries(
           (Array.isArray(keys) ? keys : [keys]).filter(key => key in state).map(key => [key, state[key]]));
         callback?.(result); return Promise.resolve(result);
@@ -41,6 +53,7 @@
         const changes = Object.fromEntries(Object.entries(items).map(([key, value]) => [key, {oldValue: state[key], newValue: value}]));
         Object.assign(state, items);
         if ('chromeNav_pixelGarden_v1' in items) localStorage.setItem(previewKey,JSON.stringify(items.chromeNav_pixelGarden_v1));
+        if (orchardKey in items) localStorage.setItem(orchardPreviewKey, JSON.stringify(items[orchardKey]));
         if (fontKey in items) localStorage.setItem(fontPreviewKey, JSON.stringify(items[fontKey]));
         if (layoutKey in items) localStorage.setItem(layoutPreviewKey, items[layoutKey]);
         if (Object.keys(items).some(key => key.startsWith('chromeNav_scopedNav_')
@@ -49,12 +62,18 @@
         changesEvent.emit(changes);
         callback?.(); return Promise.resolve();
       },
-      remove(keys, callback) { (Array.isArray(keys) ? keys : [keys]).forEach(key => delete state[key]); persistNavigationPreview(); callback?.(); return Promise.resolve(); },
-      clear(callback) { Object.keys(state).forEach(key => delete state[key]); localStorage.removeItem(fontPreviewKey); localStorage.removeItem(previewKey); localStorage.removeItem(navigationPreviewKey); localStorage.removeItem(layoutPreviewKey); changesEvent.emit({[fontKey]:{newValue:undefined}}); callback?.(); return Promise.resolve(); }
+      remove(keys, callback) { (Array.isArray(keys) ? keys : [keys]).forEach(key => { delete state[key]; if(key===orchardKey)localStorage.removeItem(orchardPreviewKey); }); persistNavigationPreview(); callback?.(); return Promise.resolve(); },
+      clear(callback) { Object.keys(state).forEach(key => delete state[key]); localStorage.removeItem(orchardPreviewKey); localStorage.removeItem(fontPreviewKey); localStorage.removeItem(previewKey); localStorage.removeItem(navigationPreviewKey); localStorage.removeItem(layoutPreviewKey); changesEvent.emit({[fontKey]:{newValue:undefined},[orchardKey]:{newValue:undefined}}); callback?.(); return Promise.resolve(); }
     }, onChanged: changesEvent },
     runtime: { id: 'prototype-only', onMessage: event(), getURL: file => '/' + file,
       openOptionsPage() { window.open('/options.html','_blank','noopener'); },
       sendMessage(message, callback) {
+        if (message?.type === 'ORCHARD_ACTION' && window.OrchardService) {
+          const run = () => OrchardService.create(window.chrome.storage.local).handle(message);
+          const response = window.navigator.locks
+            ? window.navigator.locks.request('chromeNav_previewOrchardWrite', run) : run();
+          return response.catch(error => ({success:false,message:error.message})).then(result => { callback?.(result); return result; });
+        }
         if (message?.type !== 'COMMIT_NAV_DATA') {
           callback?.({ success: true }); return Promise.resolve({ success: true });
         }

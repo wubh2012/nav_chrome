@@ -1,0 +1,72 @@
+// 加载隔离的 Chromium 扩展配置，检查真实 Service Worker 与 storage，不使用用户浏览器资料。
+const fs=require('node:fs');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+const {chromium}=require(process.env.ORCHARD_PLAYWRIGHT_MODULE||'playwright');
+const root=path.resolve(__dirname,'..');
+const output=path.join(root,'.orchard-qa');
+const profile=path.join(output,'profile-'+Date.now());
+const Core=require('../js/modules/orchard-core.js');
+async function run(){
+  fs.mkdirSync(output,{recursive:true});
+  const context=await chromium.launchPersistentContext(profile,{channel:'chromium',headless:true,args:[`--disable-extensions-except=${root}`,`--load-extension=${root}`],viewport:{width:1440,height:1000}});
+  const report=[],errors=[];
+  try{
+    const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker',{timeout:15000});
+    const id=worker.url().split('/')[2],url=`chrome-extension://${id}/newtab.html`;
+    await worker.evaluate(async()=>{await chrome.storage.local.set({chromeNav_testMode:true,chromeNav_typography_v1:{body:'system',size:16},chromeNav_pixelGarden_v1:{version:1,basket:9,total:15,cats:2,fruit:[3,2,1,0],trees:[{stage:2,fruit:0}],fish:[0,2],decorations:[{id:'flowers',owned:true,visible:false,zone:2}]}});});
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(url);await page.waitForFunction(()=>document.querySelector('.garden-pocket strong')?.textContent==='9');
+    let saved=await worker.evaluate(async()=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2);
+    assert.equal(saved.version,2);assert.equal(saved.trees.length,5);assert.deepEqual(saved.fish,['blue','gold']);report.push('真实扩展旧存档迁移');
+    await page.locator('#garden-scene-slot [data-orchard="tree"][data-index="0"]').click();
+    await page.locator('#orchard-dialog [data-orchard="tree-harvest"]').click();
+    await page.waitForFunction(()=>document.querySelector('.garden-pocket strong').textContent==='12');await page.keyboard.press('Escape');
+    await page.reload();await page.waitForFunction(()=>document.querySelector('.garden-pocket strong')?.textContent==='12');report.push('刷新恢复 Chrome 本地存储');
+    const second=await context.newPage();await second.goto(url);await second.waitForSelector('.garden-pocket');
+    const responses=await Promise.all([page,second].map(p=>p.evaluate(()=>chrome.runtime.sendMessage({type:'ORCHARD_ACTION',action:{type:'tree-harvest',index:1}}))));
+    assert.equal(responses.filter(r=>r.success).length,1);await page.waitForFunction(()=>document.querySelector('.garden-pocket strong').textContent==='14');await second.waitForFunction(()=>document.querySelector('.garden-pocket strong').textContent==='14');report.push('跨标签页后台串行操作与即时同步');await second.close();
+    await page.locator('.garden-pocket').click();await page.locator('[data-orchard="walk"]').click();
+    await page.locator('#orchard-world [data-orchard="crop"][data-index="0"]').click();
+    await page.locator('#orchard-dialog [data-orchard="sow"][data-kind="berry"]').click();
+    await page.waitForFunction(()=>document.querySelector('#orchard-dialog [data-orchard="crop-water"]'));
+    // 在隔离配置中使苗床成熟，用实际页面验证离线恢复后的收获，不添加正式快进按钮。
+    await worker.evaluate(async()=>{const {chromeNav_orchard_v2:s}=await chrome.storage.local.get('chromeNav_orchard_v2');s.life.plots[0].readyAt=Date.now()-1000;await chrome.storage.local.set({chromeNav_orchard_v2:s});});
+    await page.waitForFunction(()=>!document.querySelector('#orchard-dialog [data-orchard="crop-harvest"]').disabled);
+    await page.locator('#orchard-dialog [data-orchard="crop-harvest"]').click();await page.waitForFunction(()=>document.querySelector('.garden-pocket strong').textContent==='16');report.push('真实存档中成熟苗床收获');
+    await page.locator('#orchard-world [data-orchard="edit"]').first().click();
+    await page.locator('#orchard-world [data-orchard="palette"][data-kind="bed"]').click();
+    const point=await page.locator('#orchard-world .editing-map').evaluate(svg=>{const p=svg.createSVGPoint();p.x=700;p.y=180;const q=p.matrixTransform(svg.getScreenCTM());return{x:q.x,y:q.y};});
+    await page.mouse.click(point.x,point.y);await page.waitForFunction(()=>document.querySelector('#orchard-world .workshop-hit.selected'));
+    await page.locator('#orchard-world [data-orchard="color"][data-color="0"]').click();
+    await page.waitForFunction(async()=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.landscape.items.some(i=>i.kind==='bed'&&i.color===0));
+    const bed=await worker.evaluate(async()=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.landscape.items.find(i=>i.kind==='bed'));
+    const dragPoints=await page.locator('#orchard-world .editing-map').evaluate((svg,item)=>{const convert=(x,y)=>{const p=svg.createSVGPoint();p.x=x;p.y=y;const q=p.matrixTransform(svg.getScreenCTM());return{x:q.x,y:q.y};};return{start:convert(item.x,item.y-25),end:convert(item.x+40,item.y-25)};},bed);
+    await page.mouse.move(dragPoints.start.x,dragPoints.start.y);await page.mouse.down();await page.mouse.move(dragPoints.end.x,dragPoints.end.y,{steps:8});await page.mouse.up();
+    await page.waitForFunction(async id=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.landscape.items.find(i=>i.id===id).x===740,bed.id);
+    await page.locator(`#orchard-world .workshop-item[data-id="${bed.id}"]`).focus();await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction(async id=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.landscape.items.find(i=>i.id===id).x===720,bed.id);
+    await page.locator('#orchard-world [data-orchard="undo"]').click();
+    await page.waitForFunction(async id=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.landscape.items.find(i=>i.id===id).x===740,bed.id);report.push('真实指针拖动、方向键移动与后台撤销');
+    await page.locator(`#orchard-world .workshop-item[data-id="${bed.id}"]`).click();
+    const river=await page.locator('#orchard-world .editing-map').evaluate(svg=>{const p=svg.createSVGPoint();p.x=410;p.y=310;const q=p.matrixTransform(svg.getScreenCTM());return{x:q.x,y:q.y};});await page.mouse.click(river.x,river.y);
+    await page.waitForFunction(()=>{const e=document.querySelector('#orchard-world > .orchard-toast');return e&&!e.hidden&&e.textContent.includes('河流');});assert.equal(await page.locator('#orchard-world > .orchard-toast').isVisible(),true);report.push('布置错误提示在原生弹窗内可见');
+    await page.locator('#orchard-world [data-orchard="finish"]').click();assert.equal(await page.locator('#orchard-world [data-creature="cat"]').count(),1);report.push('布置、配色保存与动物组合来访');
+    await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#orchard-world').evaluate(e=>e.scrollWidth<=e.clientWidth+1),true);report.push('390px 展开果园无横向溢出');
+    await page.screenshot({path:path.join(output,'orchard-mobile.png')});await page.setViewportSize({width:1440,height:1000});
+    await page.keyboard.press('Escape');await page.keyboard.press('Control+f');await page.waitForSelector('#quick-search-modal.active');await page.keyboard.press('Escape');assert.equal(await page.locator('#quick-search-modal.active').count(),0);report.push('果园关闭后原有搜索快捷键正常');
+    await page.screenshot({path:path.join(output,'newtab-desktop.png')});
+    await page.locator('.garden-pocket').click();await page.locator('[data-orchard="walk"]').click();await page.screenshot({path:path.join(output,'orchard-desktop.png')});
+    await page.locator('#orchard-world [data-orchard="book"]').first().click();await page.locator('#orchard-dialog [data-orchard="route"][data-route="fish"]').click();await page.locator('#orchard-dialog [data-orchard="fishing"]').click();
+    await worker.evaluate(()=>{Math.random=()=>0;});
+    await page.locator('#orchard-dialog [data-orchard="cast"]').click();await page.waitForSelector('.fishing-water[data-phase="bite"]');await page.locator('#orchard-dialog [data-orchard="reel"]').click();
+    await page.waitForFunction(async()=> (await chrome.storage.local.get('chromeNav_orchard_v2')).chromeNav_orchard_v2.life.inventory.fish===1);report.push('钓鱼交互真实提交收获与经验');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+    const night=new Date();night.setHours(21,0,0,0);await page.clock.setFixedTime(night);await page.reload();await page.waitForSelector('body[data-orchard-night="true"]');
+    await page.screenshot({path:path.join(output,'newtab-night.png')});await page.locator('.garden-pocket').click();await page.locator('[data-orchard="walk"]').click();await page.waitForSelector('#orchard-world[data-night="true"][open]');
+    assert.equal(await page.locator('#orchard-world').evaluate(e=>getComputedStyle(e).getPropertyValue('--sky').trim()),'#192b40');await page.screenshot({path:path.join(output,'orchard-night.png')});report.push('设备本地夜间首页与探索配色');await page.keyboard.press('Escape');
+    await worker.evaluate(async()=>{await chrome.storage.local.set({chromeNav_homeLayout_v1:'classic'});});await page.reload();await page.waitForSelector('body.classic-home');assert.equal(await page.locator('#orchard-world').count(),0);report.push('经典分类布局不初始化果园');
+    assert.deepEqual(errors,[]);report.push('扩展页面无脚本错误');
+    fs.writeFileSync(path.join(output,'extension-check.json'),JSON.stringify({checkedAt:new Date().toISOString(),report,errors},null,2),'utf8');console.log(JSON.stringify({report,errors},null,2));
+  }finally{await context.close();}
+}
+run().catch(error=>{console.error(error);process.exitCode=1;});

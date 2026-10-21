@@ -1,0 +1,15 @@
+/* 快照只参与启动交接，不覆盖已准备好的页面交互。 */
+.first-paint-preview { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+html[data-first-paint-image="1"] .first-paint-preview {
+  background-image: var(--first-paint-image);
+  background-size: var(--first-paint-size, cover);
+  background-position: var(--first-paint-position, center center);
+  background-repeat: no-repeat;
+  filter: blur(var(--first-paint-blur, 0px));
+}
+html[data-first-paint="armed"][data-first-paint-image="1"] .first-paint-preview { opacity: 1; }
+html[data-first-paint="fading"] .first-paint-preview { transition: opacity 0.2s ease; opacity: 0; }
+html[data-first-paint] .artdeco-bg { visibility: visible; }
+html[data-first-paint] .background-image-layer { transition: none; }
+html[data-first-paint-image="1"] .background-overlay-layer { background: rgba(0, 0, 0, var(--first-paint-overlay, 0.38)); }
+@media (prefers-reduced-motion: reduce) { .first-paint-preview { transition: none !important; } }

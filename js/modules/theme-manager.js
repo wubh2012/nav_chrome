@@ -262,6 +262,8 @@ const ThemeManager = (function() {
       root.style.setProperty(prop, value);
     }
 
+    window.FirstPaint?.rememberTheme(currentSkin, currentMode, colors);
+
     if (persistPreference) {
       Storage.saveThemePreference(currentSkin, currentMode);
     }

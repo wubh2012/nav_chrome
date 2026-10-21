@@ -3,12 +3,13 @@
  * Handles startup, alarms, and sync message routing.
  */
 
-importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js', 'modules/sync-service.js', 'modules/orchard-core.js', 'modules/orchard-service.js');
+importScripts('modules/storage.js', 'modules/feishu-api.js', 'modules/drag-sort-core.js', 'modules/sync-service.js', 'modules/orchard-core.js', 'modules/orchard-service.js', 'modules/site-icon-core.js', 'modules/site-icon-cache.js', 'modules/site-icon-service.js');
 
 const PENDING_SORT_ALARM = 'chromeNav_pending_sort_retry';
 let navigationCommitQueue = Promise.resolve();
 let pendingSortFlushQueue = Promise.resolve();
 let orchardService;
+let siteIconService;
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[Background] Extension installed/updated:', details.reason);
@@ -56,6 +57,18 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'GET_SITE_ICON' || message?.type === 'CLEAR_SITE_ICON_CACHE') {
+    // 只接受本扩展页面，不向网站或 content script 暴露任意 URL 代理。
+    if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL(''))) {
+      sendResponse({ success: false });
+      return false;
+    }
+    if (!siteIconService) siteIconService = SiteIconService.create();
+    const operation = message.type === 'CLEAR_SITE_ICON_CACHE'
+      ? siteIconService.clear() : siteIconService.handle(message);
+    operation.then(sendResponse).catch(() => sendResponse({ success: false }));
+    return true;
+  }
   if (message.type === 'ORCHARD_ACTION') {
     if (sender.id !== chrome.runtime.id) { sendResponse({ success:false, message:'果园操作来源无法识别。' }); return false; }
     if (!orchardService) orchardService = OrchardService.create(chrome.storage.local);

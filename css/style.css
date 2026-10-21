@@ -2709,3 +2709,7 @@ button:disabled {
   }
 }
 
+/* 自动图标在解码前隐藏；首字占位兼容经典首页及快速搜索。 */
+.tool-icon[hidden], .quick-search-item-icon-img[hidden], #site-icon-preview[hidden] { display: none !important; }
+.tool-icon-tile > .logo-fallback { display: inline-grid; place-items: center; width: 28px; height: 28px; font-size: 17px; font-weight: 600; }
+.quick-search-item-icon > .logo-fallback { display: inline-grid; place-items: center; width: 26px; height: 26px; font-weight: 600; }

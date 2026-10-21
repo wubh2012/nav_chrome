@@ -68,11 +68,13 @@
         document.getElementById('wood-' + key + '-value').textContent = value + (key === 'fontWeight' ? '' : key === 'fontSize' ? 'px' : '%');
       });
       css.value = '.pixel-home.wooden-home {\n' + keys.map(key => `  --${key}: ${palette[key]};`).join('\n') + `\n  --wood-grain: ${palette.grain / 100};\n  --wood-font-weight: ${palette.fontWeight};\n  --wood-font-size: ${palette.fontSize}px;\n}`;
+      if (!save) window.FirstPaint?.rememberWood(mode(), palette);
       if (save) {
         const currentMode = mode(), value = { ...palette };
         pendingWrites++;
         status.textContent = '正在保存…';
         saveQueue = saveQueue.catch(() => {}).then(() => store.set(currentMode, value)).then(() => {
+          window.FirstPaint?.rememberWood(currentMode, value);
           if (mode() === currentMode && JSON.stringify(palette) === JSON.stringify(value)) status.textContent = '已保存在本地';
         }).catch(() => { status.textContent = '保存失败，请重新调整后重试。'; }).finally(() => { pendingWrites--; });
       }
@@ -113,7 +115,7 @@
       const change = changes[store.key(mode())];
       if (!pendingWrites && area === 'local' && change && JSON.stringify(core.normalize(change.newValue, mode())) !== JSON.stringify(palette)) load();
     });
-    palette = core.normalize(null, mode());
+    palette = core.normalize(window.FirstPaint?.getWood(mode()), mode());
     apply(false);
     load();
   });

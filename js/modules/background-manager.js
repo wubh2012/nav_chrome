@@ -16,6 +16,7 @@ const BackgroundManager = (function() {
     overlayLayer = document.querySelector('.background-overlay-layer');
 
     if (!imageLayer || !overlayLayer || !window.Storage) {
+      window.FirstPaint?.finish({ immediate: true });
       return;
     }
 
@@ -58,6 +59,7 @@ const BackgroundManager = (function() {
     if (settings.mode === 'default') {
       resetVisualSettings();
       clearImage();
+      notifyReady(safeThemeMode, settings, currentRequest);
       return true;
     }
 
@@ -115,6 +117,7 @@ const BackgroundManager = (function() {
         requestAnimationFrame(() => {
           if (currentRequest === requestVersion && imageLayer) {
             imageLayer.classList.add('is-visible');
+            notifyReady(themeMode, settings, currentRequest, probe, isObjectUrl);
           }
         });
         resolve(true);
@@ -157,6 +160,7 @@ const BackgroundManager = (function() {
 
     resetVisualSettings();
     clearImage();
+    notifyReady(themeMode, { ...settings, mode: 'default', url: '' }, currentRequest);
     try {
       await Storage.saveBackgroundSettings(themeMode, {
         ...settings,
@@ -184,6 +188,13 @@ const BackgroundManager = (function() {
     imageLayer.classList.remove('is-visible');
     document.body.classList.remove('has-custom-background');
     revokeObjectUrl();
+  }
+
+  function notifyReady(mode, settings, version, image, readable = false) {
+    if (version !== requestVersion) return;
+    window.FirstPaint?.backgroundReady({ mode, settings, image, readable,
+      isCurrent: () => version === requestVersion });
+    document.dispatchEvent(new CustomEvent('chromeNav:backgroundReady', { detail: { mode, type: settings.mode } }));
   }
 
   function revokeObjectUrl() {

@@ -223,6 +223,7 @@ const UIRenderer = (function() {
 
     // 先隐藏容器，避免中间状态
     grid.style.visibility = 'hidden';
+    window.SiteLogoManager?.releaseWithin(grid);
     grid.textContent = '';
 
     const tools = rendererCore.flattenToolsByCategoryPriority(data);
@@ -276,7 +277,7 @@ const UIRenderer = (function() {
    *   name 会作为显示文本和悬浮提示，url 会在卡片点击时打开。
    * @returns {HTMLDivElement} 可插入工具网格的卡片节点。
    * @throws {Error} 本函数不主动抛错；若传入字段类型异常，DOM API 或下游 openLink 可能失败。
-   * @sideeffects 创建 DOM、绑定点击事件和删除按钮事件；不执行外部 I/O。
+   * @sideeffects 创建 DOM、绑定交互，并异步请求后台加载和缓存网站图标。
    */
   function createToolCard(tool) {
     const card = document.createElement('div');
@@ -327,7 +328,9 @@ const UIRenderer = (function() {
 
     if (useImageIcon) {
       const imageIcon = card.querySelector('.tool-icon');
-      if (imageIcon) {
+      if (imageIcon && window.SiteLogoManager) {
+        SiteLogoManager.load(imageIcon, tool);
+      } else if (imageIcon) {
         imageIcon.addEventListener('error', () => {
           imageIcon.replaceWith(createTextIconElement(getInitial(tool.name)));
         }, { once: true });
@@ -364,9 +367,10 @@ const UIRenderer = (function() {
   function createToolIconElement(tool) {
     const icon = String(tool?.icon || '');
 
-    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
+    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')
+      || (!icon && /^https?:\/\//i.test(tool?.url || ''))) {
       const image = document.createElement('img');
-      image.src = icon;
+      if (!window.SiteLogoManager && icon) image.src = icon;
       image.alt = tool?.name || '';
       image.className = 'tool-icon';
       return { element: image, useImageIcon: true };

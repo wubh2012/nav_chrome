@@ -56,7 +56,10 @@ async function createPage() {
   node('setup-wizard');
   nodes.get('app-secret').type = 'password';
   const defaults = { mode: 'default', url: '', size: 'cover', overlayOpacity: 0.38, blurPx: 0 };
-  const calls = { tests: 0, saves: [], backgrounds: [] };
+  const calls = { tests: 0, saves: [], backgrounds: [], iconClears: 0, navClears: 0, paintClears: 0 };
+  const runtime = { async sendMessage(message) {
+    if (message.type === 'CLEAR_SITE_ICON_CACHE') { calls.iconClears++; return { success: true }; }
+  } };
   const api = {
     testConnection: async () => { calls.tests++; return { success: true }; },
     clearTokenCache: async () => {}
@@ -65,7 +68,7 @@ async function createPage() {
     loadFeishuConfig: async () => null, getTestMode: async () => false,
     loadAllBackgroundSettings: async () => ({ profiles: { light: defaults, dark: defaults } }),
     normalizeBackgroundSettings: value => ({ ...defaults, ...value }),
-    saveFeishuConfig: async config => calls.saves.push(config), clearNavCache: async () => {},
+    saveFeishuConfig: async config => calls.saves.push(config), clearNavCache: async () => { calls.navClears++; },
     saveTestMode: async () => {},
     saveBackgroundSettings: async (mode, settings) => { calls.backgrounds.push(mode); return settings; }
   };
@@ -79,19 +82,33 @@ async function createPage() {
     }
   };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/options.js'), 'utf8'), {
-    window: { BackgroundStorage: {} }, document, console: { log() {}, warn() {}, error() {} },
+    window: { BackgroundStorage: {}, FirstPaint: { clear() { calls.paintClears++; } } }, document, chrome: { runtime }, console: { log() {}, warn() {}, error() {} },
     Storage: storage, FeishuAPI: api, Blob,
     BackgroundStorage: { getUploadedBackground: async () => null },
     setTimeout: () => 1, clearTimeout() {}, confirm: () => true,
     URL: { createObjectURL() {}, revokeObjectURL() {} }
   });
   await new Promise(resolve => setImmediate(resolve));
-  return { nodes, groups, api, storage, calls, focused: () => focused };
+  return { nodes, groups, api, storage, calls, runtime, focused: () => focused };
 }
 
 function fill(page) {
   for (const id of ['app-id', 'app-secret', 'app-token', 'table-id']) page.nodes.get(id).value = 'synthetic-' + id;
 }
+
+test('设置页清缓存同时清除网站图标，后台失败时不声称成功', async () => {
+  const page = await createPage();
+  await page.nodes.get('clear-cache-btn').fire('click');
+  assert.equal(page.calls.iconClears, 1);
+  assert.equal(page.calls.navClears, 1);
+  assert.equal(page.calls.paintClears, 1);
+  assert.match(page.nodes.get('data-status-message').textContent, /网站图标缓存已清除/);
+  page.runtime.sendMessage = async () => ({ success: false });
+  await page.nodes.get('clear-cache-btn').fire('click');
+  assert.equal(page.calls.navClears, 1);
+  assert.equal(page.calls.paintClears, 1);
+  assert.match(page.nodes.get('data-status-message').textContent, /清除缓存失败/);
+});
 
 test('顶部步骤可直接切换、保留已填内容并支持方向键', async () => {
   const page = await createPage();

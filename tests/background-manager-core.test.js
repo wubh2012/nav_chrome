@@ -26,7 +26,7 @@ function createStyle() {
   };
 }
 
-function createEnvironment() {
+function createEnvironment({ deferFrames = false } = {}) {
   const listeners = {};
   const images = [];
   const loadCalls = [];
@@ -34,6 +34,8 @@ function createEnvironment() {
   const imageLayer = { style: createStyle(), classList: createClassList() };
   const overlayLayer = { style: createStyle() };
   const body = { classList: createClassList() };
+  const frames = [];
+  const ready = [];
   let currentMode = 'light';
 
   class TestImage {
@@ -84,7 +86,9 @@ function createEnvironment() {
   };
   const ThemeManager = { getCurrentMode: () => currentMode };
   const context = {
-    window: { Storage, ThemeManager },
+    window: { Storage, ThemeManager, FirstPaint: { backgroundReady(details) {
+      ready.push({ mode: details.mode, type: details.settings.mode, visible: imageLayer.classList.contains('is-visible') });
+    } } },
     document,
     Storage,
     ThemeManager,
@@ -92,7 +96,7 @@ function createEnvironment() {
     Image: TestImage,
     CustomEvent: TestCustomEvent,
     URL: { createObjectURL: () => 'blob:test', revokeObjectURL: () => {} },
-    requestAnimationFrame: (callback) => callback(),
+    requestAnimationFrame: (callback) => deferFrames ? frames.push(callback) : callback(),
     Blob,
     console
   };
@@ -104,6 +108,9 @@ function createEnvironment() {
     images,
     loadCalls,
     saveCalls,
+    ready,
+    frames,
+    storage: Storage,
     imageLayer,
     setCurrentMode(mode) {
       currentMode = mode;
@@ -114,6 +121,37 @@ function createEnvironment() {
 function flush() {
   return new Promise((resolve) => setImmediate(resolve));
 }
+
+test('背景加载和可见类提交之后才交接快照，过期加载不能触发就绪', async () => {
+  const env = createEnvironment({ deferFrames: true });
+  const initialized = env.manager.init();
+  await flush();
+  assert.equal(env.ready.length, 0);
+  env.images[0].onload();
+  await initialized;
+  assert.equal(env.ready.length, 0);
+  env.frames.shift()();
+  assert.deepEqual(env.ready[0], { mode: 'light', type: 'url', visible: true });
+  env.document.dispatchEvent({ type: 'chromeNav:themeChanged', detail: { mode: 'dark' } });
+  await flush();
+  env.document.dispatchEvent({ type: 'chromeNav:themeChanged', detail: { mode: 'light' } });
+  await flush();
+  env.images[1].onload();
+  assert.equal(env.ready.length, 1);
+});
+
+test('默认背景无需图片加载也能交接，失败回退同样通知就绪', async () => {
+  const env = createEnvironment();
+  env.storage.loadBackgroundSettings = async () => ({ mode: 'default' });
+  await env.manager.init();
+  assert.equal(env.ready[0].type, 'default');
+  const failed = createEnvironment();
+  const initialized = failed.manager.init();
+  await flush();
+  await failed.images[0].onerror();
+  await initialized;
+  assert.equal(failed.ready[0].type, 'default');
+});
 
 test('切换皮肤不重载背景，切换明暗模式加载对应档案', async () => {
   const env = createEnvironment();

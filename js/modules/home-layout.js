@@ -12,6 +12,7 @@ const HomeLayout = (() => {
   async function save(value) {
     const layout = normalize(value);
     await Storage.set({ [KEY]: layout });
+    window.FirstPaint?.rememberLayout(layout);
     return layout;
   }
 
@@ -64,6 +65,7 @@ const HomeLayout = (() => {
       bindSidebar();
     }
     document.documentElement.dataset.homeLayout = layout;
+    window.FirstPaint?.rememberLayout(layout);
     document.body.classList.remove('home-layout-pending');
     document.dispatchEvent(new CustomEvent('chromeNav:layoutReady', { detail: { layout } }));
     return layout;

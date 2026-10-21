@@ -37,10 +37,13 @@
   "options_page": "options.html",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "favicon",
+    "offscreen"
   ],
   "host_permissions": [
-    "https://open.feishu.cn/*"
+    "https://*/*",
+    "http://*/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self' https://fonts.gstatic.com https://fontsapi.zeoseven.com https://cdn.jsdelivr.net;"
@@ -56,5 +59,6 @@
       ]
     }
   ],
-  "offline_enabled": true
+  "offline_enabled": true,
+  "minimum_chrome_version": "109"
 }

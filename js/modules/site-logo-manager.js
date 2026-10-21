@@ -1,77 +1,123 @@
-/* 网站图标加载失败或超时时尝试官方 favicon，再显示首字。 */
-(() => {
+/** 首页、搜索和编辑预览共用的图标加载器；通过后台获取并持久缓存图片。 */
+(function(root, factory) {
+  const api = factory(root);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.SiteLogoManager = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(root) {
   'use strict';
-  const handled = new WeakSet();
-  const selector = '#tools-grid img.tool-icon, #quick-search-list img.quick-search-item-icon-img';
-  function improve(image) {
-    if (handled.has(image)) return;
-    handled.add(image);
+  const core = root.SiteIconCore || (typeof require === 'function' ? require('./site-icon-core.js') : null);
+  const states = new WeakMap();
+  const active = new Set();
+  const requests = new Map();
+
+  function release(image) {
+    const state = states.get(image);
+    if (!state) return;
+    states.delete(image);
+    active.delete(image);
+    clearTimeout(state.timer);
+    image.onload = image.onerror = null;
+    image.removeAttribute('src');
+    state.placeholder?.remove();
+    if (state.objectUrl) root.URL.revokeObjectURL(state.objectUrl);
+    state.cancel?.();
+  }
+
+  function releaseWithin(container) {
+    if (!container) return;
+    if (states.has(container)) release(container);
+    container.querySelectorAll?.('img').forEach(release);
+  }
+
+  function request(site, force) {
+    const customIcon = core.getCustomIcon(site);
+    const key = `${core.cacheKey(site.url, customIcon)}|${Boolean(force)}`;
+    if (!requests.has(key)) {
+      const promise = Promise.resolve().then(() => root.chrome.runtime.sendMessage({
+        type: 'GET_SITE_ICON', url: site.url, customIcon, force: Boolean(force)
+      }));
+      requests.set(key, promise);
+      promise.finally(() => { if (requests.get(key) === promise) requests.delete(key); }).catch(() => {});
+    }
+    return requests.get(key);
+  }
+
+  async function load(image, site, { onStatus, force = false, placeholder = true } = {}) {
+    release(image);
+    const state = { site, options: { onStatus, placeholder } };
+    states.set(image, state);
+    active.add(image);
+    image.hidden = true;
+    image.referrerPolicy = 'no-referrer';
     const holder = image.parentElement;
-    const card = image.closest('.tool-item, .quick-search-item');
-    const name = image.alt || card?.getAttribute('aria-label') || card?.querySelector('.quick-search-item-name')?.textContent || '网站';
-    const link = card?.matches('a') ? card : card?.querySelector('a');
-    const siteUrl = link?.href;
-    const local = null;
-    const candidates = [local && new URL(local, document.baseURI).href, image.src];
+    const current = () => states.get(image) === state;
+    const status = (value, detail) => {
+      if (!current()) return;
+      if (holder) holder.dataset.logoStatus = value;
+      onStatus?.(value, detail);
+    };
+    if (placeholder && holder) {
+      state.placeholder = root.document.createElement('span');
+      state.placeholder.className = 'logo-fallback';
+      state.placeholder.textContent = Array.from(String(site?.name || '网站').trim())[0]?.toUpperCase() || '网';
+      state.placeholder.setAttribute('aria-hidden', 'true');
+      holder.appendChild(state.placeholder);
+    }
+    status('loading');
+
+    function show(source, objectUrl = false) {
+      return new Promise(resolve => {
+        if (!current()) { if (objectUrl) root.URL.revokeObjectURL(source); resolve(false); return; }
+        if (objectUrl) state.objectUrl = source;
+        const settle = success => {
+          clearTimeout(state.timer);
+          state.cancel = null;
+          image.onload = image.onerror = null;
+          if (!current()) { resolve(false); return; }
+          if (success && image.naturalWidth > 0) {
+            state.placeholder?.remove();
+            image.hidden = false;
+            resolve(true);
+          } else {
+            image.removeAttribute('src');
+            if (state.objectUrl) { root.URL.revokeObjectURL(state.objectUrl); state.objectUrl = null; }
+            resolve(false);
+          }
+        };
+        state.cancel = () => resolve(false);
+        image.onload = () => settle(true);
+        image.onerror = () => settle(false);
+        state.timer = setTimeout(() => settle(false), 2200);
+        image.src = source;
+      });
+    }
+
     try {
-      const url = new URL(siteUrl);
-      if (/^https?:$/.test(url.protocol)) candidates.push(url.origin + '/favicon.ico');
-    } catch (_) { /* 搜索结果没有链接时，使用已有图标地址。 */ }
-    const queue = [...new Set(candidates.filter(Boolean))];
-    const placeholder = document.createElement('span');
-    placeholder.className = 'logo-placeholder';
-    placeholder.textContent = '·';
-    placeholder.setAttribute('aria-hidden', 'true');
-    image.replaceWith(placeholder);
-    const deadline = Date.now() + 6500;
-    function fallback() {
-      const initial = document.createElement('span');
-      initial.className = 'logo-fallback';
-      initial.textContent = Array.from(name.trim())[0]?.toUpperCase() || '网';
-      initial.title = name + '：暂无法加载图标';
-      placeholder.replaceWith(initial);
-      holder.dataset.logoStatus = 'fallback';
-    }
-    function next() {
-      const source = queue.shift();
-      const remaining = deadline - Date.now();
-      if (!source || remaining <= 0 || !holder.isConnected) { fallback(); return; }
-      const candidate = new Image();
-      handled.add(candidate);
-      candidate.className = image.className;
-      candidate.alt = image.alt;
-      candidate.referrerPolicy = 'no-referrer';
-      let settled = false;
-      const settle = success => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        candidate.onload = candidate.onerror = null;
-        if (success && candidate.naturalWidth > 0) {
-          placeholder.replaceWith(candidate);
-          holder.dataset.logoStatus = 'loaded';
-        } else { next(); }
-      };
-      const timer = setTimeout(() => settle(false), Math.min(2200, remaining));
-      candidate.onload = () => settle(true);
-      candidate.onerror = () => settle(false);
-      candidate.src = source;
-    }
-    next();
+      if (/^data:image\//i.test(site?.icon || '')) {
+        if (await show(site.icon)) { status('loaded', { local: true }); return; }
+      } else {
+        const response = await request(site || {}, force);
+        if (!current()) return;
+        if (response?.success && Array.isArray(response.bytes) && response.bytes.length
+          && response.bytes.length <= core.MAX_ICON_BYTES && /^image\//i.test(response.mimeType || '')) {
+          const blob = new Blob([Uint8Array.from(response.bytes)], { type: response.mimeType });
+          if (await show(root.URL.createObjectURL(blob), true)) { status('loaded', response); return; }
+        }
+      }
+    } catch (_) { /* 扩展重载或后台不可用时保留文字回退。 */ }
+    status('fallback');
   }
-  function scan() {
-    document.querySelectorAll(selector).forEach(improve);
-    document.querySelectorAll('#tools-grid .text-icon').forEach(initial => {
-      initial.classList.add('logo-fallback');
-      initial.parentElement.dataset.logoStatus = 'fallback';
-      initial.title = initial.closest('.tool-item')?.getAttribute('aria-label') + '：暂无本地图标';
-    });
-  }
-  document.addEventListener('chromeNav:layoutReady', () => {
-    ['tools-grid', 'quick-search-list'].forEach(id => {
-      const container = document.getElementById(id);
-      if (container) new MutationObserver(scan).observe(container, { childList: true, subtree: true });
-    });
-    scan();
+
+  if (root.addEventListener) root.addEventListener('pagehide', event => {
+    if (!event.persisted) [...active].forEach(release);
   });
-})();
+  function refreshVisible(url, exclude) {
+    for (const image of [...active]) {
+      const state = states.get(image);
+      if (image !== exclude && core.httpUrl(state?.site?.url) === core.httpUrl(url)) {
+        load(image, state.site, state.options);
+      }
+    }
+  }
+  return { load, release, releaseWithin, refreshVisible };
+});

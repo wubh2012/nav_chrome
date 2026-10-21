@@ -8,12 +8,13 @@
   js/modules 下的全局模块加载顺序以及 newtab 页面固定容器 ID。
   首页支持木牌果园与经典分类布局，布局偏好在设置页独立保存。
 -->
-<html lang="zh-CN" data-skin="cream" data-theme="light">
+<html lang="zh-CN" data-skin="cream" data-theme="light" data-first-paint-page>
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>水果导航</title>
+  <script src="js/first-paint.js"></script>
 
 
 
@@ -35,12 +36,14 @@
   <link rel="stylesheet" href="css/orchard.css">
   <link rel="stylesheet" href="css/wood-home.css">
   <link rel="stylesheet" href="css/home-layout.css">
+  <link rel="stylesheet" href="css/first-paint.css">
 
 </head>
 
 <body class="pixel-home wooden-home home-layout-pending">
+  <script src="js/first-paint-body.js"></script>
   <a class="skip-link" href="#home-search-btn">跳到搜索</a>
-  <div class="artdeco-bg" aria-hidden="true"><div class="background-image-layer"></div><div class="background-overlay-layer"></div></div>
+  <div class="artdeco-bg" aria-hidden="true"><div class="background-image-layer"></div><div class="first-paint-preview"></div><div class="background-overlay-layer"></div></div>
   <div id="shortcut-toast" class="shortcut-toast" role="status" aria-live="polite"><span>按 Ctrl+Shift+F 快速搜索，无需先点击页面</span></div>
   <main class="main-content">
     <div class="main-content-inner">
@@ -289,8 +292,8 @@
           <div class="form-group">
             <label for="site-icon">图标 URL（可选）</label>
             <div class="icon-input-row">
-              <input type="url" id="site-icon" name="site-icon" placeholder="根据网址自动建议 favicon">
-              <button type="button" id="use-favicon-btn" class="icon-suggest-btn" title="使用网址生成图标建议" aria-label="使用网址生成图标建议">
+              <input type="url" id="site-icon" name="site-icon" placeholder="留空自动获取，或填写自定义图标 URL">
+              <button type="button" id="use-favicon-btn" class="icon-suggest-btn" title="重新获取网站图标" aria-label="重新获取网站图标">
                 <i class="bi bi-stars"></i>
               </button>
             </div>
@@ -299,7 +302,7 @@
                 <img id="site-icon-preview" alt="">
                 <i class="bi bi-image"></i>
               </div>
-              <span class="icon-preview-status" id="icon-preview-status" aria-live="polite">输入网址后自动建议 favicon</span>
+              <span class="icon-preview-status" id="icon-preview-status" aria-live="polite">输入网址后自动获取图标</span>
             </div>
             <div class="error-message" id="icon-error"></div>
           </div>
@@ -391,6 +394,8 @@
   <script src="js/modules/background-manager.js"></script>
   <script src="js/modules/theme-manager.js"></script>
   <script src="js/modules/ui-renderer-core.js"></script>
+  <script src="js/modules/site-icon-core.js"></script>
+  <script src="js/modules/site-logo-manager.js"></script>
   <script src="js/modules/ui-renderer.js"></script>
   <script src="js/modules/link-manager-core.js"></script>
   <script src="js/modules/link-manager.js"></script>
@@ -408,7 +413,6 @@
   <script src="js/modules/wood-appearance-core.js"></script>
   <script src="js/modules/wood-appearance.js"></script>
   <script src="js/modules/home-layout.js"></script>
-  <script src="js/modules/site-logo-manager.js"></script>
   <script src="js/app.js"></script>
 </body>
 

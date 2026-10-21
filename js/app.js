@@ -41,6 +41,7 @@
       if (window.BackgroundManager) {
         BackgroundManager.init().catch((error) => {
           console.warn('[ChromeNav] Background init failed:', error);
+          window.FirstPaint?.finish();
         });
       }
 
@@ -69,6 +70,7 @@
       console.log('[ChromeNav] 初始化完成');
     } catch (error) {
       console.error('[ChromeNav] 初始化失败:', error);
+      window.FirstPaint?.finish({ immediate: true });
       UIRenderer.showSyncStatus('初始化失败，请刷新重试', 'error');
     }
   }

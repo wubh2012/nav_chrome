@@ -18,7 +18,6 @@ const LinkManager = (function() {
   let currentEditingLink = null;
   let defaultSiteSort = 10;
   let cachedCategories = [];
-  let lastSuggestedIconUrl = '';
   let deletedLocalRecordIds = new Set();
   let pendingRemoteDeleteIds = new Set();
   let remoteDeleteRetryTimer = null;
@@ -82,20 +81,20 @@ const LinkManager = (function() {
     if (urlInput && !urlInput.dataset.linkManagerBound) {
       urlInput.dataset.linkManagerBound = 'true';
       urlInput.addEventListener('input', debounce(() => {
-        refreshSuggestedFields({ suggestName: true, autoFillIcon: true });
+        refreshSuggestedFields({ suggestName: true });
       }, 400));
     }
 
     if (iconInput && !iconInput.dataset.linkManagerBound) {
       iconInput.dataset.linkManagerBound = 'true';
-      iconInput.addEventListener('input', () => {
-        updateIconPreview(iconInput.value.trim(), iconInput.value.trim() ? '正在预览手动图标' : '图标为空时会使用文字图标');
-      });
+      iconInput.addEventListener('input', debounce(() => {
+        updateIconPreview(iconInput.value.trim(), iconInput.value.trim() ? '正在预览手动图标' : '正在自动获取图标');
+      }, 400));
     }
 
     if (faviconBtn && !faviconBtn.dataset.linkManagerBound) {
       faviconBtn.dataset.linkManagerBound = 'true';
-      faviconBtn.addEventListener('click', applySuggestedFavicon);
+      faviconBtn.addEventListener('click', refreshSiteIcon);
     }
 
     if (categorySelect && !categorySelect.dataset.linkManagerBound) {
@@ -242,7 +241,7 @@ const LinkManager = (function() {
       if (titleEl) titleEl.textContent = '修改网站';
       if (saveBtn) saveBtn.textContent = '更新';
       setFormValues(link);
-      refreshSuggestedFields({ suggestName: false, autoFillIcon: false });
+      refreshSuggestedFields({ suggestName: false });
     } else {
       if (titleEl) titleEl.textContent = '添加网站';
       if (saveBtn) saveBtn.textContent = '保存';
@@ -291,7 +290,7 @@ const LinkManager = (function() {
    * @sideeffects 写入表单字段、选择分类并刷新自定义分类输入框显示状态。
    */
   function setFormValues(link) {
-    const icon = link.customIcon || link.icon || '';
+    const icon = window.SiteIconCore ? SiteIconCore.getCustomIcon(link) : (link.customIcon || link.icon || '');
 
     setInputValue('site-url', link.url || 'https://');
     setInputValue('site-name', link.name || '');
@@ -305,7 +304,7 @@ const LinkManager = (function() {
       categorySelect.value = link.category || cachedCategories[0] || '__custom__';
     }
     handleCategoryChange();
-    updateIconPreview(icon, icon ? '正在预览当前图标' : '当前链接未设置图标');
+    updateIconPreview(icon, icon ? '正在预览当前图标' : '正在自动获取图标');
   }
 
   /**
@@ -1015,25 +1014,23 @@ const LinkManager = (function() {
   }
 
   /**
-   * 根据 URL 输入刷新网站名称和 favicon 建议。
+   * 根据 URL 输入建议网站名称并自动预览图标，不填充手动图标字段。
    *
    * @param {Object} options - 刷新选项。
    * @param {boolean} options.suggestName - 是否在名称为空且非编辑状态时建议名称。
-   * @param {boolean} options.autoFillIcon - 是否在图标为空时自动写入 favicon 建议。
    * @returns {void} 无返回值。
    * @throws {Error} 不主动抛错。
    * @sideeffects 可能写入名称、图标输入框、图标预览和建议按钮状态。
    */
-  function refreshSuggestedFields({ suggestName, autoFillIcon }) {
+  function refreshSuggestedFields({ suggestName }) {
     const urlInput = document.getElementById('site-url');
     const iconInput = document.getElementById('site-icon');
     const url = urlInput?.value.trim() || '';
 
     if (!core.isValidHttpUrl(url)) {
-      lastSuggestedIconUrl = '';
       setFaviconButtonState(false);
       if (!iconInput?.value.trim()) {
-        updateIconPreview('', '输入有效网址后自动建议 favicon');
+        updateIconPreview('', '输入有效网址后自动获取图标');
       }
       return;
     }
@@ -1042,15 +1039,8 @@ const LinkManager = (function() {
       suggestSiteNameFromUrl(url);
     }
 
-    lastSuggestedIconUrl = core.resolveFaviconUrl(url);
-    setFaviconButtonState(Boolean(lastSuggestedIconUrl));
-
-    if (autoFillIcon && iconInput && !iconInput.value.trim() && lastSuggestedIconUrl) {
-      iconInput.value = lastSuggestedIconUrl;
-      updateIconPreview(lastSuggestedIconUrl, '已根据网址生成图标建议');
-    } else {
-      updateIconPreview(iconInput?.value.trim() || lastSuggestedIconUrl, iconInput?.value.trim() ? '正在预览图标' : '可使用网址生成图标建议');
-    }
+    setFaviconButtonState(true);
+    updateIconPreview(iconInput?.value.trim() || '', iconInput?.value.trim() ? '正在预览图标' : '正在自动获取图标');
   }
 
   /**
@@ -1081,25 +1071,20 @@ const LinkManager = (function() {
   }
 
   /**
-   * 将当前 URL 对应的 favicon 建议写入图标字段。
+   * 绕过图标冷却，重新获取当前自动图标或自定义图片。
    *
    * @returns {void} 无返回值。
    * @throws {Error} 不主动抛错。
-   * @sideeffects 读取 URL 输入框，写入图标输入框并刷新图标预览。
+   * @sideeffects 请求后台更新图标缓存并刷新预览，不修改图标输入框。
    */
-  function applySuggestedFavicon() {
+  function refreshSiteIcon() {
     const url = document.getElementById('site-url')?.value.trim() || '';
     const iconInput = document.getElementById('site-icon');
-    const suggestedIcon = lastSuggestedIconUrl || core.resolveFaviconUrl(url);
-
-    if (!iconInput || !suggestedIcon) {
+    if (!iconInput || !core.isValidHttpUrl(url)) {
       updateIconPreview('', '请先输入有效网址');
       return;
     }
-
-    lastSuggestedIconUrl = suggestedIcon;
-    iconInput.value = suggestedIcon;
-    updateIconPreview(suggestedIcon, '已使用网址生成图标建议');
+    updateIconPreview(iconInput.value.trim(), '正在重新获取图标', { force: true });
     setFaviconButtonState(true);
   }
 
@@ -1123,31 +1108,62 @@ const LinkManager = (function() {
    *
    * @returns {void} 无返回值。
    * @throws {Error} 不主动抛错。
-   * @sideeffects 清空建议图标 URL、禁用建议按钮并更新预览 DOM。
+   * @sideeffects 释放预览图片、禁用刷新按钮并重置状态文本。
    */
   function resetIconPreview() {
-    lastSuggestedIconUrl = '';
     setFaviconButtonState(false);
-    updateIconPreview('', '输入网址后自动建议 favicon');
+    const image = document.getElementById('site-icon-preview');
+    if (image) window.SiteLogoManager?.release(image);
+    const box = document.getElementById('site-icon-preview-box');
+    box?.classList.add('is-empty');
+    box?.classList.remove('has-error');
+    const status = document.getElementById('icon-preview-status');
+    if (status) {
+      status.classList.remove('has-error');
+      status.textContent = '输入网址后自动获取图标';
+    }
   }
 
   /**
    * 渲染图标预览和加载状态。
    *
-   * @param {string} iconUrl - 要预览的图标 URL；为空或非法时显示占位状态。
+   * @param {string} iconUrl - 自定义图标 URL；为空时根据网站网址自动获取。
    * @param {string} message - 加载前或占位状态文案。
    * @returns {void} 无返回值。
    * @throws {Error} 不主动抛错。
    * @sideeffects 写入 img src、状态文本和预览容器 CSS 状态类；浏览器会尝试加载图片。
    */
-  function updateIconPreview(iconUrl, message) {
+  function updateIconPreview(iconUrl, message, { force = false } = {}) {
     const previewImg = document.getElementById('site-icon-preview');
     const previewBox = document.getElementById('site-icon-preview-box');
     const statusEl = document.getElementById('icon-preview-status');
     const url = String(iconUrl || '').trim();
+    const siteUrl = document.getElementById('site-url')?.value.trim() || '';
 
     if (!previewImg || !previewBox || !statusEl) return;
 
+    window.SiteLogoManager?.release(previewImg);
+    if (window.SiteLogoManager && (!url || core.isValidHttpUrl(url)) && core.isValidHttpUrl(siteUrl)) {
+      previewBox.classList.remove('has-error');
+      previewBox.classList.add('is-empty');
+      statusEl.classList.remove('has-error');
+      statusEl.textContent = message || '正在获取图标';
+      SiteLogoManager.load(previewImg, {
+        url: siteUrl, icon: url, customIcon: url,
+        name: document.getElementById('site-name')?.value || '网站'
+      }, { force, placeholder: false, onStatus(status, detail) {
+        previewBox.classList.toggle('is-empty', status !== 'loaded');
+        previewBox.classList.toggle('has-error', status === 'fallback');
+        statusEl.classList.toggle('has-error', status === 'fallback' || Boolean(detail?.refreshFailed));
+        if (status === 'loaded') {
+          statusEl.textContent = detail?.refreshFailed ? '刷新失败，继续使用缓存图标' : detail?.fromCache ? '已加载本地图标缓存' : '图标已获取';
+          if (force && !detail?.refreshFailed) SiteLogoManager.refreshVisible(siteUrl, previewImg);
+        } else if (status === 'fallback') statusEl.textContent = '暂未获取到图标，可继续保存或手动更换';
+      } });
+      return;
+    }
+
+    previewImg.hidden = false;
     previewBox.classList.remove('is-empty', 'has-error');
     statusEl.classList.remove('has-error');
 

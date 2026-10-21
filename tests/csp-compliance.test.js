@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const projectRoot = path.resolve(__dirname, '..');
-const extensionPages = ['newtab.html', 'options.html', 'popup.html'];
+const extensionPages = ['newtab.html', 'options.html', 'popup.html', 'js/site-icon-offscreen.html'];
 const sourceScriptsDir = path.join(projectRoot, 'js');
 
 function collectJavaScriptFiles(dir) {

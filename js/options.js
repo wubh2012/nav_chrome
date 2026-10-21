@@ -1048,8 +1048,11 @@
     }
 
     try {
+      const icons = await chrome.runtime.sendMessage({ type: 'CLEAR_SITE_ICON_CACHE' });
+      if (!icons?.success) throw new Error('图标缓存清除失败');
       await Storage.clearNavCache();
-      showStatus('缓存已清除，下次打开新标签页将重新加载导航数据', 'success', elements.dataStatusMessage);
+      window.FirstPaint?.clear();
+      showStatus('导航和网站图标缓存已清除，下次打开新标签页将重新加载', 'success', elements.dataStatusMessage);
     } catch (error) {
       console.error('[Options] 清除缓存失败:', error);
       showStatus('清除缓存失败，请重试', 'error', elements.dataStatusMessage);
@@ -1065,7 +1068,10 @@
     }
 
     try {
+      const icons = await chrome.runtime.sendMessage({ type: 'CLEAR_SITE_ICON_CACHE' });
+      if (!icons?.success) throw new Error('图标缓存清除失败');
       await Storage.clearAll();
+      window.FirstPaint?.clear();
       if (window.BackgroundStorage) {
         await BackgroundStorage.clearAllUploadedBackgrounds();
       }

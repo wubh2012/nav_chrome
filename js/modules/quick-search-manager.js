@@ -275,6 +275,7 @@ const QuickSearchManager = (function() {
           name: item.name,
           url: item.url,
           icon: item.icon || '',
+          ...(Object.prototype.hasOwnProperty.call(item, 'customIcon') ? { customIcon: item.customIcon } : {}),
           category,
           sort: Number(item.sort) || 999
         });
@@ -320,6 +321,7 @@ const QuickSearchManager = (function() {
     if (!listEl || !emptyEl) return;
 
     if (searchResults.length === 0) {
+      window.SiteLogoManager?.releaseWithin(listEl);
       listEl.innerHTML = '';
       const keyword = inputEl ? inputEl.value.trim() : '';
       emptyEl.textContent = keyword ? `没有匹配“${keyword}”的网站` : '暂无可搜索的网站';
@@ -328,7 +330,15 @@ const QuickSearchManager = (function() {
     }
 
     emptyEl.style.display = 'none';
+    window.SiteLogoManager?.releaseWithin(listEl);
     listEl.innerHTML = searchResults.map((result, index) => createItemHtml(result, index)).join('');
+    if (window.SiteLogoManager) {
+      listEl.querySelectorAll('.quick-search-item').forEach(item => {
+        const image = item.querySelector('.quick-search-item-icon-img');
+        const site = searchResults[Number(item.dataset.index)]?.site;
+        if (image && site) SiteLogoManager.load(image, site);
+      });
+    }
     updateSelectionUI();
   }
 
@@ -373,8 +383,10 @@ const QuickSearchManager = (function() {
   function renderSiteIcon(site) {
     const icon = site.icon || '';
 
-    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
-      return `<span class="quick-search-item-icon"><img class="quick-search-item-icon-img" src="${escapeAttribute(icon)}" alt=""></span>`;
+    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')
+      || (!icon && /^https?:\/\//i.test(site.url || ''))) {
+      const source = window.SiteLogoManager ? '' : ` src="${escapeAttribute(icon)}"`;
+      return `<span class="quick-search-item-icon"><img class="quick-search-item-icon-img"${source} alt=""></span>`;
     }
 
     if (icon.startsWith('bi-')) {
